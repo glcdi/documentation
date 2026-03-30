@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLCDI — Technical Steps of Sharing Data on a Data Space</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+  <style>
+    :root {
+      --r-heading-color: #1565C0;
+      --r-link-color: #1565C0;
+      --r-selection-background-color: #E3F2FD;
+    }
+    .reveal h1, .reveal h2, .reveal h3 { text-transform: none; }
+    .reveal h1 { font-size: 1.8em; }
+    .reveal h2 { font-size: 1.4em; }
+    .reveal h3 { font-size: 1.1em; color: #424242; }
+    .reveal p, .reveal li, .reveal td, .reveal th { font-size: 0.7em; }
+    .reveal table { margin: 0.5em auto; font-size: 0.65em; }
+    .reveal th { background: #E3F2FD; color: #1565C0; }
+    .reveal td, .reveal th { padding: 0.3em 0.6em; border: 1px solid #E0E0E0; }
+    .reveal blockquote { background: #F5F5F5; border-left: 4px solid #1565C0; padding: 0.5em 1em; font-size: 0.7em; text-align: left; width: 85%; }
+    .reveal .slide-number { font-size: 0.5em; }
+    .badge-provider { display: inline-block; background: #E8F5E9; color: #2E7D32; border: 1px solid #2E7D32; border-radius: 4px; padding: 0.1em 0.5em; font-size: 0.6em; margin-bottom: 0.3em; }
+    .badge-consumer { display: inline-block; background: #E3F2FD; color: #1565C0; border: 1px solid #1565C0; border-radius: 4px; padding: 0.1em 0.5em; font-size: 0.6em; margin-bottom: 0.3em; }
+    .badge-system { display: inline-block; background: #F3E5F5; color: #7B1FA2; border: 1px solid #7B1FA2; border-radius: 4px; padding: 0.1em 0.5em; font-size: 0.6em; margin-bottom: 0.3em; }
+    .two-columns { display: flex; gap: 2em; align-items: flex-start; }
+    .two-columns > * { flex: 1; }
+    .highlight-box { background: #FFF9C4; border: 1px solid #F9A825; border-radius: 6px; padding: 0.6em 1em; margin: 0.5em 0; text-align: left; }
+    .check { color: #2E7D32; font-weight: bold; }
+    .cross { color: #C62828; font-weight: bold; }
+    .fragment.fade-in-then-semi-out.visible:not(.current-fragment) { opacity: 0.4; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================ -->
+<!-- TITLE -->
+<!-- ============================================================ -->
+<section>
+  <h1>Technical Steps of Sharing Data<br>on a Data Space</h1>
+  <h3>GLCDI — Grazing Lands Carbon Data Initiative</h3>
+  <p style="margin-top: 2em; font-size: 0.6em; color: #9E9E9E;">
+    A step-by-step walkthrough of publishing, discovering,<br>
+    negotiating, and transferring data in the GLCDI dataspace.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<!-- OVERVIEW -->
+<!-- ============================================================ -->
+<section>
+  <h2>Overview: Two Perspectives</h2>
+  <div class="two-columns">
+    <div>
+      <h3><span class="badge-provider">Provider</span></h3>
+      <p><strong>Will Thompson</strong><br>Rancher at Caney Fork Farms</p>
+      <p>Will has quarterly Soil Organic Carbon measurements he wants to share with GLCDI researchers.</p>
+      <p style="font-size:0.6em; color:#9E9E9E;">Slides 1 &ndash; 8</p>
+    </div>
+    <div>
+      <h3><span class="badge-consumer">Consumer</span></h3>
+      <p><strong>Dr. Elena Martinez</strong><br>Soil scientist at Point Blue</p>
+      <p>Elena needs SOC data from multiple ranches to train a predictive agronomic model.</p>
+      <p style="font-size:0.6em; color:#9E9E9E;">Slides 9 &ndash; 16</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 1: PROVIDER -->
+<!-- ============================================================ -->
+<section>
+  <h2>Part 1: Publishing Data</h2>
+  <h3><span class="badge-provider">Provider's perspective</span></h3>
+</section>
+
+<!-- SLIDE 1 -->
+<section>
+  <h2>Step 1 — I log in on my Connector</h2>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>Will opens his participant portal:<br>
+  <code>https://caney-fork.glcdi.startinblox.com/catalogue/</code></p>
+
+  <p>He clicks <strong>"Log in"</strong> and authenticates via Keycloak.</p>
+
+  <div class="highlight-box">
+    <p style="font-size:0.6em;"><strong>Behind the scenes:</strong> Will's local Keycloak brokers to the
+    governance Keycloak, which adds GLCDI claims to his token:</p>
+    <ul style="font-size:0.55em;">
+      <li><code>glcdi_membership: "active"</code></li>
+      <li><code>glcdi_roles: ["glcdi_member", "glcdi_producer"]</code></li>
+      <li><code>glcdi_certification_status: "regenerative-verified"</code></li>
+      <li><code>glcdi_contribution_status: "contributing"</code></li>
+    </ul>
+    <p style="font-size:0.55em;">Will doesn't see any of this &mdash; he just logs in.</p>
+  </div>
+</section>
+
+<!-- SLIDE 2 -->
+<section>
+  <h2>Step 2 — I go to "My Assets"</h2>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>Will navigates to the <strong>"My Assets"</strong> section.</p>
+
+  <p>He sees his previously published datasets:</p>
+  <ul>
+    <li>Grazing Rotation Schedule</li>
+    <li>Paddock Boundaries (GeoJSON)</li>
+    <li>NDVI Vegetation Index</li>
+  </ul>
+
+  <p>He clicks <strong>"Publish a new dataset"</strong>.</p>
+</section>
+
+<!-- SLIDE 3 -->
+<section>
+  <h2>Step 3 — I describe my dataset</h2>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>The connector presents a <strong>publication form</strong>:</p>
+
+  <table>
+    <tr><th>Field</th><th>Will's input</th></tr>
+    <tr><td>Name</td><td>Soil Organic Carbon Measurements &mdash; Caney Fork</td></tr>
+    <tr><td>Description</td><td>Quarterly SOC at 3 depth strata across 42 paddocks</td></tr>
+    <tr><td>Keywords</td><td>soil organic carbon, SOC, grazing land, regenerative</td></tr>
+    <tr><td>Format</td><td>JSON</td></tr>
+    <tr><td>Category</td><td>soil-organic-carbon</td></tr>
+    <tr><td>Spatial coverage</td><td>Caney Fork, Tennessee, USA</td></tr>
+    <tr><td>Temporal coverage</td><td>2023 &ndash; 2026</td></tr>
+    <tr><td>Data endpoint</td><td><code>https://internal.example.com/api/soc</code></td></tr>
+  </table>
+
+  <div class="highlight-box">
+    <p style="font-size:0.6em;">This creates an <strong>Asset</strong> &mdash; a description of the dataset, not the data itself.<br>
+    The data stays on Will's infrastructure. The connector acts as a gateway.</p>
+  </div>
+</section>
+
+<!-- SLIDE 4 -->
+<section>
+  <h2>Step 4 &mdash; I associate policies</h2>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>Before the dataset appears in other participants' catalogs,<br>
+  Will must attach <strong>policies</strong> that define the rules of engagement.</p>
+
+  <p>The connector presents <strong>pre-defined policy templates</strong><br>
+  created by the GLCDI governance team.</p>
+
+  <p>Will must choose <strong>two types</strong> of policies&hellip;</p>
+</section>
+
+<!-- SLIDE 5 -->
+<section>
+  <h2>Two types of policies</h2>
+
+  <div class="two-columns">
+    <div>
+      <h3 style="color:#2E7D32;">Access Policy</h3>
+      <p><strong>Who can see my offer?</strong></p>
+      <p style="font-size:0.6em;">Controls <em>catalog visibility</em>. If a consumer doesn't match, they don't even know the dataset exists.</p>
+      <table>
+        <tr><th>Template</th><th>Who can see</th></tr>
+        <tr><td>Any GLCDI member</td><td>All onboarded participants</td></tr>
+        <tr><td>Researchers only</td><td>Research institutions &amp; data stewards</td></tr>
+        <tr><td>Organic producers</td><td>Certified regenerative producers</td></tr>
+        <tr><td>Contributing members</td><td>Those who also share data</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3 style="color:#1565C0;">Contract Policy</h3>
+      <p><strong>What can they do with my data?</strong></p>
+      <p style="font-size:0.6em;">Controls <em>usage terms</em>. The consumer must accept before accessing the data.</p>
+      <table>
+        <tr><th>Template</th><th>What it requires</th></tr>
+        <tr><td>Time-limited</td><td>Expires after a set date</td></tr>
+        <tr><td>Attribution</td><td>Must cite source</td></tr>
+        <tr><td>Non-commercial</td><td>No commercial use</td></tr>
+        <tr><td>Anonymisation</td><td>Remove farm-identifiable info</td></tr>
+        <tr><td>Model training only</td><td>Restricted purpose</td></tr>
+        <tr><td>Share back insights</td><td>Return derived results</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6 -->
+<section>
+  <h2>Step 5 &mdash; Will selects his policies</h2>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>For his SOC measurements, Will chooses:</p>
+
+  <p><strong style="color:#2E7D32;">Access:</strong> Researchers only<br>
+  <span style="font-size:0.65em;">Only Point Blue, University of Florida, and similar research participants can see this dataset.</span></p>
+
+  <p><strong style="color:#1565C0;">Contract (combined):</strong></p>
+  <ul>
+    <li>Model training only &mdash; restricted purpose</li>
+    <li>Time-limited &mdash; expires September 2026</li>
+    <li>Attribution required &mdash; cite Caney Fork</li>
+    <li>Anonymisation required &mdash; remove farm name &amp; GPS</li>
+    <li>Share back insights &mdash; return model predictions</li>
+  </ul>
+
+  <blockquote>
+    "Researchers can see this dataset. They can use it for model training
+    until September 2026. They must anonymise it, cite me, and share their results back."
+  </blockquote>
+</section>
+
+<!-- SLIDE 7 -->
+<section>
+  <h2>Step 6 &mdash; I publish my dataset</h2>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>Will clicks <strong>"Publish"</strong>.</p>
+
+  <p>Behind the scenes, the connector creates three objects:</p>
+  <ol>
+    <li><strong>Asset</strong> &mdash; the dataset description + data source</li>
+    <li><strong>Policy Definitions</strong> &mdash; the selected access + contract policies</li>
+    <li><strong>Contract Definition</strong> &mdash; the binding: asset + policies</li>
+  </ol>
+
+  <div class="highlight-box">
+    <p style="font-size:0.65em;">The dataset is now <strong>live</strong>. It will appear in the catalog
+    of any participant who satisfies the access policy.</p>
+    <p style="font-size:0.65em;">Will sees: <em>"SOC Measurements published. Visible to: researchers and data stewards."</em></p>
+  </div>
+
+  <p style="font-size:0.6em; color:#9E9E9E;">
+    The data itself never moves &mdash; it stays on Will's infrastructure.<br>
+    The connector is the gatekeeper.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<!-- PART 2: CONSUMER -->
+<!-- ============================================================ -->
+<section>
+  <h2>Part 2: Accessing Data</h2>
+  <h3><span class="badge-consumer">Consumer's perspective</span></h3>
+</section>
+
+<!-- SLIDE 8 -->
+<section>
+  <h2>Step 7 &mdash; Elena browses the catalog</h2>
+  <span class="badge-consumer">Consumer: Elena</span>
+
+  <p>Elena logs in at <code>point-blue.glcdi.startinblox.com</code><br>
+  and navigates to <strong>"Discover Data"</strong>.</p>
+
+  <p>Her connector queries Caney Fork's catalog.<br>
+  Caney Fork's connector evaluates the <strong>access policy</strong> for each asset:</p>
+
+  <table>
+    <tr><th>Asset</th><th>Access Policy</th><th>Elena (researcher)</th><th>Visible?</th></tr>
+    <tr><td>SOC Measurements</td><td>Researchers only</td><td><code>glcdi_researcher</code></td><td class="check">Yes</td></tr>
+    <tr><td>Grazing Rotation</td><td>Contributing members</td><td><code>contributing</code></td><td class="check">Yes</td></tr>
+    <tr><td>Paddock Boundaries</td><td>Members only</td><td><code>glcdi_member</code></td><td class="check">Yes</td></tr>
+    <tr><td>NDVI Time Series</td><td>Members only</td><td><code>glcdi_member</code></td><td class="check">Yes</td></tr>
+  </table>
+
+  <p style="font-size:0.6em; color:#9E9E9E;">
+    A corporate analyst with <code>glcdi_corporate</code> would only see 3 datasets &mdash;
+    SOC Measurements would be <strong>hidden</strong>.
+  </p>
+</section>
+
+<!-- SLIDE 9 -->
+<section>
+  <h2>Step 8 &mdash; Elena reviews the terms</h2>
+  <span class="badge-consumer">Consumer: Elena</span>
+
+  <p>Elena clicks on <strong>"SOC Measurements &mdash; Caney Fork"</strong>.</p>
+
+  <p>The connector displays the <strong>contract terms</strong>:</p>
+
+  <blockquote>
+    <strong>Usage terms for this dataset:</strong><br><br>
+    Purpose: Agronomic model training only<br>
+    Valid until: September 30, 2026<br>
+    You must: anonymise farm-identifiable information<br>
+    You must: cite "Caney Fork Farms via GLCDI Data Space"<br>
+    You must: share model outputs back with the provider<br>
+    You must not: redistribute the raw data<br>
+    You must not: use for commercial purposes
+  </blockquote>
+
+  <p>Elena decides these terms are acceptable for her research.</p>
+</section>
+
+<!-- SLIDE 10 -->
+<section>
+  <h2>Step 9 &mdash; Contract negotiation</h2>
+  <span class="badge-consumer">Consumer: Elena</span>
+  <span class="badge-system">Automatic</span>
+
+  <p>Elena clicks <strong>"Request Access"</strong> and declares her purpose:</p>
+  <p><code>Purpose: Agronomic Model Training</code></p>
+
+  <p>Caney Fork's connector <strong>automatically evaluates</strong> the contract policy:</p>
+
+  <table>
+    <tr><th>Check</th><th>Result</th></tr>
+    <tr><td>Purpose in [AgronomicModelTraining, EcosystemModelCalibration]?</td><td class="check">Pass</td></tr>
+    <tr><td>Current date &le; 2026-09-30?</td><td class="check">Pass</td></tr>
+  </table>
+
+  <div class="highlight-box">
+    <p style="font-size:0.65em;"><strong>No human intervention from Will is needed.</strong><br>
+    The connector accepts automatically based on the policies Will defined when publishing.</p>
+    <p style="font-size:0.65em;">Result: <strong>Contract Agreement &mdash; FINALIZED</strong></p>
+  </div>
+</section>
+
+<!-- SLIDE 11 -->
+<section>
+  <h2>Step 10 &mdash; Data transfer</h2>
+  <span class="badge-consumer">Consumer: Elena</span>
+
+  <p>With an active contract, Elena clicks <strong>"Download Dataset"</strong>.</p>
+
+  <p>Her connector sends a <strong>Transfer Request</strong> to Caney Fork's connector.</p>
+
+  <p>Caney Fork's connector:</p>
+  <ol>
+    <li>Verifies a valid contract agreement exists</li>
+    <li>Serves the SOC data via the HTTP data plane</li>
+  </ol>
+
+  <p>Elena receives the dataset in her connector's data store.</p>
+
+  <div class="highlight-box">
+    <p style="font-size:0.6em;">The transfer is <strong>logged on both sides</strong> &mdash; an auditable record
+    of who accessed what, when, and under which contract terms.</p>
+  </div>
+</section>
+
+<!-- SLIDE 12 -->
+<section>
+  <h2>Obligations in effect</h2>
+  <span class="badge-consumer">Consumer: Elena</span>
+
+  <p>Elena now has the data. Her contractual obligations are active:</p>
+
+  <table>
+    <tr><th>Obligation</th><th>What Elena must do</th><th>Enforced by</th></tr>
+    <tr><td>Anonymise</td><td>Replace "Caney Fork" &rarr; "Tennessee Region", generalise GPS</td><td>Data Sharing Agreement</td></tr>
+    <tr><td>Attribute</td><td>Cite "Caney Fork Farms via GLCDI Data Space"</td><td>Data Sharing Agreement</td></tr>
+    <tr><td>Share back</td><td>Return model predictions to Will</td><td>Data Sharing Agreement</td></tr>
+    <tr><td>Time limit</td><td>Stop using after September 2026</td><td>Connector (blocks new transfers)</td></tr>
+    <tr><td>No redistribution</td><td>Do not share raw data outside Point Blue</td><td>Data Sharing Agreement</td></tr>
+  </table>
+
+  <p style="font-size:0.6em; color:#9E9E9E;">
+    Some obligations are <strong>technically enforced</strong> (time limit).<br>
+    Others are <strong>governance-enforced</strong> (anonymisation, attribution).
+  </p>
+</section>
+
+<!-- SLIDE 13 -->
+<section>
+  <h2>Reciprocity: Elena shares back</h2>
+  <span class="badge-consumer">Consumer: Elena</span>
+  <span class="badge-provider">Provider: Will</span>
+
+  <p>Six months later, Elena has trained her SOC prediction model.</p>
+
+  <p>She <strong>publishes her model outputs</strong> as a new dataset<br>
+  on Point Blue's connector, targeting Caney Fork.</p>
+
+  <p>Will receives a notification and sees Elena's predictions:</p>
+
+  <blockquote>
+    "Based on your current rotation schedule, SOC at 0&ndash;10cm depth is projected
+    to increase by 0.3% annually over the next 5 years."
+  </blockquote>
+
+  <div class="highlight-box">
+    <p style="font-size:0.65em;"><strong>The reciprocity loop is complete:</strong></p>
+    <ul style="font-size:0.6em;">
+      <li>Will shared raw SOC data</li>
+      <li>Elena trained a model</li>
+      <li>Elena shared predictions back with Will</li>
+      <li>Will gets actionable insights for his farm</li>
+    </ul>
+    <p style="font-size:0.6em;">Data providers get value back. That's the core promise of the GLCDI data space.</p>
+  </div>
+</section>
+
+<!-- SLIDE 14 -->
+<section>
+  <h2>What happens when the contract expires?</h2>
+  <span class="badge-system">System</span>
+
+  <p><strong>September 30, 2026</strong> &mdash; the prototype phase ends.</p>
+
+  <ul>
+    <li>Elena tries to negotiate new access to SOC data</li>
+    <li>Caney Fork's connector <strong>automatically rejects</strong>: time constraint expired</li>
+    <li>Existing data on Elena's system is still there (no remote deletion)</li>
+    <li>Retention obligations from the DSA still apply</li>
+  </ul>
+
+  <p><strong>To continue sharing</strong>, Will must:</p>
+  <ol>
+    <li>Review the partnership</li>
+    <li>Publish a new policy with an updated expiry</li>
+    <li>Elena negotiates a new contract</li>
+  </ol>
+
+  <div class="highlight-box">
+    <p style="font-size:0.65em;">This creates a <strong>natural consent renewal point</strong> &mdash;
+    Will decides each phase whether to continue sharing, with whom, and under what terms.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SUMMARY -->
+<!-- ============================================================ -->
+<section>
+  <h2>Summary: The data sharing flow</h2>
+
+  <table>
+    <tr><th>#</th><th>Step</th><th>Who</th><th>What happens</th></tr>
+    <tr><td>1</td><td>Log in</td><td><span class="badge-provider">Provider</span></td><td>OIDC authentication via Keycloak</td></tr>
+    <tr><td>2</td><td>Describe dataset</td><td><span class="badge-provider">Provider</span></td><td>Create Asset (metadata + endpoint)</td></tr>
+    <tr><td>3</td><td>Select policies</td><td><span class="badge-provider">Provider</span></td><td>Choose access + contract templates</td></tr>
+    <tr><td>4</td><td>Publish</td><td><span class="badge-provider">Provider</span></td><td>Contract Definition links asset to policies</td></tr>
+    <tr><td>5</td><td>Discover</td><td><span class="badge-consumer">Consumer</span></td><td>Catalog query, filtered by access policy</td></tr>
+    <tr><td>6</td><td>Negotiate</td><td><span class="badge-consumer">Consumer</span></td><td>Contract negotiation, validated by contract policy</td></tr>
+    <tr><td>7</td><td>Transfer</td><td><span class="badge-consumer">Consumer</span></td><td>Data delivered via HTTP data plane</td></tr>
+    <tr><td>8</td><td>Fulfill obligations</td><td><span class="badge-consumer">Consumer</span></td><td>Anonymise, attribute, share back, respect limits</td></tr>
+  </table>
+
+  <div class="highlight-box">
+    <p style="font-size:0.65em;"><strong>Key principle:</strong> The provider defines the rules <em>once</em>.
+    The connector enforces them automatically for every consumer.
+    No manual approval needed per request &mdash; trust is encoded in the policies.</p>
+  </div>
+</section>
+
+<!-- SLIDE: WHAT IF -->
+<section>
+  <h2>What if the consumer doesn't match?</h2>
+
+  <div class="two-columns">
+    <div>
+      <h3 style="color:#C62828;">Access policy fails</h3>
+      <p>A corporate analyst queries Caney Fork's catalog.</p>
+      <p>SOC Measurements has <code>researchers-only</code> access.</p>
+      <p>The analyst's role is <code>glcdi_corporate</code>.</p>
+      <p><strong class="cross">The dataset is invisible.</strong><br>
+      The analyst doesn't know it exists.</p>
+    </div>
+    <div>
+      <h3 style="color:#C62828;">Contract policy fails</h3>
+      <p>A researcher sees the dataset (access passes).</p>
+      <p>They declare purpose: <code>Scope3Reporting</code>.</p>
+      <p>The policy only allows <code>AgronomicModelTraining</code>.</p>
+      <p><strong class="cross">Negotiation is rejected.</strong><br>
+      They must use a different dataset<br>or contact the provider.</p>
+    </div>
+  </div>
+</section>
+
+<!-- END -->
+<section>
+  <h1>GLCDI Data Space</h1>
+  <h3>Consent-governed, federated data sharing<br>for regenerative grazing</h3>
+  <p style="margin-top:2em; font-size:0.6em; color:#9E9E9E;">
+    glcdi@startinblox.com
+  </p>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    width: 1200,
+    height: 700,
+    margin: 0.08,
+    transition: 'slide',
+    transitionSpeed: 'default',
+  });
+</script>
+</body>
+</html>
