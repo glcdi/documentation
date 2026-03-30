@@ -97,13 +97,15 @@ configuration while keeping the data model clean.
 }
 ```
 
-### 2.2 Add certification status as user attribute
+### 2.2 Add certification status and contribution status as user attributes
 
 | Item | Detail |
 |------|--------|
-| **Task** | Define `glcdi_certification_status` as a custom user attribute |
-| **Values** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
+| **Task** | Define `glcdi_certification_status` and `glcdi_contribution_status` as custom user attributes |
+| **Certification values** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
+| **Contribution values** | `contributing` (has published data), `observer` (onboarded but no data published yet), `pending` (awaiting verification) |
 | **Where** | Set per-user in Keycloak admin console or via Admin API. Not part of the realm export by default — attributes are per-user, not schema-level. |
+| **Who updates contribution status** | For the prototype (3–5 participants): the Steering Committee sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service queries each participant's catalog and updates the attribute. |
 | **Status** | [ ] Not started |
 
 ### 2.3 Create protocol mappers for token serialisation
@@ -172,6 +174,31 @@ the default `realm_access.roles` which also includes Keycloak internal roles.
 }
 ```
 
+#### Mapper 2b: User attribute → `glcdi_contribution_status` claim
+
+```json
+{
+  "name": "glcdi-contribution-status",
+  "protocol": "openid-connect",
+  "protocolMapper": "oidc-usermodel-attribute-mapper",
+  "config": {
+    "claim.name": "glcdi_contribution_status",
+    "jsonType.label": "String",
+    "user.attribute": "glcdi_contribution_status",
+    "id.token.claim": "true",
+    "access.token.claim": "true",
+    "userinfo.token.claim": "true"
+  }
+}
+```
+
+**Resulting token claim:**
+```json
+{
+  "glcdi_contribution_status": "contributing"
+}
+```
+
 #### Mapper 3 (optional): Hardcoded `glcdi_membership` claim
 
 As a shortcut, instead of checking for the `glcdi_member` role in the roles array, add a
@@ -204,13 +231,13 @@ hardcoded claim mapper on the client scope that applies to all authenticated use
 | **Task** | Assign the correct realm roles and user attributes to each prototype participant's service account or user |
 | **Status** | [ ] Not started |
 
-| Participant | Realm Roles | Certification Status |
-|-------------|-------------|---------------------|
-| Caney Fork Farms | `glcdi_member`, `glcdi_producer` | `regenerative-verified` |
-| Point Blue Conservation Science | `glcdi_member`, `glcdi_researcher` | `not-applicable` |
-| White Buffalo Land Trust | `glcdi_member`, `glcdi_producer` | `regenerative-verified` |
-| TSIP (if onboarded Q2) | `glcdi_member`, `glcdi_data_steward` | `not-applicable` |
-| University of Florida (if onboarded Q2) | `glcdi_member`, `glcdi_researcher` | `not-applicable` |
+| Participant | Realm Roles | Certification Status | Contribution Status |
+|-------------|-------------|---------------------|---------------------|
+| Caney Fork Farms | `glcdi_member`, `glcdi_producer` | `regenerative-verified` | `contributing` (after seeding) |
+| Point Blue Conservation Science | `glcdi_member`, `glcdi_researcher` | `not-applicable` | `contributing` (after seeding) |
+| White Buffalo Land Trust | `glcdi_member`, `glcdi_producer` | `regenerative-verified` | `observer` (until data published) |
+| TSIP (if onboarded Q2) | `glcdi_member`, `glcdi_data_steward` | `not-applicable` | `observer` (until data published) |
+| University of Florida (if onboarded Q2) | `glcdi_member`, `glcdi_researcher` | `not-applicable` | `observer` (until data published) |
 
 **Via Keycloak Admin API:**
 
@@ -348,6 +375,7 @@ read from the token:
 | `glcdi:participantType isAnyOf ["researcher","data-steward"]` | same | `glcdi_roles` (array) | any of `["glcdi_researcher","glcdi_data_steward"]` present in array |
 | `glcdi:certificationStatus eq "regenerative-verified"` | `https://w3id.org/glcdi/v0.1.0/ns/certificationStatus` | `glcdi_certification_status` (string) | `claim == rightOperand` |
 | `glcdi:certificationStatus isAnyOf [...]` | same | same | `claim` in `rightOperand` list |
+| `glcdi:contributionStatus eq "contributing"` | `https://w3id.org/glcdi/v0.1.0/ns/contributionStatus` | `glcdi_contribution_status` (string) | `claim == rightOperand` |
 
 > **Important:** The policy function for `participantType` needs to translate between the
 > policy value (e.g., `"researcher"`) and the Keycloak role name (e.g., `"glcdi_researcher"`).

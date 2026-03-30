@@ -49,7 +49,8 @@ policies/
 ├── access/                     # Access policies (catalog visibility)
 │   ├── members-only.json       # Any GLCDI participant
 │   ├── organic-producers.json  # Organic/regenerative producers only
-│   └── researchers-only.json   # Research institutions only
+│   ├── researchers-only.json   # Research institutions only
+│   └── contributing-members.json  # Only participants who also contribute data
 ├── contract/                   # Contract policies (usage terms)
 │   ├── time-limited.json       # Time-bounded usage (6 months)
 │   ├── internal-use-only.json  # No redistribution
@@ -58,11 +59,13 @@ policies/
 │   ├── attribution.json        # Citation/attribution required
 │   ├── non-commercial.json     # Non-commercial use only
 │   ├── purpose-model-training.json  # Model training purpose only
-│   └── data-retention-limit.json    # Delete after agreed period
+│   ├── data-retention-limit.json    # Delete after agreed period
+│   └── reciprocal-insights.json     # Must share back derived insights
 ├── combined/                   # Realistic combined policy examples
 │   ├── researcher-model-feeding.json       # Agronomic model use case
 │   ├── rancher-benchmarking.json           # Regional benchmarking use case
-│   └── corporate-supply-chain.json         # Supply chain / ESG reporting
+│   ├── corporate-supply-chain.json         # Supply chain / ESG reporting
+│   └── reciprocal-benchmarking.json        # Contribute-to-access benchmarking pool
 ├── diagrams/                   # PlantUML sequence diagrams
 │   ├── 01-researcher-accesses-soc-data.puml      # Full model calibration flow
 │   ├── 02-producer-blocked-from-research-data.puml  # Access policy filtering
@@ -70,7 +73,8 @@ policies/
 │   ├── 04-wrong-purpose-rejected.puml             # Contract rejection on wrong purpose
 │   ├── 05-organic-producers-exclusive.puml        # Certification-based inner circle
 │   ├── 06-time-limited-expiry.puml                # Temporal constraint & renewal
-│   └── 07-corporate-supply-chain-flow.puml        # Corporate ESG with payment & retention
+│   ├── 07-corporate-supply-chain-flow.puml        # Corporate ESG with payment & retention
+│   └── 08-reciprocal-benchmarking-pool.puml       # Contribute-to-access reciprocity
 └── README.md
 ```
 
@@ -92,6 +96,7 @@ authentication, catalog discovery, policy evaluation, contract negotiation, and 
 | 05 | [Organic producers exclusive](diagrams/05-organic-producers-exclusive.puml) | `organic-producers` | Three participants query the same asset: a regenerative producer (sees it), a researcher (blocked), and a corporate analyst (blocked). Shows how **multi-constraint access policies** create tiered visibility based on participant type and certification status. |
 | 06 | [Time-limited expiry](diagrams/06-time-limited-expiry.puml) | `time-limited` | A researcher negotiates successfully during the prototype phase, then gets rejected after the expiry date. Shows the **natural consent renewal cycle**: the provider decides whether to publish a new policy for the next phase. |
 | 07 | [Corporate supply chain](diagrams/07-corporate-supply-chain-flow.puml) | `corporate-partners` + `supply-chain-terms` | Lisa Park (FoodCorp ESG analyst) discovers SOC data, pays $1,000, negotiates a Scope 3 reporting contract, receives data with anonymisation and retention obligations, and must delete after 12 months. Shows the **post-prototype corporate scenario** with payment, anonymisation, attribution, and retention enforcement. |
+| 08 | [Reciprocal benchmarking pool](diagrams/08-reciprocal-benchmarking-pool.puml) | `contributing-members` + `reciprocal-benchmarking-terms` | A contributing rancher (Sarah) accesses the benchmarking pool and must share back results. A newly onboarded rancher (observer status) is blocked until they publish their own data. Shows how **contribute-to-access reciprocity** prevents free-riding and how a new participant unlocks access by contributing. |
 
 To render the diagrams, use any PlantUML-compatible tool:
 
@@ -134,6 +139,16 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **ODRL mechanism** | Two constraints: active membership + participant type `isAnyOf ["researcher", "data-steward"]`. |
 | **GLCDI relevance** | Central to the **Agronomic Model Calibration** use case. Point Blue Conservation Science and University of Florida need access to detailed SOC time-series and grazing records to train predictive models. Producers like Caney Fork may be comfortable sharing raw, non-anonymised data with trusted research partners (who are bound by institutional ethics protocols) but not with the broader membership. Data stewards (like TSIP) are included because they play a bridging role — maintaining datasets and facilitating research access with producer consent. |
 | **Implementation** | The `glcdi:participantType` claim would be set during onboarding based on the participant's category (as documented in the blueprint's Stakeholders section). |
+
+### `access/contributing-members.json` — Contributing Members Only (Reciprocity)
+
+| Aspect | Detail |
+|--------|--------|
+| **ID** | `glcdi:access:contributing-members` |
+| **What it does** | Restricts catalog visibility to participants who have themselves published at least one dataset to the dataspace. Participants who have only consumed data (or are newly onboarded and haven't shared anything yet) cannot see the offer. |
+| **ODRL mechanism** | Two constraints: active membership + `glcdi:contributionStatus eq "contributing"`. |
+| **GLCDI relevance** | This is the primary mechanism for encoding **reciprocity expectations** — a key trust boundary identified in the blueprint's Cohort 1 objectives. The blueprint states that participants must establish "reciprocity expectations" as part of their trust boundaries. Ranchers like Caney Fork fear free-riding: sharing their hard-won SOC and grazing data while receiving nothing in return. This policy ensures that the benchmarking pool is a **commons of contributors**, not an extractive one-way flow. It's especially important for the **Regional Benchmarking** use case, where peer comparison only works if peers actually contribute. The `contributing` status acts as a lightweight "skin in the game" check. |
+| **Implementation** | Requires a `glcdi_contribution_status` claim in the Keycloak token (same pattern as `certificationStatus` — user attribute + protocol mapper). For the prototype with 3–5 participants, the Steering Committee sets this status manually after verifying that the participant's connector has published assets. For scaling, a periodic automated check could query each participant's catalog and update the attribute. |
 
 ## Contract Policies
 
@@ -217,6 +232,16 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **GLCDI relevance** | Data retention limits are critical for **data sovereignty** — a core principle of the dataspace architecture. The blueprint describes the cohort model (Q1 foundational, Q2 cross-context, Q3 stress-testing), each with different participants and trust levels. Retention limits ensure that data shared during one cohort phase doesn't persist indefinitely in a consumer's systems. This is especially important for producers who may want to revoke or renegotiate access as the Trust Framework evolves from v0 to v1. Also relevant for **corporate consumers** in post-prototype phases, where data access should be tied to active partnership agreements, not permanent grants. |
 | **Implementation** | The `elapsedTime` constraint may need a custom policy function (vanilla EDC supports `dateTime` but `elapsedTime` from transfer date requires tracking the transfer timestamp). The `delete` and `inform` obligations are governance-level. |
 
+### `contract/reciprocal-insights.json` — Share Back Derived Insights (Reciprocity)
+
+| Aspect | Detail |
+|--------|--------|
+| **ID** | `glcdi:contract:reciprocal-insights` |
+| **What it does** | Requires the consumer to share back any derived insights, model outputs, or analytical results with the original data provider. This does not require sharing the consumer's own raw data — only the outputs produced *using the provider's data*. |
+| **ODRL mechanism** | Permissions for `use` and `derive`, each carrying a `glcdi:shareBack` duty with `odrl:recipient eq glcdi:OriginalProvider`. The `derive` permission also carries an `attribute` duty. |
+| **GLCDI relevance** | This is the **contract-level reciprocity mechanism**, complementing the access-level `contributing-members` policy. While `contributing-members` ensures you must *give to receive*, `reciprocal-insights` ensures you must *give back what you learn*. This directly addresses the value proposition described in the blueprint: Caney Fork's expected value includes "practical insights into how grazing decisions influence soil health" — insights that can only come from researchers who process their data. Without a share-back obligation, a researcher could consume SOC data, train a model, publish results, and the rancher who contributed the data would never see the output. This policy closes that loop. It also supports Point Blue's role as a data steward: they consume data from multiple ranches, produce aggregated analyses, and the share-back duty ensures those analyses flow back to the contributing producers. |
+| **Implementation** | Governance-level obligation — the connector cannot technically verify that the consumer has shared back insights. Enforcement relies on the Data Sharing Agreement and Steering Committee review. Could be partially operationalised by requiring consumers to publish derived datasets back to the dataspace (which would also be detectable by automated monitoring). |
+
 ## Combined Scenario Policies
 
 ### `combined/researcher-model-feeding.json` — Agronomic Model Calibration
@@ -252,6 +277,17 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **Includes contract definition** | Example using asset category selectors (all SOC data assets) rather than individual asset IDs. |
 | **GLCDI relevance** | This **anticipates the post-prototype corporate participation** described in the blueprint. The blueprint's "Key Audience" section identifies "Corporate & Supply-Chain Stakeholders" (food companies, procurement programs, certification bodies, ESG reporting teams, Scope 3 analysts) who value "consent-governed auditability infrastructure". The blueprint also notes a comment about "Scope 3 emissions calculations" and mentions that future resourcing will be "tied to the value delivered for academic, producer, and corporate participants". This policy package models the most demanding scenario: corporate consumers who derive significant commercial value from the data, requiring the strongest protections (payment, anonymisation, retention limits, no redistribution) to maintain producer trust. It demonstrates to funders that GLCDI has a credible path to sustainability beyond grant funding. |
 
+### `combined/reciprocal-benchmarking.json` — Reciprocal Benchmarking Pool
+
+| Aspect | Detail |
+|--------|--------|
+| **ID** | Access: `glcdi:access:benchmarking-pool` / Contract: `glcdi:contract:reciprocal-benchmarking-terms` |
+| **Scenario** | Ranchers form a benchmarking pool where access is conditional on contribution. A newly onboarded rancher who hasn't published their own data cannot access the pool. Those who contribute get access to peer data AND must share their benchmarking results back with the data provider. |
+| **Access policy** | Active membership + `contributionStatus == "contributing"`. Participants who have not yet published data (`observer` status) see nothing from the pool. |
+| **Contract policy** | Usage restricted to benchmarking and internal analysis. Time-limited to prototype phase. Two reciprocity duties: (1) share back benchmarking results with the data provider, (2) attribution. Redistribution and commercial use prohibited. |
+| **Includes contract definition** | Example binding to `caney-fork-grazing-rotation` asset. |
+| **GLCDI relevance** | This is the **complete reciprocity-aware implementation of regional benchmarking**. It combines the two reciprocity mechanisms: contribute-to-access (you must give to receive) and share-back (you must return insights). The blueprint describes reciprocity expectations as part of the trust boundaries that Cohort 1 must establish. This policy package operationalises that: the benchmarking pool is a commons where every consumer is also a contributor, and every consumer owes the provider a view of the insights derived from their data. It directly addresses the rancher fear of one-sided data extraction — the policy structurally prevents free-riding. |
+
 ## Applying Policies via EDC Management API
 
 ```bash
@@ -280,35 +316,79 @@ curl -X POST http://localhost:29193/management/v3/contractdefinitions \
   }'
 ```
 
-## Implementation Notes
+## Implementation Feasibility
 
-### What Requires Custom EDC Extensions
+### Per-Policy Feasibility Assessment
 
-Not all constraints in these examples work out of the box with vanilla EDC. Specifically:
+Each policy is rated on three axes:
+- **ODRL expressibility**: Can the intent be expressed in standard ODRL 2.2?
+- **EDC enforceability**: Can the EDC connector technically enforce it at runtime?
+- **Implementation effort**: What does it take to make it work?
 
-- **Membership / role-based constraints** (`glcdi:participantType`, `glcdi:membership`):
-  Require a custom policy function that resolves participant claims from Keycloak tokens
-  or Verifiable Credentials. See `edc-connector/extensions/` for where to add this.
+#### Access Policies
 
-- **Payment constraints** (`odrl:compensation`): ODRL defines the vocabulary, but EDC has
-  no built-in payment verification. This would need an external settlement system and a
-  custom policy function to verify payment status.
+| Policy | ODRL expressible? | EDC enforceable? | Effort | Notes |
+|--------|:-:|:-:|--------|-------|
+| `members-only` | Yes | Yes, with custom function | **Low** — one `AtomicConstraintFunction` reading `glcdi_membership` from JWT. ~50 lines of Java. | Simplest custom function. Pattern reusable for all claim-based policies. |
+| `researchers-only` | Yes | Yes, with custom function | **Low** — same pattern as above, reads `glcdi_roles` array. Adds `isAnyOf` operator support. | Can share base class with membership function. |
+| `organic-producers` | Yes | Yes, with custom function | **Low** — combines two existing functions (type + certification). No new code pattern. | Three constraints evaluated as AND — EDC handles multi-constraint natively. |
+| `contributing-members` | Yes | Yes, with custom function | **Low** — identical pattern to certification status (user attribute → token claim → policy function). | Governance team must manually update `contributionStatus` in Keycloak. For prototype scale this is fine; automation is a future enhancement. |
 
-- **Anonymisation obligations** (`odrl:anonymize`): These are **duty-based** — they express
-  what the consumer must do, but enforcement is governance-level (contractual/legal),
-  not technically enforced by the connector at transfer time.
+#### Contract Policies
 
-### What Works With Vanilla EDC
+| Policy | ODRL expressible? | EDC enforceable? | Effort | Notes |
+|--------|:-:|:-:|--------|-------|
+| `time-limited` | Yes | **Yes, natively** | **None** — `odrl:dateTime` constraints are built into vanilla EDC. | Zero custom code. Works today. |
+| `internal-use-only` | Yes | Partially | **None** for the `purpose` constraint (native). The `distribute` prohibition is **governance-level** — the connector cannot prevent the consumer from copying data after transfer. | Consumer agrees to prohibition at negotiation time. Legal enforcement via DSA. |
+| `purpose-model-training` | Yes | Partially | **None** — `purpose` constraint is native if the consumer declares purpose in the offer. Prohibition on distributing raw data is governance-level. | Consumer must include `purpose` in their contract offer for EDC to evaluate it. |
+| `non-commercial` | Yes | Partially | **None** — same `purpose` constraint mechanism. `commercialize` prohibition is governance-level. | |
+| `attribution` | Yes | **No** — governance only | **None** (no connector code needed). | ODRL `duty` with action `attribute`. The consumer agrees at negotiation; fulfillment is tracked by the governance team, not the connector. |
+| `anonymisation` | Yes | **No** — governance only | **None** (no connector code needed). | Same as attribution: duty-based, legally enforceable, not technically enforceable. |
+| `reciprocal-insights` | Partially — `glcdi:shareBack` is a custom action not in the ODRL vocabulary | **No** — governance only | **None** (no connector code needed). | The share-back duty is a contractual obligation. The connector cannot verify whether the consumer has shared insights. Enforcement relies on Steering Committee review and the DSA. The custom action `glcdi:shareBack` extends the ODRL vocabulary — this is valid per the ODRL specification (custom actions are allowed). |
+| `payment-required` | Yes | With custom function + external system | **High** — requires: (1) external payment/invoicing API, (2) custom policy function that calls the API during negotiation, (3) payment reconciliation logic. | Not needed for the prototype. ODRL provides the vocabulary but EDC has no payment plumbing. Target: post-prototype when corporate participants join. |
+| `data-retention-limit` | Yes | Partially | **Medium** — `odrl:elapsedTime` needs a custom function that tracks the transfer timestamp (vanilla EDC supports `dateTime` but not duration-from-event). The `delete` and `inform` obligations are governance-level. | The custom function is non-trivial: it must persist the transfer timestamp and compare it against the policy duration at subsequent evaluation points. |
 
-- **Temporal constraints** (`odrl:dateTime`): Supported natively by EDC.
-- **Basic permission/prohibition structure**: Fully supported.
-- **`odrl:purpose` constraints**: Supported if the consumer includes purpose in their offer.
+#### Reciprocity Mechanisms
+
+| Mechanism | ODRL expressible? | EDC enforceable? | Effort | Feasibility |
+|-----------|:-:|:-:|--------|-------------|
+| **Contribute-to-access** (contributing-members) | Yes | Yes, with custom function | **Low** | Fully feasible. One Keycloak attribute + one policy function. Governance team updates status manually. Same pattern as certification. |
+| **Share-back insights** (reciprocal-insights) | Partially (custom action) | No — governance only | **None** (contractual) | Feasible as a governance obligation. Cannot be technically enforced. Consumer agrees at negotiation; Steering Committee monitors compliance. |
+| **Balanced exchange** ("I share only if you share with me simultaneously") | Not expressible in ODRL | No | **Very high** | Not feasible with current EDC architecture. Contract negotiation is unilateral (consumer requests, provider evaluates). There is no protocol-level mechanism for bilateral "I'll accept if you also offer me X". Would require either: (a) a custom negotiation extension that queries the consumer's catalog mid-negotiation (fragile, adds latency), or (b) out-of-band coordination. **In practice, this reduces to contribute-to-access**: the governance team verifies both parties have published before granting `contributing` status. |
+
+### Effort Summary
+
+| Effort level | Policies | What's needed |
+|:---:|---|---|
+| **None** (works today) | `time-limited` | Vanilla EDC — no custom code |
+| **None** (governance-level) | `attribution`, `anonymisation`, `reciprocal-insights`, `internal-use-only` (prohibition part), `non-commercial` (prohibition part) | Consumer agrees at negotiation. Enforcement via DSA and Steering Committee review. No connector code. |
+| **Low** (one policy function each) | `members-only`, `researchers-only`, `organic-producers`, `contributing-members` | Custom `AtomicConstraintFunction` in Java. ~50–100 lines each. All follow the same pattern: extract claim from JWT → compare to constraint. Can share a base class. **Total: ~200 lines of Java + tests.** |
+| **Low** (native + governance) | `purpose-model-training`, `non-commercial`, `internal-use-only` | `purpose` constraint is native (consumer declares purpose). Prohibitions are governance-level. |
+| **Medium** | `data-retention-limit` | Custom function for `elapsedTime` that persists transfer timestamps. More complex than claim-based functions. |
+| **High** | `payment-required` | External payment system + custom policy function + reconciliation. Post-prototype. |
+| **Not feasible** | Balanced exchange (bilateral negotiation) | Architectural limitation of DSP/EDC. Use contribute-to-access as the practical alternative. |
+
+### Implementation Priority
+
+Based on effort and value for the prototype:
+
+| Priority | Policy | Why |
+|:---:|---|---|
+| **P0** (do first) | `time-limited` | Zero effort, immediate value. Use it now. |
+| **P1** (prototype must-have) | `members-only`, `researchers-only` | Core access control. Without these, all offers are visible to everyone. Low effort. |
+| **P1** | `attribution`, `non-commercial` | Key trust-building obligations for producers. Governance-level only — no code needed, just DSA clauses. |
+| **P2** (prototype nice-to-have) | `organic-producers`, `contributing-members` | Finer-grained access. Same code pattern as P1 policies. |
+| **P2** | `purpose-model-training`, `internal-use-only` | Purpose constraints work natively if consumers declare purpose. |
+| **P2** | `reciprocal-insights`, `anonymisation` | Important governance obligations. No code — add to DSA. |
+| **P3** (post-prototype) | `data-retention-limit` | Valuable but needs non-trivial custom function. |
+| **P3** | `payment-required` | Needs external payment infrastructure. Target: corporate onboarding phase. |
+| **N/A** | Balanced exchange | Not implementable. Use contribute-to-access instead. |
 
 ### Relation to GLCDI Use Cases
 
-| Blueprint Use Case              | Access Policy               | Contract Policy                     |
-|---------------------------------|-----------------------------|-------------------------------------|
-| Regional benchmarking           | members-only                | attribution + non-commercial        |
-| Agronomic model calibration     | researchers-only            | time-limited + purpose-model        |
-| Peer-to-peer data sharing       | members-only                | internal-use-only or time-limited   |
-| Supply chain / ESG reporting    | (future) corporate partners | anonymisation + attribution         |
+| Blueprint Use Case | Access Policy | Contract Policy | Reciprocity |
+|--------------------|---------------|-----------------|-------------|
+| Regional benchmarking | contributing-members | attribution + non-commercial + reciprocal-insights | Contribute-to-access + share-back |
+| Agronomic model calibration | researchers-only | time-limited + purpose-model + anonymisation + attribution | Share-back (model outputs to producer) |
+| Peer-to-peer data sharing | members-only | internal-use-only or time-limited | Contributing-members for sensitive data |
+| Supply chain / ESG reporting | (future) corporate-partners | payment + anonymisation + retention + attribution | Payment as reciprocity mechanism |

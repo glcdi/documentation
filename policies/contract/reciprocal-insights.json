@@ -1,0 +1,50 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:contract:reciprocal-insights",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "duty": [
+          {
+            "action": "glcdi:shareBack",
+            "constraint": [
+              {
+                "leftOperand": "odrl:recipient",
+                "operator": "eq",
+                "rightOperand": "glcdi:OriginalProvider"
+              }
+            ],
+            "comment": "The consumer must share back any derived insights, model outputs, or analytical results with the original data provider. This does not require sharing raw data from the consumer's own holdings — only the outputs produced using the provider's data. For example: a researcher who trains a model on Caney Fork SOC data must share the model's predictions back with Caney Fork. A rancher who benchmarks against a peer's grazing rotation must share their own benchmarking results."
+          }
+        ]
+      },
+      {
+        "action": "derive",
+        "duty": [
+          {
+            "action": "glcdi:shareBack",
+            "constraint": [
+              {
+                "leftOperand": "odrl:recipient",
+                "operator": "eq",
+                "rightOperand": "glcdi:OriginalProvider"
+              }
+            ],
+            "comment": "Derived works (aggregated analyses, model calibration results, benchmark reports) must be shared with the provider."
+          },
+          {
+            "action": "attribute"
+          }
+        ]
+      }
+    ]
+  }
+}

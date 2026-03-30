@@ -1,0 +1,31 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:access:contributing-members",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "constraint": [
+          {
+            "leftOperand": "glcdi:membership",
+            "operator": "eq",
+            "rightOperand": "active"
+          },
+          {
+            "leftOperand": "glcdi:contributionStatus",
+            "operator": "eq",
+            "rightOperand": "contributing",
+            "comment": "Only participants who have themselves published at least one dataset to the dataspace can see this offer. The 'contributing' status is assigned by the governance team (Steering Committee) after verifying that the participant's connector has published assets. This enforces reciprocity: you must give to receive."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "comment": "SCENARIO: Reciprocal Benchmarking Pool — Ranchers form a benchmarking pool where access is conditional on contribution. A rancher who has not published any data to the dataspace cannot access the pool. Those who contribute get access to peer data AND must share their benchmarking results back. This encodes the reciprocity expectation described in the GLCDI Trust Framework: participants establish clear reciprocity expectations as part of the trust boundaries.",
+
+  "accessPolicy": {
+    "@id": "glcdi:access:benchmarking-pool",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "glcdi:membership",
+              "operator": "eq",
+              "rightOperand": "active"
+            },
+            {
+              "leftOperand": "glcdi:contributionStatus",
+              "operator": "eq",
+              "rightOperand": "contributing",
+              "comment": "Only participants who have published their own grazing/SOC data can access the benchmarking pool."
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "contractPolicy": {
+    "@id": "glcdi:contract:reciprocal-benchmarking-terms",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "odrl:purpose",
+              "operator": "isAnyOf",
+              "rightOperand": [
+                "glcdi:RegionalBenchmarking",
+                "glcdi:InternalAnalysis"
+              ]
+            },
+            {
+              "leftOperand": "odrl:dateTime",
+              "operator": "lteq",
+              "rightOperand": {
+                "@type": "xsd:dateTime",
+                "@value": "2026-09-30T23:59:59Z"
+              }
+            }
+          ],
+          "duty": [
+            {
+              "action": "glcdi:shareBack",
+              "constraint": [
+                {
+                  "leftOperand": "odrl:recipient",
+                  "operator": "eq",
+                  "rightOperand": "glcdi:OriginalProvider"
+                }
+              ],
+              "comment": "Consumer must share their benchmarking results (comparisons, insights, anonymised summaries) back with the data provider."
+            },
+            {
+              "action": "attribute"
+            }
+          ]
+        }
+      ],
+      "prohibition": [
+        {
+          "action": "distribute"
+        },
+        {
+          "action": "commercialize"
+        }
+      ]
+    }
+  },
+
+  "contractDefinitionExample": {
+    "@id": "cd-caney-fork-grazing-benchmarking-pool",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "glcdi:access:benchmarking-pool",
+    "contractPolicyId": "glcdi:contract:reciprocal-benchmarking-terms",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "caney-fork-grazing-rotation"
+      }
+    ]
+  }
+}

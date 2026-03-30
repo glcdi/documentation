@@ -354,6 +354,7 @@ Policies are documented in detail in [`policies/README.md`](policies/README.md).
 | [`members-only`](policies/access/members-only.json) | Any active GLCDI participant | Default for most assets |
 | [`organic-producers`](policies/access/organic-producers.json) | Certified organic/regenerative producers only | Sensitive competitive practices |
 | [`researchers-only`](policies/access/researchers-only.json) | Researchers and data stewards only | Raw data for model training |
+| [`contributing-members`](policies/access/contributing-members.json) | Only participants who also contribute data | Reciprocity: benchmarking pool |
 
 #### Contract Policies (usage terms)
 
@@ -367,6 +368,7 @@ Policies are documented in detail in [`policies/README.md`](policies/README.md).
 | [`non-commercial`](policies/contract/non-commercial.json) | No commercial exploitation | Protect producers from misuse |
 | [`purpose-model-training`](policies/contract/purpose-model-training.json) | Model training/calibration only | Agronomic model use case |
 | [`data-retention-limit`](policies/contract/data-retention-limit.json) | Delete after 12 months | Corporate, time-boxed access |
+| [`reciprocal-insights`](policies/contract/reciprocal-insights.json) | Must share back derived insights to provider | Reciprocity: return value to data contributors |
 
 #### Combined Scenarios
 
@@ -377,6 +379,7 @@ End-to-end examples showing how access + contract policies compose for real use 
 | [`researcher-model-feeding`](policies/combined/researcher-model-feeding.json) | researchers-only | purpose-limited + time + anonymisation + attribution | Agronomic model calibration |
 | [`rancher-benchmarking`](policies/combined/rancher-benchmarking.json) | members-only | benchmarking purpose + non-commercial + attribution | Regional benchmarking |
 | [`corporate-supply-chain`](policies/combined/corporate-supply-chain.json) | corporate-partners | payment + anonymisation + retention + attribution | ESG / Scope 3 reporting |
+| [`reciprocal-benchmarking`](policies/combined/reciprocal-benchmarking.json) | contributing-members | reciprocal-insights + non-commercial + attribution | Reciprocal benchmarking pool |
 
 ### Sequence Diagrams
 
@@ -392,6 +395,7 @@ See [`policies/diagrams/`](policies/diagrams/) or the [diagram index in the poli
 | [05 — Organic producers exclusive](policies/diagrams/05-organic-producers-exclusive.puml) | Same asset, three different visibility outcomes by participant type |
 | [06 — Time-limited expiry](policies/diagrams/06-time-limited-expiry.puml) | Contract works in July, fails in October, renewal flow |
 | [07 — Corporate supply chain](policies/diagrams/07-corporate-supply-chain-flow.puml) | Payment, anonymisation, retention limit, deletion confirmation |
+| [08 — Reciprocal benchmarking pool](policies/diagrams/08-reciprocal-benchmarking-pool.puml) | Contribute-to-access reciprocity, observer blocked, share-back obligation |
 
 ---
 

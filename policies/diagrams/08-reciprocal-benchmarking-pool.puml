@@ -1,0 +1,159 @@
+@startuml Reciprocal Benchmarking Pool
+title **Reciprocity: Contribute-to-Access Benchmarking Pool**\nOnly participants who share their own data can access others'
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #E8F5E9
+skinparam sequenceGroupBorderColor #2E7D32
+skinparam sequenceDividerBackgroundColor #F3E5F5
+
+actor "Sarah Chen\n(White Buffalo)\n//contributing//" as Sarah #E8F5E9
+actor "New Rancher\n(just onboarded)\n//observer//" as Newbie #FFF3E0
+participant "Governance\nKeycloak" as KC #F3E5F5
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+actor "Will Thompson\n(Caney Fork)\n//contributing//" as Will #E8F5E9
+
+== Setup: Contribution status in Keycloak ==
+
+note over KC
+  The Steering Committee maintains
+  a **contributionStatus** attribute
+  for each participant:
+
+  | Participant | Status |
+  | Caney Fork | **contributing** |
+  | White Buffalo | **contributing** |
+  | New Rancher | **observer** |
+
+  "Contributing" means the participant
+  has published at least one dataset
+  to the dataspace. Verified by the
+  governance team.
+end note
+
+Will -> CF_EDC : Publishes grazing rotation data\nwith **contributing-members** access\n+ **reciprocal-benchmarking-terms** contract
+
+== Sarah (contributing member) queries catalog ==
+
+Sarah -> CF_EDC : DSP Catalog Query
+note right of Sarah
+  Token claims:
+  glcdi_membership: **active**
+  glcdi_roles: [glcdi_member, glcdi_producer]
+  **glcdi_contribution_status: "contributing"**
+end note
+
+group Access Policy: contributing-members
+  CF_EDC -> CF_EDC : membership == "active" ? **YES**
+  CF_EDC -> CF_EDC : contributionStatus == "contributing" ? **YES**
+  note right of CF_EDC
+    Sarah has published her own data.
+    => Grazing rotation **VISIBLE**
+  end note
+end
+
+CF_EDC --> Sarah : Catalog includes grazing rotation
+
+Sarah -> CF_EDC : Negotiate contract\npurpose = "RegionalBenchmarking"
+
+group Contract Policy: reciprocal-benchmarking-terms
+  CF_EDC -> CF_EDC : purpose in ["RegionalBenchmarking",\n"InternalAnalysis"] ? **YES**
+  CF_EDC -> CF_EDC : dateTime <= 2026-09-30 ? **YES**
+  note right of CF_EDC
+    Duties accepted:
+    - **Share back** benchmarking results
+    - **Attribute** data source
+    => **AGREED**
+  end note
+end
+
+CF_EDC --> Sarah : Contract FINALIZED
+Sarah -> CF_EDC : Transfer request
+CF_EDC --> Sarah : Grazing rotation data
+
+note over Sarah
+  Sarah receives Will's data and
+  runs her benchmarking analysis.
+
+  **Reciprocity obligation:**
+  She must share her benchmarking
+  results (e.g., "your rest periods
+  are 50% longer than mine, correlating
+  with 12% higher SOC") back with Will.
+end note
+
+|||
+
+== New Rancher (observer) queries catalog ==
+
+Newbie -> CF_EDC : DSP Catalog Query
+note right of Newbie
+  Token claims:
+  glcdi_membership: **active**
+  glcdi_roles: [glcdi_member, glcdi_producer]
+  **glcdi_contribution_status: "observer"**
+end note
+
+group Access Policy: contributing-members #FFEBEE
+  CF_EDC -> CF_EDC : membership == "active" ? **YES**
+  CF_EDC -> CF_EDC : contributionStatus == "contributing" ?\n"observer" != "contributing" => **NO**
+  note right of CF_EDC #FFCDD2
+    New Rancher has not published
+    any data yet.
+    => Grazing rotation **HIDDEN**
+  end note
+end
+
+CF_EDC --> Newbie : Catalog does NOT include\ngrazing rotation
+
+note over Newbie
+  **What the new rancher sees:**
+  Only assets with members-only access
+  (no contribution requirement).
+
+  **How to unlock the benchmarking pool:**
+  1. Publish their own grazing/SOC data
+     on their connector
+  2. Notify the governance team
+  3. Steering Committee verifies and
+     updates contributionStatus
+     from "observer" to "contributing"
+  4. Next catalog query will show
+     the benchmarking pool assets
+end note
+
+== New Rancher contributes and unlocks access ==
+
+Newbie -> Newbie : Publishes own grazing data\non their connector
+Newbie -> KC : Requests status update
+KC -> KC : Steering Committee verifies\npublished assets
+KC -> KC : Sets contributionStatus\n= "contributing"
+
+Newbie -> CF_EDC : DSP Catalog Query (new token)
+note right of Newbie
+  Updated token:
+  **glcdi_contribution_status: "contributing"**
+end note
+
+group Access Policy: contributing-members
+  CF_EDC -> CF_EDC : contributionStatus == "contributing" ? **YES**
+  note right of CF_EDC
+    => Grazing rotation now **VISIBLE**
+  end note
+end
+
+CF_EDC --> Newbie : Catalog now includes\ngrazing rotation
+
+note over Newbie, Will
+  **The reciprocity loop is complete:**
+  - Will shared → Sarah accessed → Sarah shared back results
+  - New Rancher contributed → gained access → will share back too
+  - Every consumer is also a contributor
+  - The benchmarking pool grows with each participant
+end note
+
+@enduml
