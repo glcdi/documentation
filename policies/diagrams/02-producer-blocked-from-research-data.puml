@@ -1,0 +1,90 @@
+@startuml Producer Blocked from Research-Only Data
+title **Access Policy Filtering: Researcher-Only Data**\nA producer cannot see offers restricted to researchers
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #FFEBEE
+skinparam sequenceGroupBorderColor #C62828
+
+actor "Will Thompson\n(Caney Fork rancher)" as Producer #E8F5E9
+participant "Caney Fork\nCatalogue UI" as UI #E3F2FD
+participant "Caney Fork\nEDC Connector" as CF_EDC #E3F2FD
+participant "Governance\nKeycloak" as KC #F3E5F5
+participant "Point Blue\nEDC Connector" as PB_EDC #E8F5E9
+
+== Authentication ==
+
+Producer -> UI : Opens catalogue, logs in
+UI -> KC : OIDC redirect
+KC --> Producer : Login page
+Producer -> KC : Authenticates
+note right of KC
+  Token claims:
+  **glcdi_membership**: "active"
+  **glcdi_participant_type**: "producer"
+  **glcdi_certification_status**: "regenerative-verified"
+end note
+KC --> UI : Access token
+
+== Catalog Discovery ==
+
+Producer -> UI : Browses Point Blue's data offers
+UI -> CF_EDC : Request Point Blue catalog
+CF_EDC -> PB_EDC : DSP Catalog Query\n(includes Caney Fork identity)
+
+group Access Policy Evaluation [on Point Blue connector]
+  PB_EDC -> PB_EDC : Evaluate **researchers-only** policy\nfor GHG Flux Measurements
+  note right of PB_EDC #FFCDD2
+    Checks token claims:
+    1. glcdi_membership == "active" ? **YES**
+    2. glcdi_participant_type in
+       ["researcher","data-steward"] ?
+       "producer" is NOT in list => **NO**
+    => **HIDDEN** from catalog
+  end note
+
+  PB_EDC -> PB_EDC : Evaluate **members-only** policy\nfor Rangeland SOC Inventory
+  note right of PB_EDC
+    Checks token claims:
+    1. glcdi_membership == "active" ? **YES**
+    => **VISIBLE** in catalog
+  end note
+
+  PB_EDC -> PB_EDC : Evaluate **members-only** policy\nfor Weather Station Data
+  note right of PB_EDC
+    => **VISIBLE**
+  end note
+
+  PB_EDC -> PB_EDC : Evaluate **members-only** policy\nfor Biodiversity Surveys
+  note right of PB_EDC
+    => **VISIBLE**
+  end note
+end
+
+PB_EDC --> CF_EDC : Catalog response\n(3 assets visible, GHG Flux **excluded**)
+CF_EDC --> UI : Display available offers
+
+note over Producer
+  Will sees 3 of Point Blue's 5 assets.
+  The GHG Flux Measurements and other
+  researcher-only datasets are **not shown**
+  — he doesn't even know they exist.
+
+  This protects sensitive research data
+  while still enabling peer benchmarking
+  with the datasets marked members-only.
+end note
+
+Producer -> UI : Selects "Rangeland SOC Inventory"\nfor regional benchmarking
+note over UI
+  This asset uses **members-only** access
+  + **non-commercial + attribution** contract.
+  Will can proceed with contract negotiation
+  for benchmarking purposes.
+end note
+
+@enduml

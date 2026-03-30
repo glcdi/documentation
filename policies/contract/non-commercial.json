@@ -1,0 +1,37 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:contract:non-commercial",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "constraint": [
+          {
+            "leftOperand": "odrl:purpose",
+            "operator": "isAnyOf",
+            "rightOperand": [
+              "glcdi:ScientificResearch",
+              "glcdi:EducationalUse",
+              "glcdi:ConservationPlanning",
+              "glcdi:RegionalBenchmarking"
+            ],
+            "comment": "Usage is restricted to non-commercial purposes. Acceptable purposes include scientific research, education, conservation planning, and peer benchmarking. Commercial exploitation (resale, inclusion in paid products, carbon credit generation) is prohibited."
+          }
+        ]
+      }
+    ],
+    "prohibition": [
+      {
+        "action": "commercialize",
+        "comment": "No commercial use of the data, including selling, licensing for profit, or using in commercially-sold analytical products."
+      }
+    ]
+  }
+}

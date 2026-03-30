@@ -1,0 +1,52 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:contract:purpose-model-training",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "constraint": [
+          {
+            "leftOperand": "odrl:purpose",
+            "operator": "isAnyOf",
+            "rightOperand": [
+              "glcdi:AgronomicModelTraining",
+              "glcdi:EcosystemModelCalibration"
+            ],
+            "comment": "Data may only be used for training or calibrating agronomic and ecosystem models (e.g., predicting SOC response to grazing management). Other uses require separate consent."
+          }
+        ]
+      },
+      {
+        "action": "derive",
+        "constraint": [
+          {
+            "leftOperand": "odrl:purpose",
+            "operator": "eq",
+            "rightOperand": "glcdi:ModelOutput"
+          }
+        ],
+        "duty": [
+          {
+            "action": "attribute",
+            "comment": "Model outputs must credit the training data source."
+          }
+        ]
+      }
+    ],
+    "prohibition": [
+      {
+        "action": "distribute",
+        "target": "glcdi:RawData",
+        "comment": "Raw training data may not be redistributed. Only model outputs and aggregated/anonymised derivatives may be shared."
+      }
+    ]
+  }
+}

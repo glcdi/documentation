@@ -1,0 +1,35 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:contract:payment-required",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "duty": [
+          {
+            "action": "compensate",
+            "constraint": [
+              {
+                "leftOperand": "odrl:payAmount",
+                "operator": "gteq",
+                "rightOperand": {
+                  "@type": "xsd:decimal",
+                  "@value": "500.00"
+                },
+                "unit": "http://dbpedia.org/resource/United_States_dollar",
+                "comment": "A minimum payment of $500 USD is required per dataset access agreement. Adjust amount per asset. In practice, this would be verified by an external payment/invoicing system and a custom EDC policy function."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

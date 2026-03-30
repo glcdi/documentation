@@ -1,0 +1,116 @@
+@startuml Organic Producers Exclusive Access
+title **Access Policy: Organic Producers Only**\nSensitive practices data shared exclusively among certified producers
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #E8F5E9
+skinparam sequenceGroupBorderColor #2E7D32
+
+actor "Sarah Chen\n(White Buffalo Land Trust)\n//regenerative-verified//" as Sarah #E8F5E9
+actor "Dr. Martinez\n(Point Blue)\n//researcher//" as Martinez #E3F2FD
+actor "Corporate Analyst\n//corporate//" as Corp #FFF3E0
+
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+
+note over CF_EDC
+  Caney Fork publishes a **proprietary
+  grazing protocol** dataset with the
+  **organic-producers** access policy.
+
+  This contains detailed AMP rotation
+  techniques that give competitive
+  advantage in regenerative markets.
+end note
+
+== Sarah (regenerative producer) queries catalog ==
+
+Sarah -> CF_EDC : DSP Catalog Query
+note right of Sarah
+  Token claims:
+  membership: **active**
+  participantType: **producer**
+  certificationStatus: **regenerative-verified**
+end note
+
+group Access Policy: organic-producers
+  CF_EDC -> CF_EDC : membership == "active" ? **YES**
+  CF_EDC -> CF_EDC : participantType == "producer" ? **YES**
+  CF_EDC -> CF_EDC : certificationStatus in\n["organic-certified",\n"regenerative-verified",\n"transitioning-organic"] ? **YES**
+  note right of CF_EDC
+    All 3 constraints pass.
+    => Asset **VISIBLE** to Sarah
+  end note
+end
+
+CF_EDC --> Sarah : Catalog includes proprietary\ngrazing protocol
+
+|||
+
+== Dr. Martinez (researcher) queries catalog ==
+
+Martinez -> CF_EDC : DSP Catalog Query
+note right of Martinez
+  Token claims:
+  membership: **active**
+  participantType: **researcher**
+  certificationStatus: **not-applicable**
+end note
+
+group Access Policy: organic-producers #FFEBEE
+  CF_EDC -> CF_EDC : membership == "active" ? **YES**
+  CF_EDC -> CF_EDC : participantType == "producer" ?\n"researcher" != "producer" => **NO**
+  note right of CF_EDC #FFCDD2
+    Failed at participantType check.
+    => Asset **HIDDEN**
+  end note
+end
+
+CF_EDC --> Martinez : Catalog does NOT include\nproprietary grazing protocol
+note over Martinez
+  Dr. Martinez doesn't see this asset.
+  She can still access SOC measurements
+  and other datasets with researchers-only
+  or members-only access policies.
+end note
+
+|||
+
+== Corporate Analyst queries catalog ==
+
+Corp -> CF_EDC : DSP Catalog Query
+note right of Corp
+  Token claims:
+  membership: **active**
+  participantType: **corporate**
+  certificationStatus: **not-applicable**
+end note
+
+group Access Policy: organic-producers #FFEBEE
+  CF_EDC -> CF_EDC : membership == "active" ? **YES**
+  CF_EDC -> CF_EDC : participantType == "producer" ?\n"corporate" != "producer" => **NO**
+  note right of CF_EDC #FFCDD2
+    => Asset **HIDDEN**
+  end note
+end
+
+CF_EDC --> Corp : Catalog does NOT include\nproprietary grazing protocol
+
+note over CF_EDC
+  **Summary: Same asset, three different views**
+
+  | Participant | Type | Cert. Status | Sees asset? |
+  | Sarah | producer | regenerative | **Yes** |
+  | Dr. Martinez | researcher | n/a | **No** |
+  | Corp Analyst | corporate | n/a | **No** |
+
+  The organic-producers policy creates a
+  **trusted inner circle** among certified
+  producers, protecting competitive
+  practices from researchers and corporates.
+end note
+
+@enduml

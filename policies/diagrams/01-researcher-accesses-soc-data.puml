@@ -1,0 +1,111 @@
+@startuml Researcher Accesses SOC Data for Model Training
+title **Use Case: Agronomic Model Calibration**\nPoint Blue researcher accesses Caney Fork SOC data to train a predictive model
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #E3F2FD
+skinparam sequenceGroupBorderColor #1565C0
+skinparam sequenceDividerBackgroundColor #E8F5E9
+
+actor "Dr. Martinez\n(Point Blue researcher)" as Researcher #E8F5E9
+participant "Point Blue\nCatalogue UI" as UI #E3F2FD
+participant "Point Blue\nEDC Connector" as PB_EDC #E3F2FD
+participant "Governance\nKeycloak" as KC #F3E5F5
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+
+== Authentication ==
+
+Researcher -> UI : Opens catalogue, clicks "Login"
+UI -> KC : OIDC redirect
+KC --> Researcher : Login page
+Researcher -> KC : Authenticates with Point Blue credentials
+note right of KC
+  Keycloak issues token with claims:
+  **glcdi_membership**: "active"
+  **glcdi_participant_type**: "researcher"
+  **glcdi_certification_status**: "not-applicable"
+end note
+KC --> UI : Access token + ID token
+
+== Catalog Discovery ==
+
+Researcher -> UI : Browses available data offers
+UI -> PB_EDC : Request Caney Fork catalog\n(DSP catalog request)
+PB_EDC -> CF_EDC : DSP Catalog Query\n(includes Point Blue identity token)
+
+group Access Policy Evaluation [on Caney Fork connector]
+  CF_EDC -> CF_EDC : Evaluate **researchers-only** policy\nfor SOC measurements asset
+  note right of CF_EDC
+    Checks token claims:
+    1. glcdi_membership == "active" ? **YES**
+    2. glcdi_participant_type in\n   ["researcher","data-steward"] ? **YES**
+    => **VISIBLE** in catalog
+  end note
+
+  CF_EDC -> CF_EDC : Evaluate **members-only** policy\nfor grazing rotation asset
+  note right of CF_EDC
+    Checks token claims:
+    1. glcdi_membership == "active" ? **YES**
+    => **VISIBLE** in catalog
+  end note
+end
+
+CF_EDC --> PB_EDC : Catalog response\n(SOC measurements + grazing rotation\n+ paddock boundaries + NDVI)
+PB_EDC --> UI : Display available offers
+
+Researcher -> UI : Selects "SOC Measurements"\nReviews contract terms
+
+note over UI
+  Contract terms displayed:
+  - Purpose: Model Training or Ecosystem Calibration only
+  - Time limit: Until 2026-09-30
+  - **Must anonymise** farm-identifiable data
+  - **Must attribute** data source in publications
+  - Raw data redistribution: **prohibited**
+  - Commercial use: **prohibited**
+end note
+
+== Contract Negotiation ==
+
+Researcher -> UI : Accepts terms, declares\npurpose = "AgronomicModelTraining"
+UI -> PB_EDC : Initiate contract negotiation
+PB_EDC -> CF_EDC : DSP Contract Negotiation\n(offer with purpose claim)
+
+group Contract Policy Evaluation [on Caney Fork connector]
+  CF_EDC -> CF_EDC : Evaluate **model-calibration-terms**
+  note right of CF_EDC
+    Checks offer claims:
+    1. purpose in ["AgronomicModelTraining",\n   "EcosystemModelCalibration"] ? **YES**
+    2. dateTime <= 2026-09-30 ? **YES**
+    => **NEGOTIATION ACCEPTED**
+  end note
+end
+
+CF_EDC --> PB_EDC : Contract Agreement (FINALIZED)
+PB_EDC --> UI : Contract confirmed
+
+== Data Transfer ==
+
+Researcher -> UI : Initiates data transfer
+UI -> PB_EDC : Start transfer request
+PB_EDC -> CF_EDC : DSP Transfer Request
+CF_EDC --> PB_EDC : SOC measurements dataset
+PB_EDC --> UI : Transfer complete
+
+note over Researcher
+  Dr. Martinez can now use the data
+  to train the SOC prediction model.
+
+  **Obligations to fulfill:**
+  - Anonymise ranch name & GPS before processing
+  - Cite "Caney Fork Farms via GLCDI Data Space"
+  - Do not redistribute raw data
+  - Do not use for commercial purposes
+  - Delete data after prototype phase ends
+end note
+
+@enduml

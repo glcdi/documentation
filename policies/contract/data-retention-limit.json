@@ -1,0 +1,57 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:contract:data-retention-12m",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "constraint": [
+          {
+            "leftOperand": "odrl:elapsedTime",
+            "operator": "lteq",
+            "rightOperand": "P12M",
+            "comment": "Usage is permitted for a maximum of 12 months from the date of transfer (ISO 8601 duration). After this period, the consumer must delete all copies of the data."
+          }
+        ]
+      }
+    ],
+    "obligation": [
+      {
+        "action": "delete",
+        "constraint": [
+          {
+            "leftOperand": "odrl:event",
+            "operator": "gt",
+            "rightOperand": {
+              "@id": "odrl:policyUsage"
+            }
+          },
+          {
+            "leftOperand": "odrl:elapsedTime",
+            "operator": "gt",
+            "rightOperand": "P12M"
+          }
+        ],
+        "comment": "Consumer must delete all copies of the data and any non-anonymised derivatives within 30 days of the retention period expiring. A deletion confirmation must be sent to the provider."
+      },
+      {
+        "action": "inform",
+        "constraint": [
+          {
+            "leftOperand": "odrl:recipient",
+            "operator": "eq",
+            "rightOperand": "glcdi:OriginalProvider"
+          }
+        ],
+        "comment": "Notify the provider once deletion is complete."
+      }
+    ]
+  }
+}

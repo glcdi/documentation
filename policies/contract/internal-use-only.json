@@ -1,0 +1,43 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "@id": "glcdi:contract:internal-use-only",
+  "@type": "PolicyDefinition",
+  "policy": {
+    "@context": "http://www.w3.org/ns/odrl.jsonld",
+    "@type": "Set",
+    "permission": [
+      {
+        "action": "use",
+        "constraint": [
+          {
+            "leftOperand": "odrl:purpose",
+            "operator": "eq",
+            "rightOperand": "glcdi:InternalAnalysis",
+            "comment": "Consumer declares the data will only be used for internal analysis within their organisation."
+          }
+        ]
+      }
+    ],
+    "prohibition": [
+      {
+        "action": "distribute",
+        "comment": "Redistribution to third parties is explicitly prohibited. The consumer may not share the raw data outside their organisation."
+      },
+      {
+        "action": "derive",
+        "constraint": [
+          {
+            "leftOperand": "odrl:recipient",
+            "operator": "neq",
+            "rightOperand": "glcdi:OriginalProvider",
+            "comment": "Derived works may not be shared with anyone other than the original data provider without additional consent."
+          }
+        ]
+      }
+    ]
+  }
+}

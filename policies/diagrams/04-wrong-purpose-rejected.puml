@@ -1,0 +1,82 @@
+@startuml Contract Rejected — Wrong Purpose
+title **Contract Policy Enforcement: Wrong Purpose**\nA corporate actor tries to use research data for ESG reporting
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #FFEBEE
+skinparam sequenceGroupBorderColor #C62828
+
+actor "ESG Analyst\n(Corporate partner)" as Analyst #FFF3E0
+participant "Corporate\nEDC Connector" as CORP_EDC #E3F2FD
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+
+== Catalog Discovery (succeeds — asset uses members-only access) ==
+
+Analyst -> CORP_EDC : Browse Caney Fork catalog
+CORP_EDC -> CF_EDC : DSP Catalog Query
+
+CF_EDC -> CF_EDC : Evaluate **members-only** access policy
+note right of CF_EDC
+  glcdi_membership == "active" ? **YES**
+  (Corporate partner is an active member)
+  => Asset is **visible**
+end note
+
+CF_EDC --> CORP_EDC : Catalog with grazing rotation offer\n(contract: **benchmarking-terms**)
+CORP_EDC --> Analyst : Shows offer
+
+note over Analyst
+  The analyst sees the grazing rotation
+  data and wants to use it for their
+  company's Scope 3 emissions report.
+  The contract terms say: benchmarking
+  or internal analysis only.
+end note
+
+== Contract Negotiation (fails — wrong purpose) ==
+
+Analyst -> CORP_EDC : Accepts terms\npurpose = "Scope3Reporting"
+CORP_EDC -> CF_EDC : Contract negotiation\n(purpose = "Scope3Reporting")
+
+group Contract Policy Evaluation [REJECTED] #FFEBEE
+  CF_EDC -> CF_EDC : Evaluate **benchmarking-terms**
+  note right of CF_EDC #FFCDD2
+    purpose in ["RegionalBenchmarking",
+    "InternalAnalysis"] ?
+
+    "Scope3Reporting" is **NOT** in the
+    permitted purpose list.
+
+    => **NEGOTIATION REJECTED**
+  end note
+end
+
+CF_EDC --> CORP_EDC : Contract negotiation TERMINATED\n(policy not satisfied)
+CORP_EDC --> Analyst : Negotiation failed:\npurpose not permitted
+
+note over Analyst
+  **What happened:**
+  The corporate analyst could **see** the offer
+  (members-only access policy passed) but
+  could not **negotiate a contract** because
+  the intended purpose (Scope 3 reporting)
+  doesn't match the allowed purposes.
+
+  **What the analyst should do:**
+  1. Look for assets with a
+     **supply-chain-terms** contract
+     that explicitly permits Scope3Reporting
+  2. Contact the data provider to request
+     a new contract definition with
+     appropriate terms (may require
+     payment + anonymisation)
+  3. Work with the GLCDI governance team
+     to establish a corporate data access
+     agreement
+end note
+
+@enduml

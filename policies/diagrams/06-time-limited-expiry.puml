@@ -1,0 +1,103 @@
+@startuml Time-Limited Policy Expiry
+title **Contract Policy: Time Limit Enforcement**\nWhat happens when a contract's time window expires
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceDividerBackgroundColor #E8F5E9
+
+actor "Dr. Martinez\n(Point Blue)" as Researcher #E8F5E9
+participant "Point Blue\nEDC Connector" as PB_EDC #E3F2FD
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+
+== July 2026: Within prototype phase ==
+
+note over PB_EDC, CF_EDC
+  Current date: **2026-07-15**
+  Policy expiry: **2026-09-30**
+end note
+
+Researcher -> PB_EDC : Negotiate contract for SOC data\npurpose = "AgronomicModelTraining"
+PB_EDC -> CF_EDC : Contract negotiation
+
+group Contract Policy: time-limited
+  CF_EDC -> CF_EDC : dateTime <= 2026-09-30 ?\n2026-07-15 <= 2026-09-30 => **YES**
+  CF_EDC -> CF_EDC : purpose check => **YES**
+end
+
+CF_EDC --> PB_EDC : Contract FINALIZED
+PB_EDC --> Researcher : Contract active, transfer available
+
+Researcher -> PB_EDC : Transfer data
+PB_EDC -> CF_EDC : DSP Transfer
+CF_EDC --> PB_EDC : SOC dataset delivered
+
+note over Researcher
+  Dr. Martinez receives the data and
+  begins model training during the
+  active prototype phase.
+end note
+
+== October 2026: Prototype phase ended ==
+
+/ note over PB_EDC, CF_EDC
+  Current date: **2026-10-15**
+  Policy expiry: **2026-09-30** (passed)
+end note
+
+Researcher -> PB_EDC : Request new contract for\nupdated SOC measurements
+PB_EDC -> CF_EDC : Contract negotiation
+
+group Contract Policy: time-limited #FFEBEE
+  CF_EDC -> CF_EDC : dateTime <= 2026-09-30 ?\n2026-10-15 > 2026-09-30 => **NO**
+  note right of CF_EDC #FFCDD2
+    Time constraint no longer satisfied.
+    => **NEGOTIATION REJECTED**
+  end note
+end
+
+CF_EDC --> PB_EDC : Contract TERMINATED\n(time constraint expired)
+PB_EDC --> Researcher : Negotiation failed: offer expired
+
+note over Researcher
+  **What this means for Dr. Martinez:**
+
+  - The **existing contract** from July is
+    still valid for data already transferred
+    (EDC doesn't revoke past transfers)
+  - **New contracts** cannot be negotiated
+    until the provider updates the policy
+    with a new expiry date
+  - This is a **natural consent renewal point**:
+    Caney Fork decides whether to extend
+    sharing into the next project phase
+
+  **What Caney Fork should do:**
+  - Review the partnership at the end of
+    the prototype phase
+  - If satisfied, publish a new policy
+    with updated expiry (e.g., 2027-09-30)
+  - If not, simply leave the expired policy
+    — no new access is possible
+end note
+
+== Renewal (if agreed) ==
+
+CF_EDC -> CF_EDC : Provider updates policy:\ndateTime <= **2027-09-30**
+note right of CF_EDC
+  New policy created for the
+  next project phase, potentially
+  with updated terms (different
+  purposes, new obligations, etc.)
+end note
+
+Researcher -> PB_EDC : Negotiate new contract
+PB_EDC -> CF_EDC : Contract negotiation
+CF_EDC -> CF_EDC : dateTime <= 2027-09-30 ? **YES**
+CF_EDC --> PB_EDC : Contract FINALIZED
+PB_EDC --> Researcher : New contract active
+
+@enduml

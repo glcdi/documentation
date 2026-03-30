@@ -1,0 +1,139 @@
+@startuml Corporate Supply Chain Data Access
+title **Use Case: Corporate ESG / Scope 3 Reporting (Post-Prototype)**\nA food company accesses aggregated SOC data under strict terms
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #FFF3E0
+skinparam sequenceGroupBorderColor #EF6C00
+skinparam sequenceDividerBackgroundColor #F3E5F5
+
+actor "Lisa Park\n(ESG Analyst\nat FoodCorp)" as Lisa #FFF3E0
+participant "FoodCorp\nEDC Connector" as FC_EDC #E3F2FD
+participant "Payment\nSystem" as PAY #F3E5F5
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+actor "Will Thompson\n(Caney Fork)" as Will #E8F5E9
+
+== Setup ==
+
+note over Will, CF_EDC
+  Caney Fork publishes SOC data with
+  **corporate-partners** access policy and
+  **supply-chain-terms** contract policy:
+  - Access: corporate / certification-body only
+  - Purpose: Scope 3, ESG, certification only
+  - Payment: $1,000 USD minimum
+  - Anonymisation to regional level mandatory
+  - 12-month retention limit
+  - Attribution required
+  - No redistribution (including subsidiaries)
+end note
+
+== Catalog Discovery ==
+
+Lisa -> FC_EDC : Browse Caney Fork catalog
+FC_EDC -> CF_EDC : DSP Catalog Query
+
+group Access Policy: corporate-partners
+  CF_EDC -> CF_EDC : membership == "active" ? **YES**
+  CF_EDC -> CF_EDC : participantType in\n["corporate","certification-body",\n"supply-chain-partner"] ? **YES**
+  note right of CF_EDC
+    FoodCorp is an active corporate member.
+    => SOC data offer is **VISIBLE**
+  end note
+end
+
+CF_EDC --> FC_EDC : Catalog with SOC data offer
+FC_EDC --> Lisa : Shows offer with supply-chain terms
+
+note over Lisa
+  Lisa reviews the terms:
+  - $1,000 per dataset
+  - Must anonymise to regional level
+  - Must attribute GLCDI in ESG report
+  - Data deleted after 12 months
+  - Cannot share with subsidiaries
+  - Purpose: Scope 3 reporting only
+end note
+
+== Payment ==
+
+Lisa -> PAY : Initiates payment ($1,000)
+PAY --> Lisa : Payment confirmed\n(reference: PAY-2026-0847)
+
+== Contract Negotiation ==
+
+Lisa -> FC_EDC : Accept terms\npurpose = "Scope3Reporting"\npaymentRef = "PAY-2026-0847"
+FC_EDC -> CF_EDC : Contract negotiation
+
+group Contract Policy: supply-chain-terms
+  CF_EDC -> CF_EDC : purpose in ["Scope3Reporting",\n"ESGCompliance",\n"CertificationVerification"] ? **YES**
+  CF_EDC -> CF_EDC : elapsedTime <= 12 months ? **YES** (new)
+  CF_EDC -> PAY : Verify payment PAY-2026-0847
+  PAY --> CF_EDC : Payment verified ($1,000)
+  CF_EDC -> CF_EDC : payAmount >= $1,000 ? **YES**
+  note right of CF_EDC
+    All constraints satisfied.
+    => **AGREED**
+  end note
+end
+
+CF_EDC --> FC_EDC : Contract FINALIZED
+FC_EDC --> Lisa : Contract confirmed
+
+== Data Transfer ==
+
+Lisa -> FC_EDC : Request transfer
+FC_EDC -> CF_EDC : DSP Transfer
+CF_EDC --> FC_EDC : SOC measurements dataset
+
+== Lisa uses the data ==
+
+note over Lisa #FFF3E0
+  **Lisa's obligations (contractual + governance-level):**
+
+  1. **Anonymise** immediately:
+     - Remove "Caney Fork Farms" → "Tennessee Region"
+     - GPS coords → county-level aggregation
+     - Field IDs → removed
+
+  2. **Attribute** in ESG report:
+     "Soil carbon data sourced via GLCDI
+      Data Space from participating producers."
+
+  3. **Do not share** raw data with
+     FoodCorp subsidiaries or third-party
+     analytics firms
+
+  4. **Delete all copies** by month 12
+     and confirm deletion to Caney Fork
+
+  5. Use **only for Scope 3 reporting**
+     — not for supplier negotiations,
+     marketing claims, or resale
+end note
+
+== 12 months later: Retention limit ==
+
+/ note over Lisa, CF_EDC
+  **Month 12: Retention period expires**
+end note
+
+FC_EDC -> Lisa : Reminder: retention period expiring
+Lisa -> Lisa : Delete all data copies\nand derivatives
+Lisa -> FC_EDC : Confirm deletion
+FC_EDC -> CF_EDC : Deletion confirmation\nfrom FoodCorp
+CF_EDC --> Will : Notification: FoodCorp\nconfirmed data deletion
+
+note over Will
+  Will receives confirmation that
+  FoodCorp has deleted his data.
+  If FoodCorp needs continued access,
+  a **new contract** must be negotiated
+  (with a new payment).
+end note
+
+@enduml

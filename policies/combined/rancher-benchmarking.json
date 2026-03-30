@@ -1,0 +1,92 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "comment": "SCENARIO: Regional Benchmarking — A rancher (e.g., White Buffalo Land Trust) wants to compare their SOC levels and grazing strategies against regional peers. Another rancher (e.g., Caney Fork Farms) shares aggregated data so that participating producers can benchmark against each other. Visibility is limited to GLCDI members, and usage is for internal benchmarking only — no redistribution, no commercial use.",
+
+  "accessPolicy": {
+    "@id": "glcdi:access:peer-benchmarking",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "glcdi:membership",
+              "operator": "eq",
+              "rightOperand": "active"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "contractPolicy": {
+    "@id": "glcdi:contract:benchmarking-terms",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "odrl:purpose",
+              "operator": "isAnyOf",
+              "rightOperand": [
+                "glcdi:RegionalBenchmarking",
+                "glcdi:InternalAnalysis"
+              ]
+            },
+            {
+              "leftOperand": "odrl:dateTime",
+              "operator": "lteq",
+              "rightOperand": {
+                "@type": "xsd:dateTime",
+                "@value": "2026-09-30T23:59:59Z"
+              }
+            }
+          ],
+          "duty": [
+            {
+              "action": "attribute",
+              "comment": "When referencing benchmark results, acknowledge that data was shared through GLCDI."
+            }
+          ]
+        }
+      ],
+      "prohibition": [
+        {
+          "action": "distribute",
+          "comment": "Shared data may not be forwarded to non-participants."
+        },
+        {
+          "action": "commercialize",
+          "comment": "Data may not be used for commercial advantage (e.g., gaining competitive pricing info, selling insights)."
+        }
+      ]
+    }
+  },
+
+  "contractDefinitionExample": {
+    "@id": "cd-caney-fork-grazing-for-benchmarking",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "glcdi:access:peer-benchmarking",
+    "contractPolicyId": "glcdi:contract:benchmarking-terms",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "caney-fork-grazing-rotation"
+      }
+    ]
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "comment": "SCENARIO: Agronomic Model Calibration — A research institution (e.g., Point Blue Conservation Science) wants to access SOC and grazing management data from multiple ranches to train a predictive model that estimates how SOC changes in response to grazing practices. The producer (e.g., Caney Fork Farms) shares their data under strict conditions: only researchers may see it, it can only be used for model training, must be anonymised, and attribution is required.",
+
+  "accessPolicy": {
+    "@id": "glcdi:access:model-calibration-researchers",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "glcdi:membership",
+              "operator": "eq",
+              "rightOperand": "active"
+            },
+            {
+              "leftOperand": "glcdi:participantType",
+              "operator": "isAnyOf",
+              "rightOperand": ["researcher", "data-steward"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "contractPolicy": {
+    "@id": "glcdi:contract:model-calibration-terms",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "odrl:purpose",
+              "operator": "isAnyOf",
+              "rightOperand": [
+                "glcdi:AgronomicModelTraining",
+                "glcdi:EcosystemModelCalibration"
+              ]
+            },
+            {
+              "leftOperand": "odrl:dateTime",
+              "operator": "lteq",
+              "rightOperand": {
+                "@type": "xsd:dateTime",
+                "@value": "2026-09-30T23:59:59Z"
+              }
+            }
+          ],
+          "duty": [
+            {
+              "action": "attribute",
+              "comment": "Cite data source in all publications: '[Ranch] via GLCDI Data Space'"
+            }
+          ]
+        },
+        {
+          "action": "derive",
+          "constraint": [
+            {
+              "leftOperand": "odrl:purpose",
+              "operator": "eq",
+              "rightOperand": "glcdi:ModelOutput"
+            }
+          ]
+        }
+      ],
+      "obligation": [
+        {
+          "action": "anonymize",
+          "comment": "All farm-identifiable information (ranch name, precise GPS, field IDs) must be anonymised before model training."
+        }
+      ],
+      "prohibition": [
+        {
+          "action": "distribute",
+          "target": "glcdi:RawData"
+        },
+        {
+          "action": "commercialize"
+        }
+      ]
+    }
+  },
+
+  "contractDefinitionExample": {
+    "@id": "cd-caney-fork-soc-for-modelling",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "glcdi:access:model-calibration-researchers",
+    "contractPolicyId": "glcdi:contract:model-calibration-terms",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "caney-fork-soc-measurements"
+      }
+    ]
+  }
+}

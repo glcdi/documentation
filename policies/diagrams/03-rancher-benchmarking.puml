@@ -1,0 +1,129 @@
+@startuml Rancher-to-Rancher Benchmarking
+title **Use Case: Regional Benchmarking**\nTwo ranchers share grazing data to compare SOC outcomes
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #E8F5E9
+skinparam sequenceGroupBorderColor #2E7D32
+skinparam sequenceDividerBackgroundColor #E3F2FD
+
+actor "Sarah Chen\n(White Buffalo\nLand Trust)" as Sarah #E8F5E9
+participant "White Buffalo\nEDC Connector" as WB_EDC #E3F2FD
+participant "Governance\nKeycloak" as KC #F3E5F5
+participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
+actor "Will Thompson\n(Caney Fork)" as Will #E8F5E9
+
+== Setup: Caney Fork publishes benchmarking offer ==
+
+Will -> CF_EDC : Publishes grazing rotation data\nwith **members-only** access policy\nand **benchmarking-terms** contract policy
+note right of CF_EDC
+  Access: Any active GLCDI member
+  Contract:
+  - Purpose: benchmarking or internal analysis
+  - Time limit: 2026-09-30
+  - Attribution required
+  - No redistribution
+  - No commercial use
+end note
+
+== Sarah discovers and negotiates ==
+
+Sarah -> WB_EDC : Logs in (via governance Keycloak)
+note right of KC
+  Sarah's token claims:
+  **glcdi_membership**: "active"
+  **glcdi_participant_type**: "producer"
+  **glcdi_certification_status**: "regenerative-verified"
+end note
+
+Sarah -> WB_EDC : Browse Caney Fork catalog
+WB_EDC -> CF_EDC : DSP Catalog Query
+
+group Access Policy: members-only
+  CF_EDC -> CF_EDC : glcdi_membership == "active" ? **YES**
+  note right of CF_EDC
+    Sarah is an active member.
+    Grazing rotation data is **visible**.
+  end note
+end
+
+CF_EDC --> WB_EDC : Catalog with grazing rotation offer
+WB_EDC --> Sarah : Shows offer with benchmarking terms
+
+Sarah -> WB_EDC : Accepts terms\npurpose = "RegionalBenchmarking"
+WB_EDC -> CF_EDC : Contract negotiation
+
+group Contract Policy: benchmarking-terms
+  CF_EDC -> CF_EDC : purpose in ["RegionalBenchmarking",\n"InternalAnalysis"] ? **YES**
+  CF_EDC -> CF_EDC : dateTime <= 2026-09-30 ? **YES**
+  note right of CF_EDC
+    => **AGREED**
+  end note
+end
+
+CF_EDC --> WB_EDC : Contract FINALIZED
+
+== Data Transfer ==
+
+Sarah -> WB_EDC : Request transfer
+WB_EDC -> CF_EDC : DSP Transfer
+CF_EDC --> WB_EDC : Grazing rotation dataset\n(AMP rotation, stocking density, rest periods)
+
+== Sarah uses the data ==
+
+hnote over Sarah #E8F5E9
+  Sarah compares Caney Fork's
+  rotation schedule against
+  White Buffalo's own practices.
+
+  She can see:
+  - Stocking density differences
+  - Rest period durations
+  - Seasonal rotation patterns
+
+  She discovers that Caney Fork
+  uses longer rest periods (45 vs
+  her 30 days), correlating with
+  higher SOC gains.
+end hnote
+
+note over Sarah
+  **What Sarah CAN do:**
+  - Compare against her own data internally
+  - Discuss anonymised insights at
+    GLCDI Steering Committee meetings
+  - Adjust her own practices based
+    on what she learns
+
+  **What Sarah CANNOT do:**
+  - Share Caney Fork's raw data
+    with her funders or partners
+  - Use the data in a paid
+    consulting report
+  - Forward to non-GLCDI participants
+end note
+
+== Reciprocal sharing ==
+
+Sarah -> WB_EDC : Publishes her own grazing data\nwith same policy terms
+note over WB_EDC
+  White Buffalo reciprocates by publishing
+  their data under the same benchmarking
+  terms. This builds the peer comparison
+  dataset that benefits all participants.
+end note
+
+Will -> CF_EDC : Discovers White Buffalo's offer
+Will -> CF_EDC : Negotiates & transfers
+note over Will
+  Both ranchers now have each other's
+  grazing data for comparison.
+  The benchmarking service can
+  aggregate both into regional insights.
+end note
+
+@enduml

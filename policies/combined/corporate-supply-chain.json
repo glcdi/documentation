@@ -1,0 +1,128 @@
+{
+  "@context": {
+    "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+  },
+  "comment": "SCENARIO: Corporate Supply Chain / ESG Reporting — A food company or certification body needs aggregated SOC data to support Scope 3 emissions calculations, ESG reporting, or regenerative sourcing claims. The data provider (a ranch) allows access but requires: anonymisation of farm-level data, attribution to GLCDI, payment for data access, and a strict retention limit. This scenario anticipates post-prototype corporate participation mentioned in the blueprint.",
+
+  "accessPolicy": {
+    "@id": "glcdi:access:corporate-partners",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "glcdi:membership",
+              "operator": "eq",
+              "rightOperand": "active"
+            },
+            {
+              "leftOperand": "glcdi:participantType",
+              "operator": "isAnyOf",
+              "rightOperand": ["corporate", "certification-body", "supply-chain-partner"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "contractPolicy": {
+    "@id": "glcdi:contract:supply-chain-terms",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "http://www.w3.org/ns/odrl.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "odrl:purpose",
+              "operator": "isAnyOf",
+              "rightOperand": [
+                "glcdi:Scope3Reporting",
+                "glcdi:ESGCompliance",
+                "glcdi:CertificationVerification"
+              ]
+            },
+            {
+              "leftOperand": "odrl:elapsedTime",
+              "operator": "lteq",
+              "rightOperand": "P12M"
+            }
+          ],
+          "duty": [
+            {
+              "action": "compensate",
+              "constraint": [
+                {
+                  "leftOperand": "odrl:payAmount",
+                  "operator": "gteq",
+                  "rightOperand": {
+                    "@type": "xsd:decimal",
+                    "@value": "1000.00"
+                  },
+                  "unit": "http://dbpedia.org/resource/United_States_dollar"
+                }
+              ]
+            },
+            {
+              "action": "attribute",
+              "comment": "All reports must credit: 'Sourced via GLCDI Data Space from participating producers.'"
+            }
+          ]
+        }
+      ],
+      "obligation": [
+        {
+          "action": "anonymize",
+          "comment": "Farm-identifiable information must be aggregated to regional level before use in any external report."
+        },
+        {
+          "action": "delete",
+          "constraint": [
+            {
+              "leftOperand": "odrl:elapsedTime",
+              "operator": "gt",
+              "rightOperand": "P12M"
+            }
+          ],
+          "comment": "All data copies must be deleted after 12 months. Renewal requires a new contract negotiation."
+        }
+      ],
+      "prohibition": [
+        {
+          "action": "distribute",
+          "comment": "Data may not be shared with subsidiaries, partners, or third-party analytics firms without a separate agreement."
+        }
+      ]
+    }
+  },
+
+  "contractDefinitionExample": {
+    "@id": "cd-regional-soc-for-supply-chain",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "glcdi:access:corporate-partners",
+    "contractPolicyId": "glcdi:contract:supply-chain-terms",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/contenttype",
+        "operator": "=",
+        "operandRight": "application/json"
+      },
+      {
+        "@type": "Criterion",
+        "operandLeft": "glcdi:dataCategory",
+        "operator": "=",
+        "operandRight": "soil-organic-carbon"
+      }
+    ]
+  }
+}
