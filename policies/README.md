@@ -48,7 +48,7 @@ This namespace is specific to GLCDI and would be defined in the dataspace's voca
 policies/
 ├── access/                     # Access policies (catalog visibility)
 │   ├── members-only.json       # Any GLCDI participant
-│   ├── organic-producers.json  # Organic/regenerative producers only
+│   ├── regenerative-producers.json # Regenerative producers only
 │   ├── researchers-only.json   # Research institutions only
 │   └── contributing-members.json  # Only participants who also contribute data
 ├── contract/                   # Contract policies (usage terms)
@@ -71,7 +71,7 @@ policies/
 │   ├── 02-producer-blocked-from-research-data.puml  # Access policy filtering
 │   ├── 03-rancher-benchmarking.puml               # Peer-to-peer benchmarking
 │   ├── 04-wrong-purpose-rejected.puml             # Contract rejection on wrong purpose
-│   ├── 05-organic-producers-exclusive.puml        # Certification-based inner circle
+│   ├── 05-regenerative-producers-exclusive.puml   # Certification-based inner circle
 │   ├── 06-time-limited-expiry.puml                # Temporal constraint & renewal
 │   ├── 07-corporate-supply-chain-flow.puml        # Corporate ESG with payment & retention
 │   └── 08-reciprocal-benchmarking-pool.puml       # Contribute-to-access reciprocity
@@ -89,14 +89,14 @@ authentication, catalog discovery, policy evaluation, contract negotiation, and 
 
 | # | Diagram | Policies illustrated | End-user story |
 |---|---------|---------------------|----------------|
-| 01 | [Researcher accesses SOC data](diagrams/01-researcher-accesses-soc-data.puml) | `researchers-only` + `model-calibration-terms` | Dr. Martinez (Point Blue) authenticates, discovers Caney Fork's SOC data in the catalog, negotiates a contract for model training, and receives the data with obligations to anonymise, attribute, and not redistribute. Shows the complete happy path for the **agronomic model calibration** use case. |
-| 02 | [Producer blocked from research data](diagrams/02-producer-blocked-from-research-data.puml) | `researchers-only` vs `members-only` | Will Thompson (Caney Fork rancher) browses Point Blue's catalog but cannot see GHG Flux data restricted to researchers. He can still see and access the 3 assets with members-only access. Demonstrates how **access policies filter the catalog** without the user knowing hidden offers exist. |
-| 03 | [Rancher-to-rancher benchmarking](diagrams/03-rancher-benchmarking.puml) | `members-only` + `benchmarking-terms` | Sarah Chen (White Buffalo) and Will Thompson (Caney Fork) share grazing data for peer comparison. Shows the full **regional benchmarking** use case including reciprocal sharing, what the rancher can learn, and what they cannot do with the data. |
-| 04 | [Wrong purpose rejected](diagrams/04-wrong-purpose-rejected.puml) | `members-only` + `benchmarking-terms` | A corporate ESG analyst can *see* an offer (passes members-only access) but cannot *negotiate a contract* because their declared purpose (Scope3Reporting) doesn't match the permitted purposes (benchmarking only). Shows how **contract policies enforce purpose constraints** even when access is open. |
-| 05 | [Organic producers exclusive](diagrams/05-organic-producers-exclusive.puml) | `organic-producers` | Three participants query the same asset: a regenerative producer (sees it), a researcher (blocked), and a corporate analyst (blocked). Shows how **multi-constraint access policies** create tiered visibility based on participant type and certification status. |
-| 06 | [Time-limited expiry](diagrams/06-time-limited-expiry.puml) | `time-limited` | A researcher negotiates successfully during the prototype phase, then gets rejected after the expiry date. Shows the **natural consent renewal cycle**: the provider decides whether to publish a new policy for the next phase. |
-| 07 | [Corporate supply chain](diagrams/07-corporate-supply-chain-flow.puml) | `corporate-partners` + `supply-chain-terms` | Lisa Park (FoodCorp ESG analyst) discovers SOC data, pays $1,000, negotiates a Scope 3 reporting contract, receives data with anonymisation and retention obligations, and must delete after 12 months. Shows the **post-prototype corporate scenario** with payment, anonymisation, attribution, and retention enforcement. |
-| 08 | [Reciprocal benchmarking pool](diagrams/08-reciprocal-benchmarking-pool.puml) | `contributing-members` + `reciprocal-benchmarking-terms` | A contributing rancher (Sarah) accesses the benchmarking pool and must share back results. A newly onboarded rancher (observer status) is blocked until they publish their own data. Shows how **contribute-to-access reciprocity** prevents free-riding and how a new participant unlocks access by contributing. |
+| 01 | [Researcher accesses SOC data](diagrams/01-researcher-accesses-soc-data.png) | `researchers-only` + `model-calibration-terms` | Dr. Martinez (Point Blue) authenticates, discovers Caney Fork's SOC data in the catalog, negotiates a contract for model training, and receives the data with obligations to anonymise, attribute, and not redistribute. Shows the complete happy path for the **agronomic model calibration** use case. |
+| 02 | [Producer blocked from research data](diagrams/02-producer-blocked-from-research-data.png) | `researchers-only` vs `members-only` | Will Thompson (Caney Fork rancher) browses Point Blue's catalog but cannot see GHG Flux data restricted to researchers. He can still see and access the 3 assets with members-only access. Demonstrates how **access policies filter the catalog** without the user knowing hidden offers exist. |
+| 03 | [Rancher-to-rancher benchmarking](diagrams/03-rancher-benchmarking.png) | `members-only` + `benchmarking-terms` | Sarah Chen (White Buffalo) and Will Thompson (Caney Fork) share grazing data for peer comparison. Shows the full **regional benchmarking** use case including reciprocal sharing, what the rancher can learn, and what they cannot do with the data. |
+| 04 | [Wrong purpose rejected](diagrams/04-wrong-purpose-rejected.png) | `members-only` + `benchmarking-terms` | A corporate ESG analyst can *see* an offer (passes members-only access) but cannot *negotiate a contract* because their declared purpose (Scope3Reporting) doesn't match the permitted purposes (benchmarking only). Shows how **contract policies enforce purpose constraints** even when access is open. |
+| 05 | [Regenerative producers exclusive](diagrams/05-regenerative-producers-exclusive.png) | `regenerative-producers` | Three participants query the same asset: a regenerative producer (sees it), a researcher (blocked), and a corporate analyst (blocked). Shows how **multi-constraint access policies** create tiered visibility based on participant type and certification status. |
+| 06 | [Time-limited expiry](diagrams/06-time-limited-expiry.png) | `time-limited` | A researcher negotiates successfully during the prototype phase, then gets rejected after the expiry date. Shows the **natural consent renewal cycle**: the provider decides whether to publish a new policy for the next phase. |
+| 07 | [Corporate supply chain](diagrams/07-corporate-supply-chain-flow.png) | `corporate-partners` + `supply-chain-terms` | Lisa Park (FoodCorp ESG analyst) discovers SOC data, pays $1,000, negotiates a Scope 3 reporting contract, receives data with anonymisation and retention obligations, and must delete after 12 months. Shows the **post-prototype corporate scenario** with payment, anonymisation, attribution, and retention enforcement. |
+| 08 | [Reciprocal benchmarking pool](diagrams/08-reciprocal-benchmarking-pool.png) | `contributing-members` + `reciprocal-benchmarking-terms` | A contributing rancher (Sarah) accesses the benchmarking pool and must share back results. A newly onboarded rancher (observer status) is blocked until they publish their own data. Shows how **contribute-to-access reciprocity** prevents free-riding and how a new participant unlocks access by contributing. |
 
 To render the diagrams, use any PlantUML-compatible tool:
 
@@ -120,14 +120,14 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **GLCDI relevance** | This is the **default baseline** for the dataspace. The blueprint emphasises that GLCDI is a trust-based alliance: once a participant has gone through the onboarding process (Keycloak account, signed MOU/Data Sharing Agreement), they should be able to discover what data is available. Especially important for the **Peer-to-Peer Data Sharing** and **Regional Benchmarking** use cases, where all participants need catalog visibility as a starting point. |
 | **Implementation** | Requires a custom EDC policy function that resolves `glcdi:membership` from the consumer's Keycloak token or Verifiable Credential. The governance Keycloak realm at `governance.glcdi.startinblox.com` would be the source of truth. |
 
-### `access/organic-producers.json` — Organic/Regenerative Producers Only
+### `access/regenerative-producers.json` — Regenerative Producers Only
 
 | Aspect | Detail |
 |--------|--------|
-| **ID** | `glcdi:access:organic-producers` |
+| **ID** | `glcdi:access:regenerative-producers` |
 | **What it does** | Restricts catalog visibility to participants who are (a) active members, (b) of type `producer`, and (c) hold a certification status of `organic-certified`, `regenerative-verified`, or `transitioning-organic`. |
 | **ODRL mechanism** | Three constraints combined (AND logic): membership check, participant type check, and certification status using `isAnyOf` for multiple accepted values. |
-| **GLCDI relevance** | Some producers may only want to share data with **peers who are on a similar regenerative journey**. Caney Fork Farms, for example, wants to "promote regenerative grazing" and "sell at a premium by participating in regenerative markets". Sharing sensitive grazing rotation data or SOC measurements only with fellow organic/regenerative producers creates a trusted inner circle — addressing the stakeholder fear of "harmful use of data by buyers or competitors". This is also relevant as the dataspace grows to include participants like PASA (a members association of sustainable agriculture practitioners). |
+| **GLCDI relevance** | Some producers may only want to share data with **peers who are on a similar regenerative journey**. Caney Fork Farms, for example, wants to "promote regenerative grazing" and "sell at a premium by participating in regenerative markets". Sharing sensitive grazing rotation data or SOC measurements only with fellow regenerative producers creates a trusted inner circle — addressing the stakeholder fear of "harmful use of data by buyers or competitors". This is also relevant as the dataspace grows to include participants like PASA (a members association of sustainable agriculture practitioners). |
 | **Implementation** | Requires `glcdi:certificationStatus` to be a verifiable claim. Could be populated during onboarding (self-declared + steering committee validation) or eventually tied to third-party certification (USDA Organic, ROC, etc.). |
 
 ### `access/researchers-only.json` — Research Institutions Only
@@ -331,7 +331,7 @@ Each policy is rated on three axes:
 |--------|:-:|:-:|--------|-------|
 | `members-only` | Yes | Yes, with custom function | **Low** — one `AtomicConstraintFunction` reading `glcdi_membership` from JWT. ~50 lines of Java. | Simplest custom function. Pattern reusable for all claim-based policies. |
 | `researchers-only` | Yes | Yes, with custom function | **Low** — same pattern as above, reads `glcdi_roles` array. Adds `isAnyOf` operator support. | Can share base class with membership function. |
-| `organic-producers` | Yes | Yes, with custom function | **Low** — combines two existing functions (type + certification). No new code pattern. | Three constraints evaluated as AND — EDC handles multi-constraint natively. |
+| `regenerative-producers` | Yes | Yes, with custom function | **Low** — combines two existing functions (type + certification). No new code pattern. | Three constraints evaluated as AND — EDC handles multi-constraint natively. |
 | `contributing-members` | Yes | Yes, with custom function | **Low** — identical pattern to certification status (user attribute → token claim → policy function). | Governance team must manually update `contributionStatus` in Keycloak. For prototype scale this is fine; automation is a future enhancement. |
 
 #### Contract Policies
@@ -362,7 +362,7 @@ Each policy is rated on three axes:
 |:---:|---|---|
 | **None** (works today) | `time-limited` | Vanilla EDC — no custom code |
 | **None** (governance-level) | `attribution`, `anonymisation`, `reciprocal-insights`, `internal-use-only` (prohibition part), `non-commercial` (prohibition part) | Consumer agrees at negotiation. Enforcement via DSA and Steering Committee review. No connector code. |
-| **Low** (one policy function each) | `members-only`, `researchers-only`, `organic-producers`, `contributing-members` | Custom `AtomicConstraintFunction` in Java. ~50–100 lines each. All follow the same pattern: extract claim from JWT → compare to constraint. Can share a base class. **Total: ~200 lines of Java + tests.** |
+| **Low** (one policy function each) | `members-only`, `researchers-only`, `regenerative-producers`, `contributing-members` | Custom `AtomicConstraintFunction` in Java. ~50–100 lines each. All follow the same pattern: extract claim from JWT → compare to constraint. Can share a base class. **Total: ~200 lines of Java + tests.** |
 | **Low** (native + governance) | `purpose-model-training`, `non-commercial`, `internal-use-only` | `purpose` constraint is native (consumer declares purpose). Prohibitions are governance-level. |
 | **Medium** | `data-retention-limit` | Custom function for `elapsedTime` that persists transfer timestamps. More complex than claim-based functions. |
 | **High** | `payment-required` | External payment system + custom policy function + reconciliation. Post-prototype. |
@@ -377,7 +377,7 @@ Based on effort and value for the prototype:
 | **P0** (do first) | `time-limited` | Zero effort, immediate value. Use it now. |
 | **P1** (prototype must-have) | `members-only`, `researchers-only` | Core access control. Without these, all offers are visible to everyone. Low effort. |
 | **P1** | `attribution`, `non-commercial` | Key trust-building obligations for producers. Governance-level only — no code needed, just DSA clauses. |
-| **P2** (prototype nice-to-have) | `organic-producers`, `contributing-members` | Finer-grained access. Same code pattern as P1 policies. |
+| **P2** (prototype nice-to-have) | `regenerative-producers`, `contributing-members` | Finer-grained access. Same code pattern as P1 policies. |
 | **P2** | `purpose-model-training`, `internal-use-only` | Purpose constraints work natively if consumers declare purpose. |
 | **P2** | `reciprocal-insights`, `anonymisation` | Important governance obligations. No code — add to DSA. |
 | **P3** (post-prototype) | `data-retention-limit` | Valuable but needs non-trivial custom function. |

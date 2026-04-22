@@ -20,7 +20,7 @@ management/
     ├── README.md                      # Full policy documentation
     ├── access/                        # Access policies (catalog visibility)
     │   ├── members-only.json          # Any active GLCDI participant
-    │   ├── organic-producers.json     # Certified organic/regenerative producers only
+    │   ├── regenerative-producers.json # Certified regenerative producers only
     │   └── researchers-only.json      # Research institutions and data stewards only
     ├── contract/                      # Contract policies (usage terms)
     │   ├── time-limited.json          # Usage until a specific date
@@ -40,7 +40,7 @@ management/
         ├── 02-producer-blocked-from-research-data.puml
         ├── 03-rancher-benchmarking.puml
         ├── 04-wrong-purpose-rejected.puml
-        ├── 05-organic-producers-exclusive.puml
+        ├── 05-regenerative-producers-exclusive.puml
         ├── 06-time-limited-expiry.puml
         └── 07-corporate-supply-chain-flow.puml
 ```

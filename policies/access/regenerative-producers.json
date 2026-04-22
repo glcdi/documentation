@@ -4,7 +4,7 @@
     "odrl": "http://www.w3.org/ns/odrl/2/",
     "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
   },
-  "@id": "glcdi:access:organic-producers",
+  "@id": "glcdi:access:regenerative-producers",
   "@type": "PolicyDefinition",
   "policy": {
     "@context": "http://www.w3.org/ns/odrl.jsonld",

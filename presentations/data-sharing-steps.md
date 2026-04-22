@@ -102,7 +102,7 @@ dataset exists.
 |----------|---------------|
 | Any GLCDI member | All onboarded participants |
 | Researchers only | Only research institutions and data stewards |
-| Organic producers only | Only certified regenerative/organic producers |
+| Regenerative producers only | Only certified regenerative producers |
 | Contributing members only | Only participants who also share their own data |
 
 **Contract Policy — What can they do with my data?**

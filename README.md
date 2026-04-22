@@ -111,14 +111,14 @@ Each participant's identity token carries three GLCDI-specific claims:
 |-------|------|--------|---------|
 | `glcdi_membership` | String | Hardcoded mapper (prototype) or user attribute | Checked by all access policies — is this participant an active member? |
 | `glcdi_roles` | String array | Realm role mapper (prefix `glcdi_`) | Determines participant type — producer, researcher, data steward, etc. |
-| `glcdi_certification_status` | String | User attribute mapper | Organic/regenerative certification — used by the `organic-producers` access policy |
+| `glcdi_certification_status` | String | User attribute mapper | Regenerative certification — used by the `regenerative-producers` access policy |
 
 ### Realm Roles
 
 | Role | Assigned to | What it unlocks |
 |------|------------|-----------------|
 | `glcdi_member` | All onboarded participants | Access to `members-only` offers |
-| `glcdi_producer` | Ranches, farming organisations | Access to `organic-producers` offers (with certification), benchmarking |
+| `glcdi_producer` | Ranches, farming organisations | Access to `regenerative-producers` offers (with certification), benchmarking |
 | `glcdi_researcher` | Universities, research NGOs | Access to `researchers-only` offers (e.g., raw SOC data for model training) |
 | `glcdi_data_steward` | Monitoring alliances (Point Blue, TSIP) | Access to `researchers-only` offers, data stewardship role |
 | `glcdi_conservation_org` | Conservation organisations | General membership access |
@@ -352,7 +352,7 @@ Policies are documented in detail in [`policies/README.md`](policies/README.md).
 | Policy | Who can see the offer | Typical use |
 |--------|-----------------------|-------------|
 | [`members-only`](policies/access/members-only.json) | Any active GLCDI participant | Default for most assets |
-| [`organic-producers`](policies/access/organic-producers.json) | Certified organic/regenerative producers only | Sensitive competitive practices |
+| [`regenerative-producers`](policies/access/regenerative-producers.json) | Certified regenerative producers only | Sensitive competitive practices |
 | [`researchers-only`](policies/access/researchers-only.json) | Researchers and data stewards only | Raw data for model training |
 | [`contributing-members`](policies/access/contributing-members.json) | Only participants who also contribute data | Reciprocity: benchmarking pool |
 
@@ -388,14 +388,14 @@ See [`policies/diagrams/`](policies/diagrams/) or the [diagram index in the poli
 
 | Diagram | What it shows |
 |---------|--------------|
-| [01 — Researcher accesses SOC data](policies/diagrams/01-researcher-accesses-soc-data.puml) | Happy path: authentication → catalog → negotiation → transfer → obligations |
-| [02 — Producer blocked from research data](policies/diagrams/02-producer-blocked-from-research-data.puml) | Access policy hides researcher-only assets from a producer |
-| [03 — Rancher benchmarking](policies/diagrams/03-rancher-benchmarking.puml) | Two ranchers share and compare grazing data |
-| [04 — Wrong purpose rejected](policies/diagrams/04-wrong-purpose-rejected.puml) | Contract negotiation fails on purpose mismatch |
-| [05 — Organic producers exclusive](policies/diagrams/05-organic-producers-exclusive.puml) | Same asset, three different visibility outcomes by participant type |
-| [06 — Time-limited expiry](policies/diagrams/06-time-limited-expiry.puml) | Contract works in July, fails in October, renewal flow |
-| [07 — Corporate supply chain](policies/diagrams/07-corporate-supply-chain-flow.puml) | Payment, anonymisation, retention limit, deletion confirmation |
-| [08 — Reciprocal benchmarking pool](policies/diagrams/08-reciprocal-benchmarking-pool.puml) | Contribute-to-access reciprocity, observer blocked, share-back obligation |
+| [01 — Researcher accesses SOC data](policies/diagrams/01-researcher-accesses-soc-data.png) | Happy path: authentication → catalog → negotiation → transfer → obligations |
+| [02 — Producer blocked from research data](policies/diagrams/02-producer-blocked-from-research-data.png) | Access policy hides researcher-only assets from a producer |
+| [03 — Rancher benchmarking](policies/diagrams/03-rancher-benchmarking.png) | Two ranchers share and compare grazing data |
+| [04 — Wrong purpose rejected](policies/diagrams/04-wrong-purpose-rejected.png) | Contract negotiation fails on purpose mismatch |
+| [05 — Regenerative producers exclusive](policies/diagrams/05-regenerative-producers-exclusive.png) | Same asset, three different visibility outcomes by participant type |
+| [06 — Time-limited expiry](policies/diagrams/06-time-limited-expiry.png) | Contract works in July, fails in October, renewal flow |
+| [07 — Corporate supply chain](policies/diagrams/07-corporate-supply-chain-flow.png) | Payment, anonymisation, retention limit, deletion confirmation |
+| [08 — Reciprocal benchmarking pool](policies/diagrams/08-reciprocal-benchmarking-pool.png) | Contribute-to-access reciprocity, observer blocked, share-back obligation |
 
 ---
 
@@ -443,7 +443,7 @@ enables it**, providing traceability from governance intent to technical impleme
 |-----------|----------------------|---------------|---------------|
 | **Federated authentication** | Participants authenticate at their local IdP, brokered to central governance | [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) | Keycloak-to-Keycloak identity brokering. Governance Keycloak is an OIDC Relying Party for each participant's Keycloak (OIDC Provider). |
 | **Token-based authorisation** | Identity claims carried in signed tokens, evaluated by provider's connector | [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) + [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | Access tokens contain `glcdi_roles`, `glcdi_membership`, `glcdi_certification_status` claims. EDC policy functions extract and evaluate them. |
-| **Role-based access control** | Participant type (producer, researcher, corporate) determines catalog visibility | [OIDC Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims) via Keycloak realm roles | `members-only.json`, `researchers-only.json`, `organic-producers.json`. Roles serialised as OIDC claims in JWT. |
+| **Role-based access control** | Participant type (producer, researcher, corporate) determines catalog visibility | [OIDC Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims) via Keycloak realm roles | `members-only.json`, `researchers-only.json`, `regenerative-producers.json`. Roles serialised as OIDC claims in JWT. |
 | **Decentralised identity** (future) | Participants identified by DIDs, claims carried in Verifiable Credentials | [W3C DID Core 1.0](https://www.w3.org/TR/did-core/) + [W3C VC Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) | Post-prototype. Currently `did:web:<participant>.glcdi.startinblox.com` is configured in EDC but VCs are not yet issued. |
 | **Gaia-X compliance** (future) | Self-descriptions, trust anchors, credential issuance aligned with Gaia-X | [Gaia-X Trust Framework](https://docs.gaia-x.eu/policy-rules-committee/trust-framework/) | Post-prototype. GLCDI architecture is designed to be Gaia-X-compatible (Self-Descriptions, Federated Catalogue, Compliance Service). |
 

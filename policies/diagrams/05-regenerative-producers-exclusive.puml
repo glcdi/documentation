@@ -1,5 +1,5 @@
-@startuml Organic Producers Exclusive Access
-title **Access Policy: Organic Producers Only**\nSensitive practices data shared exclusively among certified producers
+@startuml Regenerative Producers Exclusive Access
+title **Access Policy: Regenerative Producers Only**\nSensitive practices data shared exclusively among certified producers
 
 skinparam backgroundColor #FEFEFE
 skinparam sequenceArrowThickness 2
@@ -19,7 +19,7 @@ participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
 note over CF_EDC
   Caney Fork publishes a **proprietary
   grazing protocol** dataset with the
-  **organic-producers** access policy.
+  **regenerative-producers** access policy.
 
   This contains detailed AMP rotation
   techniques that give competitive
@@ -36,7 +36,7 @@ note right of Sarah
   certificationStatus: **regenerative-verified**
 end note
 
-group Access Policy: organic-producers
+group Access Policy: regenerative-producers
   CF_EDC -> CF_EDC : membership == "active" ? **YES**
   CF_EDC -> CF_EDC : participantType == "producer" ? **YES**
   CF_EDC -> CF_EDC : certificationStatus in\n["organic-certified",\n"regenerative-verified",\n"transitioning-organic"] ? **YES**
@@ -60,7 +60,7 @@ note right of Martinez
   certificationStatus: **not-applicable**
 end note
 
-group Access Policy: organic-producers #FFEBEE
+group Access Policy: regenerative-producers #FFEBEE
   CF_EDC -> CF_EDC : membership == "active" ? **YES**
   CF_EDC -> CF_EDC : participantType == "producer" ?\n"researcher" != "producer" => **NO**
   note right of CF_EDC #FFCDD2
@@ -89,7 +89,7 @@ note right of Corp
   certificationStatus: **not-applicable**
 end note
 
-group Access Policy: organic-producers #FFEBEE
+group Access Policy: regenerative-producers #FFEBEE
   CF_EDC -> CF_EDC : membership == "active" ? **YES**
   CF_EDC -> CF_EDC : participantType == "producer" ?\n"corporate" != "producer" => **NO**
   note right of CF_EDC #FFCDD2
@@ -107,7 +107,7 @@ note over CF_EDC
   | Dr. Martinez | researcher | n/a | **No** |
   | Corp Analyst | corporate | n/a | **No** |
 
-  The organic-producers policy creates a
+  The regenerative-producers policy creates a
   **trusted inner circle** among certified
   producers, protecting competitive
   practices from researchers and corporates.

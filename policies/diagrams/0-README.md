@@ -58,7 +58,7 @@ java -jar plantuml.jar -tsvg diagrams/*.puml
 | `02-producer-blocked-from-research-data.puml` | Access policy filtering (hidden offers) |
 | `03-rancher-benchmarking.puml` | Peer-to-peer benchmarking with reciprocal sharing |
 | `04-wrong-purpose-rejected.puml` | Contract rejected on purpose mismatch |
-| `05-organic-producers-exclusive.puml` | Certification-based access (3 participants, 1 asset) |
+| `05-regenerative-producers-exclusive.puml` | Certification-based access (3 participants, 1 asset) |
 | `06-time-limited-expiry.puml` | Temporal constraint expiry and renewal |
 | `07-corporate-supply-chain-flow.puml` | Corporate ESG flow with payment and retention |
 | `08-reciprocal-benchmarking-pool.puml` | Contribute-to-access reciprocity (observer blocked, contributor accesses + shares back) |

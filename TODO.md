@@ -46,7 +46,7 @@ defined and resolvable.
 
 ## Phase 2: Keycloak Claims Configuration — Participant Types via OIDC
 
-Policies like `members-only`, `organic-producers`, and `researchers-only` evaluate claims from
+Policies like `members-only`, `regenerative-producers`, and `researchers-only` evaluate claims from
 the consumer's identity token. For the prototype, we rely on **Keycloak realm roles** serialised
 as OIDC claims in access tokens, rather than Verifiable Credentials (which are a post-prototype
 goal — see Phase 7.2).
@@ -427,7 +427,7 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Task** | Implement an `AtomicConstraintFunction` that evaluates `glcdi:membership` |
 | **Behaviour** | Extract the `glcdi_membership` claim from the participant's identity (via `ParticipantAgent`), compare it to the constraint's `rightOperand` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/membership"` |
-| **Used by** | `access/members-only.json`, `access/organic-producers.json`, `access/researchers-only.json`, and all combined policies |
+| **Used by** | `access/members-only.json`, `access/regenerative-producers.json`, `access/researchers-only.json`, and all combined policies |
 | **Status** | [ ] Not started |
 
 ### 3.3 Implement participant type policy function
@@ -437,7 +437,7 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Task** | Implement an `AtomicConstraintFunction` that evaluates `glcdi:participantType` |
 | **Behaviour** | Extract `glcdi_participant_type` claim, support `eq` and `isAnyOf` operators |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/participantType"` |
-| **Used by** | `access/organic-producers.json`, `access/researchers-only.json`, `combined/corporate-supply-chain.json` |
+| **Used by** | `access/regenerative-producers.json`, `access/researchers-only.json`, `combined/corporate-supply-chain.json` |
 | **Status** | [ ] Not started |
 
 ### 3.4 Implement certification status policy function
@@ -447,7 +447,7 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Task** | Implement an `AtomicConstraintFunction` that evaluates `glcdi:certificationStatus` |
 | **Behaviour** | Extract `glcdi_certification_status` claim, support `eq` and `isAnyOf` operators |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/certificationStatus"` |
-| **Used by** | `access/organic-producers.json` |
+| **Used by** | `access/regenerative-producers.json` |
 | **Status** | [ ] Not started |
 
 ### 3.5 Configure claim resolution from Keycloak tokens
