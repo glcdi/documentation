@@ -11,6 +11,20 @@ It is a **sequencing** document, not a re-plan. The phase work is still defined 
 
 ---
 
+## TL;DR
+
+GLCDI's policy rollout fits into **two prototype onboarding cohorts (C1, C2) followed by a rolling, ambitious post-prototype phase** that depends on follow-on funding (~$1.5M — roughly 12× the prototype budget). Policy surface grows **4 → 11 → 14** across the three phases.
+
+**Cohort 1 (Q1 2026, in progress) — 4 policies, deliberately small.** A sensitive-first stack validates the technical infrastructure and demonstrates the end-to-end workflow to the Steering Committee. Access is filtered by `regenerative-producers` (sensitive grazing-practice data) and `members-only` (default baseline); contracts carry `internal-use-only` (no redistribution) and `time-limited` (expiry before C2). Three new Keycloak claims, ~200 LOC of connector Java, one DSA clause drafted. Participants see no UI choice yet — the project team seeds everything.
+
+**Cohort 2 (Q2 2026) — +7 policies, 11 total, the ambitious cohort.** C2 onboards PASA, UF, and TSIP and **nearly triples the policy surface** on top of C1's infrastructure. Adds role-filtering (`researchers-only`), access-level reciprocity (`contributing-members`), the commercial-misuse prohibition (`non-commercial`), purpose-filtered research contracts (`purpose-model-training`), and the full duty-clause set (`attribution`, `anonymisation`, `reciprocal-insights`). Technically cheap — most policies reuse the C1 infrastructure (+30 LOC Java, one new Keycloak claim); the real weight is DSA v1 full release and Trust Framework v1. Participants get their first UI choice: 3 access templates + 5 contract templates.
+
+**Post-prototype (Q3 2026 onwards) — +3 policies, 14 total, plus major engineering scope.** No longer an onboarding cohort; institutional and corporate participants land on a rolling basis (WWF, TNC, Soil Health Institute, AFT, USRSB, first corporates). Adds the three remaining policies (`data-retention-limit`, `payment-required`, and a newly-defined `corporate-partners` access policy) and — more importantly — the engineering that the follow-on budget unlocks: verifiable-credentials integration, federated-catalogue policy metadata, a full participant policy composer UI, certification-broker automation, compliance / audit framework, onboarding automation. DSA v2, Trust Framework v2.
+
+**Guiding philosophy.** Earn sophistication: ship fewer, enforceable policies early and grow the library as the governance pipeline proves it can absorb each wave. Ship technical enforcement (connector constraints) before contractual obligation (DSA duties). Keep access-policy self-service narrower than contract-policy self-service because the blast radius of a wrong access choice is larger than a wrong contract choice. Never enable a purpose-based contract policy for participant self-service before the UI can surface purpose declaration — a silently-passing constraint is worse than none at all.
+
+---
+
 ## Guiding principles
 
 1. **Earn sophistication.** Cohort N+1 is only allowed to introduce a policy if Cohort N's governance pipeline (onboarding → token → DSA → audit) has demonstrably absorbed the prior wave. Do not stack unenforced obligations.
@@ -36,13 +50,13 @@ The rollout below proposes what remains to be delivered for C1 before it closes 
 
 ## Cohort 1 — Q1 2026 (in progress)
 
-**Goal:** close out C1 by replacing the placeholder `open-research` policy with a **sensitive-first** policy stack and demonstrating the full end-to-end workflow to the Steering Committee. The headline policies — `regenerative-producers` on the access side and `internal-use-only` + `non-commercial` on the contract side — are the strongest protections in the catalogue, appropriate for the initial trusted-inner-circle cohort. Three companion policies (`members-only`, `researchers-only`, `time-limited`) ship alongside so non-producer participants still have a catalogue view and every contract carries a natural expiry.
+**Goal:** close out C1 with a **deliberately small** sensitive-first policy stack — the headline `regenerative-producers` access policy, the headline `internal-use-only` contract policy, and the two minimum companions (`members-only` + `time-limited`) — plus a demonstration of the full end-to-end workflow to the Steering Committee. Every policy added here has to earn its place; the richer library lands in C2.
 
 | Field | Value |
 |-------|-------|
 | Participants | 3 (Caney Fork, Point Blue, White Buffalo) |
 | Focus | Foundational validation, Trust Framework v0, **end-to-end workflow demo**, sensitive-data protection |
-| Policies live | 6 |
+| Policies live | 4 |
 | New Keycloak claims needed | `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` |
 | New Java code | ~200 LOC (membership + participant-type + certification-status functions, shared base class) |
 
@@ -50,12 +64,10 @@ The rollout below proposes what remains to be delivered for C1 before it closes 
 
 | Policy | Type | Effort | Why this cohort |
 |--------|------|:------:|-----------------|
-| [`regenerative-producers`](access/regenerative-producers.json) | Access | **Low** | **Headline access policy.** Restricts sensitive grazing-practice data to certified producers. With 3 C1 participants the SC can self-certify informally — the heavy cert-evidence workflow waits for post-prototype institutional onboarding. Evaluates three constraints: membership + producer type + certification status. |
-| [`members-only`](access/members-only.json) | Access | **Low** | Companion baseline so non-producer researchers (Point Blue) still see general-membership assets. Without it, C1 would have an empty catalogue for everyone except certified producers. |
-| [`researchers-only`](access/researchers-only.json) | Access | **Low** | Required for the Agronomic Model Calibration use case — lets Point Blue access raw SOC data that Caney Fork wouldn't share with everyone. Shares the base-class pattern with `members-only`. Critical for the workflow demo because it produces a visible difference between a producer's and a researcher's catalog view. |
+| [`regenerative-producers`](access/regenerative-producers.json) | Access | **Low** | **Headline access policy.** Restricts sensitive grazing-practice data to certified producers. With 3 C1 participants the SC self-certifies informally — the formal cert-evidence workflow waits for post-prototype institutional onboarding. Evaluates three constraints: membership + producer type + certification status. |
+| [`members-only`](access/members-only.json) | Access | **Low** | Minimal companion baseline so non-producer participants (Point Blue) still see general-membership assets. Without it, C1 would have an empty catalogue for everyone except certified producers. |
 | [`internal-use-only`](contract/internal-use-only.json) | Contract (purpose) | **None** (native) + gov | **Headline contract policy — default tone.** Data shared under GLCDI is for internal analysis by the receiving participant, not for redistribution. Native EDC `odrl:purpose` handles the permission check (consumer must declare `InternalAnalysis`); the `distribute` prohibition is DSA-enforced. |
-| [`non-commercial`](contract/non-commercial.json) | Contract (purpose) | **None** (native) + gov | **Second headline contract policy.** Pairs with `internal-use-only` on sensitive producer data: beyond prohibiting redistribution, it also rules out commercial exploitation. Directly addresses Caney Fork's stakeholder concern about "harmful use of data by buyers or competitors". Same native-purpose + DSA-prohibition pattern as `internal-use-only` — no extra technical cost to add at C1. |
-| [`time-limited`](contract/time-limited.json) | Contract | **None** | Works in vanilla EDC. Every C1 contract carries a prototype-end expiry (`2026-09-30`), giving the Steering Committee a natural re-contracting moment between cohorts. |
+| [`time-limited`](contract/time-limited.json) | Contract | **None** | Works in vanilla EDC. Every C1 contract carries a prototype-end expiry (`2026-09-30`), giving the Steering Committee a natural re-contracting moment before C2. |
 
 ### Implementation approach for C1 close-out
 
@@ -63,16 +75,18 @@ Mapped to `../TODO.md` phases:
 
 | TODO phase | C1 scope | Blocker for C1 close-out? |
 |------------|----------|:-:|
-| **Phase 1** Vocabulary | Define `glcdi:membership`, `glcdi:participantType`, `glcdi:certificationStatus`, and the purpose-taxonomy subset needed by C1 (`InternalAnalysis`, plus `AgronomicModelTraining` / `EcosystemModelCalibration` for researcher offers). Defer the rest of the purpose taxonomy. | Yes |
+| **Phase 1** Vocabulary | Define `glcdi:membership`, `glcdi:participantType`, `glcdi:certificationStatus`, and the **minimum** purpose-taxonomy subset needed by C1 (`InternalAnalysis` only). Other purpose values arrive in C2. | Yes |
 | **Phase 2** Keycloak claims | Realm roles (`glcdi_member`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`) + `glcdi_certification_status` user attribute. Hardcoded membership mapper (every authenticated user = `"active"`). SC informally self-certifies the 3 C1 participants (Caney Fork: `regenerative-verified`, White Buffalo: `regenerative-verified`, Point Blue: `not-applicable`). Defer `glcdi_contribution_status` (C2). | Yes |
-| **Phase 3** EDC extension | Ship `MembershipConstraintFunction`, `ParticipantTypeConstraintFunction`, and `CertificationStatusConstraintFunction` (with `isAnyOf` support) — three functions sharing a claim-extraction base class. `internal-use-only` and `non-commercial` both use the native EDC `odrl:purpose` mechanism — no function. Skip elapsed-time and payment functions. | Yes |
-| **Phase 4** Seeding | Rewrite `seed-caney-fork.sh` / `seed-point-blue.sh`. Attach `regenerative-producers` + `time-limited` + `internal-use-only` + `non-commercial` to sensitive grazing-practice assets; `researchers-only` + `time-limited` + `internal-use-only` to SOC data for Point Blue; `members-only` + `time-limited` + `internal-use-only` to general-membership assets. Seeding wires the declared purpose into the consumer-side contract offer for the purpose-based policies to evaluate. | Yes |
-| **Phase 5** Testing | Integration tests: (a) certified producer sees the sensitive grazing-practice asset, researcher does not; (b) researcher sees SOC asset, producer does not; (c) contract offer with a non-`InternalAnalysis` purpose is rejected; (d) contract offer declaring a commercial purpose is rejected for `non-commercial` assets; (e) expired contract is rejected. **Plus** the end-to-end workflow demo to the Steering Committee. | Yes (gates close-out) |
-| **Phase 6** Governance | **First DSA draft (v1 pre-release).** Trust Framework v0 ships with clause wording for `internal-use-only` (`distribute` prohibition) **and** `non-commercial` (`commercialize` prohibition) — both prohibitions that the connector cannot technically enforce. Full duty-policy clause set arrives with C2. MOU updated to reference the policy stack. | Parallel, gates close-out |
+| **Phase 3** EDC extension | Ship `MembershipConstraintFunction`, `ParticipantTypeConstraintFunction`, and `CertificationStatusConstraintFunction` (with `isAnyOf` support) — three functions sharing a claim-extraction base class. `internal-use-only` uses the native EDC `odrl:purpose` mechanism — no function. | Yes |
+| **Phase 4** Seeding | Rewrite `seed-caney-fork.sh` / `seed-point-blue.sh`. Attach `regenerative-producers` + `time-limited` + `internal-use-only` to sensitive grazing-practice assets; `members-only` + `time-limited` + `internal-use-only` to general-membership assets. Seeding wires the declared purpose (`InternalAnalysis`) into the consumer-side contract offer for `internal-use-only` to evaluate. | Yes |
+| **Phase 5** Testing | Integration tests: (a) certified producer sees the sensitive grazing-practice asset, non-producer Point Blue does not; (b) contract offer with a non-`InternalAnalysis` purpose is rejected; (c) expired contract is rejected. **Plus** the end-to-end workflow demo to the Steering Committee. | Yes (gates close-out) |
+| **Phase 6** Governance | **First DSA draft (v1 pre-release).** Trust Framework v0 ships with clause wording for `internal-use-only` (`distribute` prohibition) — the prohibition half the connector cannot technically enforce. Full duty-policy clause set arrives with C2. MOU updated to reference the policy stack. | Parallel, gates close-out |
 | **Phase 7** Future | — | — |
 
 ### Explicitly deferred past C1
 
+- **`researchers-only`** — technically free (shares the participant-type function with `regenerative-producers`) but pulled to C2 to keep the C1 demo narrative tight: sensitive-data filtering by certification first, participant-type role filtering as C2 adds UF / TSIP researchers.
+- **`non-commercial`** — pairs naturally with `internal-use-only` but requires its own DSA clause. Moved to C2 so C1's DSA drafting is just one prohibition clause, not two.
 - **`contributing-members`** — needs `glcdi_contribution_status` user attribute and the SC workflow that flips it once a participant publishes their first asset. Not useful until C2 brings in participants who haven't yet contributed.
 - **Duty-based policies** (`attribution`, `anonymisation`, `reciprocal-insights`) — no connector work needed, but the DSA clause set is not finalised at C1 close-out. Land with C2's governance push.
 - **`purpose-model-training`** — uses the same native-purpose mechanism C1 pilots. Added in C2 alongside the researcher-model-feeding combined scenario once UF and TSIP onboard.
@@ -82,13 +96,13 @@ Mapped to `../TODO.md` phases:
 
 ## Cohort 2 — Q2 2026 (now starting)
 
-**Goal:** onboard the second wave of participants, introduce access-level reciprocity, and complete the duty-based DSA clause set. All five policies added at C2 lean heavily on governance work (DSA v1 first full release) rather than new connector code — the technical infrastructure from C1 is reused.
+**Goal:** the **ambitious cohort**. C2 onboards the second participant wave, introduces access-level reciprocity, adds role-based researcher filtering, rounds out the sensitive-data contract bundle, and ships the full duty-based DSA clause set. Policies added at C2 draw on the C1 technical infrastructure — the connector code grows by ~30 LOC, but the *policy surface* grows from 4 to 11.
 
 | Field | Value |
 |-------|-------|
 | Participants | 6 (C1 + PASA, University of Florida, TSIP) |
-| Focus | Cross-context testing, Trust Framework v1 **draft**, full duty-policy DSA release, first access-level reciprocity |
-| Policies live | +5 (total 10) |
+| Focus | Cross-context testing, Trust Framework v1, full duty-policy DSA release, access-level reciprocity, researcher role filtering |
+| Policies live | +7 (total 11) |
 | New Keycloak claims needed | `glcdi_contribution_status` (user attribute) |
 | New Java code | ~30 LOC (`ContributionStatusConstraintFunction`, sharing the base class with C1's functions) |
 
@@ -96,8 +110,10 @@ Mapped to `../TODO.md` phases:
 
 | Policy | Type | Effort | Why this cohort |
 |--------|------|:------:|-----------------|
+| [`researchers-only`](access/researchers-only.json) | Access | **Low** (function already built) | Role-based filtering for the Agronomic Model Calibration use case — lets Point Blue, UF and TSIP access raw SOC data that Caney Fork wouldn't share with general members. Reuses the participant-type function built for C1's `regenerative-producers`, so technical cost is near-zero. |
 | [`contributing-members`](access/contributing-members.json) | Access | **Low** (enforced) | **First enforced reciprocity gate.** Non-contributors do not see benchmarking-pool assets in the catalog. Requires `glcdi_contribution_status` user attribute; for 6 participants the Steering Committee can maintain it manually. |
-| [`purpose-model-training`](contract/purpose-model-training.json) | Contract (purpose) | **None** (native) | Reuses C1's native-purpose infrastructure. Rejects offers that don't declare `AgronomicModelTraining` / `EcosystemModelCalibration` — matches the researcher-model-feeding use case, now that C2 onboards UF and TSIP. |
+| [`non-commercial`](contract/non-commercial.json) | Contract (purpose) | **None** (native) + gov | Pairs with `internal-use-only` on sensitive producer data: beyond prohibiting redistribution, it also rules out commercial exploitation. Addresses Caney Fork's stakeholder concern about "harmful use of data by buyers or competitors". Reuses the native-purpose mechanism C1 piloted. |
+| [`purpose-model-training`](contract/purpose-model-training.json) | Contract (purpose) | **None** (native) | Also reuses C1's native-purpose infrastructure. Rejects offers that don't declare `AgronomicModelTraining` / `EcosystemModelCalibration` — matches the researcher-model-feeding use case, now that C2 onboards UF and TSIP. |
 | [`attribution`](contract/attribution.json) | Contract (duty) | **None** (gov) | Lowest-cost DSA clause. First duty the Steering Committee has to actually track — proves the governance pipeline can absorb compliance monitoring. |
 | [`anonymisation`](contract/anonymisation.json) | Contract (duty) | **None** (gov) | Required for the researcher-model-feeding combined scenario. DSA clause only. |
 | [`reciprocal-insights`](contract/reciprocal-insights.json) | Contract (duty) | **None** (gov) | Contract-level reciprocity obligation. Pairs with the access-level `contributing-members` above so both sides of reciprocity land in the same cohort. |
@@ -106,12 +122,12 @@ Mapped to `../TODO.md` phases:
 
 | TODO phase | C2 scope |
 |------------|----------|
-| **Phase 1** Vocabulary | Extend the context with `glcdi:contributionStatus`, the custom `glcdi:shareBack` action used by `reciprocal-insights`, and the purpose values already not covered in C1. |
+| **Phase 1** Vocabulary | Extend the context with `glcdi:contributionStatus`, the custom `glcdi:shareBack` action used by `reciprocal-insights`, and the full purpose-taxonomy subset needed beyond C1's `InternalAnalysis` (`AgronomicModelTraining`, `EcosystemModelCalibration`, plus the commercial-purpose values used to reject `non-commercial` offers). |
 | **Phase 2** Keycloak claims | Add `glcdi_contribution_status` user attribute + protocol mapper. Define the SC workflow that flips it to `"contributing"` once a participant has published their first asset. Assign C1 roles + initial contribution status to PASA, UF, TSIP during onboarding. |
-| **Phase 3** EDC extension | Add `ContributionStatusConstraintFunction` (shares base class with C1's functions). `purpose-model-training` uses the native EDC purpose mechanism already piloted by `internal-use-only` in C1 — no new function needed. |
-| **Phase 4** Seeding | Attach `contributing-members` to benchmarking-pool assets. Expand researcher-oriented SOC datasets to combine `researchers-only` + `purpose-model-training` + `attribution` + `anonymisation`. Attach `reciprocal-insights` where share-back is expected. |
-| **Phase 5** Testing | (a) a non-contributor's catalog query hides the benchmarking-pool asset; (b) a contract offer declaring `Scope3Reporting` is rejected for a model-training asset; (c) duty-policy clauses are correctly stored and surfaced in catalog responses. |
-| **Phase 6** Governance | **Main delivery.** DSA v1 full release — extends C1's `internal-use-only` clauses with `attribution`, `anonymisation`, `reciprocal-insights` wording. Audit/monitoring workflow defined (who checks, how often, what evidence). SC workflow for contribution-status updates documented. |
+| **Phase 3** EDC extension | Add `ContributionStatusConstraintFunction` (shares base class with C1's functions). `non-commercial` and `purpose-model-training` both use the native EDC purpose mechanism already piloted by `internal-use-only` in C1 — no new functions needed. `researchers-only` reuses the C1 participant-type function. |
+| **Phase 4** Seeding | Attach `contributing-members` to benchmarking-pool assets. Expand researcher-oriented SOC datasets to combine `researchers-only` + `purpose-model-training` + `attribution` + `anonymisation`. Add `non-commercial` to sensitive producer datasets alongside C1's `internal-use-only`. Attach `reciprocal-insights` where share-back is expected. |
+| **Phase 5** Testing | (a) a non-contributor's catalog query hides the benchmarking-pool asset; (b) a researcher sees SOC data that a producer does not (new researchers-only regression); (c) a contract offer declaring `Scope3Reporting` is rejected for a model-training asset; (d) a commercial-purpose contract offer is rejected for a `non-commercial` asset; (e) duty-policy clauses are correctly stored and surfaced in catalog responses. |
+| **Phase 6** Governance | **Main delivery.** DSA v1 full release — extends C1's `internal-use-only` clause with `non-commercial`'s `commercialize` prohibition and the three duty clauses (`attribution`, `anonymisation`, `reciprocal-insights`). Audit/monitoring workflow defined (who checks, how often, what evidence). SC workflow for contribution-status updates documented. |
 | **Phase 7** Future | — |
 
 ### Explicitly deferred past C2 (→ post-prototype)
@@ -122,17 +138,18 @@ Mapped to `../TODO.md` phases:
 
 ---
 
-## Post-prototype — Q3 2026 onwards
+## Post-prototype — Q3 2026 onwards (ambitious)
 
-**Goal:** absorb the institutional onboarding, governance formalisation, UI polish, and corporate-facing policies that were originally split between a third cohort and a vaguer "post-prototype" bucket. The prototype itself ends with C2; everything below is the path toward a production dataspace.
+**Goal:** take GLCDI from a 6-participant prototype to a production-grade dataspace. The prototype itself ends with C2; post-prototype is the **ambitious phase** that earns and uses the follow-on funding (~$1.5M order-of-magnitude against the $120k prototype — roughly 12× the budget, which buys roughly 12× the engineering scope). Post-prototype is **not a cohort** — onboarding is rolling, not phased.
 
 | Field | Value |
 |-------|-------|
-| Participants | 10+ (C2 + WWF, TNC, Soil Health Institute, American Farmland Trust, USRSB, first corporates) |
+| Participants | 10+ rolling (WWF, TNC, Soil Health Institute, American Farmland Trust, USRSB, first corporates, certification bodies) |
 | Focus | Institutional scale, formal governance, participant self-service, corporate onboarding, post-grant sustainability |
-| Policies added | +3 (total 13, up from 10 at end of C2) |
+| Policies added | +3 (total 14, including a newly-defined `corporate-partners` access policy) |
 | New Keycloak claims | — (roles extended to include corporate variants) |
-| New Java code | ~200 LOC (elapsed-time function + payment gateway integration) |
+| New Java code | Substantial — see workstreams below |
+| Budget assumption | ~$1.5M, ~12× the prototype budget |
 
 ### New policies to add
 
@@ -140,42 +157,54 @@ Mapped to `../TODO.md` phases:
 |--------|------|:------:|--------------------|
 | [`data-retention-limit`](contract/data-retention-limit.json) | Contract | **Medium** | Needed for corporate data consumers. Custom function tracks transfer timestamps against `odrl:elapsedTime`. |
 | [`payment-required`](contract/payment-required.json) | Contract | **High** | Needed for corporate ESG / Scope 3 use case. Requires external payment integration. |
-| `corporate-partners` access policy | Access | **Low** | New policy (not yet defined) targeting `corporate`, `certification-body`, `supply-chain-partner` roles. |
+| `corporate-partners` access policy (new definition) | Access | **Low** (policy file) + design | Does not exist as a JSON file yet — define alongside the post-prototype onboarding of the first corporate participant. Targets `corporate`, `certification-body`, `supply-chain-partner` roles. |
 
-### Non-policy workstreams absorbed into the post-prototype phase
+### Engineering workstreams (where the 12× budget goes)
 
-These were previously scheduled inside a third onboarding cohort. They are still real deliverables — just not gated by a "next-cohort-starts" moment, since post-prototype onboarding is rolling rather than phased:
+Post-prototype is where GLCDI moves from "works for 6 trusted participants" to "works for dozens of institutions and corporates at production scale". The budget buys:
 
-| Workstream | Delivery |
-|------------|----------|
-| **Certification-evidence formalisation** | Formal SC process replacing C1's informal self-cert. Document what proof is acceptable (third-party audit, USDA Organic, Regenerative Organic Certified, self-declaration with steering-committee review, etc.). WWF / TNC / SHI certification claims are the first that will need to hold up under scrutiny. |
-| **Participant UI: purpose declaration** | Surface purpose declaration at contract-negotiation time in the Hubl-based catalog UI, replacing the C1–C2 seeding-script workaround. Once shipped, participants can author their own contract offers without project-team help and the purpose-based policies can graduate into the UI template library (see below). |
-| **DSA v2** | Extends C2's DSA v1 with `commercialize` refinements (if C1's `non-commercial` clause needs institutional-scale tightening), plus new clauses for `data-retention-limit` and `payment-required`. |
-| **Trust Framework v2** | Publishable document incorporating C1–C2 learnings and the post-prototype corporate experience. Intended as input to any follow-on production-grade dataspace. |
-| **Stress tests at institutional scale** | Exercise every policy under the combined 10+-participant cohort: (a) a WWF researcher trying to see a Caney Fork proprietary asset — blocked by `regenerative-producers`; (b) TNC negotiating a model-training contract — passes under `purpose-model-training`; (c) a newly onboarded institution trying to access the benchmarking pool without publishing first — blocked by `contributing-members`. |
+| Workstream | Scope | Budget slice (illustrative) |
+|------------|-------|-----------------------------|
+| **Payment + retention infrastructure** | External payment/invoicing gateway integration, reconciliation, `data-retention-limit` custom function with persisted transfer timestamps, delete-attestation reporting. | Large |
+| **Verifiable Credentials integration** (`../TODO.md` §7.2) | Move from Keycloak roles to VC-based identity for participant type, membership, and certification. Enables cross-dataspace portability and removes the governance-Keycloak bottleneck. | Large |
+| **Federated Catalogue policy metadata** (`../TODO.md` §7.3) | Publish each participant's policies as catalogue metadata so consumers can filter by policy before negotiating. Requires adopting or forking the XFSC Federated Catalogue (sister to TEMS). | Medium |
+| **Participant UI — policy composer** | Beyond C3's purpose-declaration dropdown: full composition UI where participants can attach any access + contract policy template to their assets, preview the effective policy, and see who would/wouldn't match. Replaces all project-team seeding. | Medium |
+| **Certification-broker integration** | Automated validation of `glcdi_certification_status` against third-party certification bodies (USDA Organic, Regenerative Organic Certified, etc.). Replaces the C1 self-certification and the C2 informal-review approach. | Medium |
+| **Contribution-status automation** | Replace SC-manual maintenance of `glcdi_contribution_status` with a periodic catalogue crawler that detects when a participant has published its first asset. Scales beyond 10 participants. | Small |
+| **Compliance / audit framework** | Machine-readable audit trail of policy decisions (who tried what, what was evaluated, what was enforced vs DSA-deferred). Dashboards, SLAs, incident-response runbooks. Required for corporate and certification-body participation. | Medium |
+| **Onboarding automation** | Self-service participant enrollment (today the SC manually provisions Keycloak users). Workflow: signed DSA → automated Keycloak user creation → per-participant compose stack provisioned → notification. | Medium |
+| **Corporate onboarding** | First corporate partner (food company / certification body) lands in this phase. Needs `corporate-partners` access policy, `payment-required`, `data-retention-limit`, and the governance model for data-as-product pricing. | Medium |
+| **DSA v2** | Corporate-grade clauses for `payment-required`, `data-retention-limit`, institutional refinements of `non-commercial`. Signed by all 10+ participants. | Small (governance-only) |
+| **Trust Framework v2** | Publishable document incorporating C1–C2 learnings and the post-prototype corporate experience. Intended as input to any follow-on production-grade dataspace. | Small |
+| **Certification-evidence formalisation** | Formal SC process replacing C1–C2 informal self-cert. Documents acceptable proof (third-party audit, USDA Organic, Regenerative Organic Certified, SC-reviewed self-declaration). WWF / TNC / SHI certification claims are the first that will need to hold up under scrutiny. | Small (governance-only) |
+| **Stress tests at institutional scale** | Exercise every policy under the combined 10+-participant deployment: (a) a WWF researcher trying to see a Caney Fork proprietary asset — blocked by `regenerative-producers`; (b) TNC negotiating a model-training contract — passes under `purpose-model-training`; (c) a newly onboarded institution trying to access the benchmarking pool without publishing first — blocked by `contributing-members`; (d) a corporate ESG consumer purchasing SOC data under `payment-required` + `data-retention-limit`. | Small |
 
 ### Implementation approach
 
-Maps to `../TODO.md` Phase 7 (Future Enhancements), plus a new `corporate-partners` access-policy definition and the non-policy workstreams above. The payment-required and data-retention-limit technical work likely requires a **separate funding cycle** — flagged in the blueprint as "tied to value delivered for corporate participants". The governance + UI workstreams can run on the residual prototype budget if institutional onboarding begins before September 2026.
+Maps to `../TODO.md` Phase 7 (Future Enhancements) plus the workstreams above. The governance + UI workstreams can start on residual prototype budget if institutional onboarding begins before September 2026; the payment + VC + federated-catalogue work is firmly post-grant and depends on the $1.5M follow-on funding landing.
+
+**Not in scope for post-prototype:** compute-to-data (data never leaves the provider), zero-knowledge policy evaluation, cross-dataspace federation with TEMS / other regenerative dataspaces. All interesting, all beyond the currently-anticipated budget.
 
 ---
 
 ## Summary: policies × cohorts
 
-The prototype itself targets **C1 and C2**; everything after is a continuous post-prototype phase, not a third onboarding cohort.
+The prototype itself targets **C1 (small) and C2 (ambitious)**; everything after is a continuous post-prototype phase sized against ~12× the prototype budget.
 
-| | C1 (Q1, in progress) | C2 (Q2) | Post-prototype (Q3 2026+) |
+| | C1 (Q1, in progress) | C2 (Q2, ambitious) | Post-prototype (Q3 2026+) |
 |---|---|---|---|
 | **Participants** | 3 | 6 | 10+ (rolling institutional + corporate onboarding) |
-| **Access policies** | `regenerative-producers`, `members-only`, `researchers-only` | +`contributing-members` | +`corporate-partners` |
-| **Contract policies** | `time-limited`, `internal-use-only`, `non-commercial` | +`attribution`, `anonymisation`, `reciprocal-insights`, `purpose-model-training` | +`data-retention-limit`, `payment-required` |
-| **Total policies live** | 6 | 10 | 13 |
+| **Access policies** | `regenerative-producers`, `members-only` | +`researchers-only`, `contributing-members` | +`corporate-partners` |
+| **Contract policies** | `time-limited`, `internal-use-only` | +`non-commercial`, `purpose-model-training`, `attribution`, `anonymisation`, `reciprocal-insights` | +`data-retention-limit`, `payment-required` |
+| **Total policies live** | 4 | 11 | 14 |
+| **Policies added in this phase** | 4 (from 0) | +7 | +3 (incl. new `corporate-partners` definition) |
 | **New Keycloak claims** | `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` | `glcdi_contribution_status` | — (roles extended for corporates) |
-| **New connector code** | ~200 LOC Java | ~30 LOC Java | ~200 LOC Java + payment integration |
+| **New connector code** | ~200 LOC Java | ~30 LOC Java | Substantial (payment gateway + retention custom fn + VC integration + federated catalogue) |
 | **Trust Framework version** | v0 | v1 | v2 |
-| **DSA template** | v1 pre-release (`internal-use-only` distribute + `non-commercial` commercialize clauses) | v1 full (adds duty clauses) | v2 (payment / retention clauses + institutional refinements) |
-| **Dominant workstream** | Technical (extension + seeding) + sensitive-data DSA clauses | Mixed — governance (full DSA v1) + technical (contribution attr) | Technical (external systems) + governance (cert-evidence formalisation) + UI |
-| **First enforced in this cohort** | Access filtering (membership + cert), contract expiry, native-purpose contract rejection (internal use + non-commercial) | Access-level reciprocity | Retention, payment, corporate access gate |
+| **DSA template** | v1 pre-release (`internal-use-only` distribute clause) | v1 full (adds `non-commercial` commercialize + three duty clauses) | v2 (payment / retention clauses + institutional refinements) |
+| **Dominant workstream** | Technical (extension + seeding) + one DSA clause | Mixed — governance (full DSA v1) + technical (contribution attr, researcher filter, purpose pilot expansion) | Technical (external systems, VC, federated catalogue, UI composer) + governance (cert-evidence formalisation) |
+| **First enforced in this phase** | Access filtering (membership + cert), contract expiry, native-purpose contract rejection | Role-based access, access-level reciprocity, commercial-purpose rejection | Retention, payment, corporate access gate |
+| **Budget assumption** | Prototype ($120k order-of-magnitude) | Prototype (same budget) | Follow-on (~$1.5M order-of-magnitude) |
 
 ---
 
@@ -183,11 +212,11 @@ The prototype itself targets **C1 and C2**; everything after is a continuous pos
 
 A policy being *live* (seeded on someone's assets) is not the same as a policy being *choosable* (offered as a template in the participant UI when publishing a new dataset). C1 seeds everything by project team; genuine participant choice begins at C2 and grows. Each template in the UI is a template the Steering Committee has to be able to audit, explain in the DSA, and answer helpdesk questions about — so growth is deliberate.
 
-| Cohort | Access templates offered | Contract templates offered | Rationale |
+| Phase | Access templates offered | Contract templates offered | Rationale |
 |---|---|---|---|
-| **C1** | **0** — project team seeds all 3 access policies directly on participants' assets | **0** — project team seeds all 3 contract policies | 3 participants, workflow-demo focus, pre-UI. Seeding is the source of truth. Sensitive-data policies (`regenerative-producers`, `internal-use-only`, `non-commercial`) are especially team-curated because the Steering Committee vets them individually. |
+| **C1** | **0** — project team seeds both access policies directly on participants' assets | **0** — project team seeds both contract policies | 3 participants, workflow-demo focus, pre-UI. Seeding is the source of truth. Sensitive-data policies (`regenerative-producers`, `internal-use-only`) are especially team-curated because the Steering Committee vets them individually. |
 | **C2** | **3** — `members-only`, `researchers-only`, `contributing-members` | **5** — `time-limited`, `attribution`, `anonymisation`, `reciprocal-insights`, `purpose-model-training` | First real participant choice at asset-publication time. Keep `regenerative-producers` project-team-seeded so the SC curates who receives sensitive-asset visibility. Keep `internal-use-only` + `non-commercial` project-team-seeded too — they are the default contractual protection bundle on sensitive assets, not a menu item to opt out of. |
-| **Post-prototype** | **5** — +`regenerative-producers`, `corporate-partners` | **8** — +`internal-use-only`, `non-commercial`, `data-retention-limit`, `payment-required` | Sensitive-data policies graduate into the UI once the participant purpose-declaration UI ships and the cert-evidence workflow is formalised. Full library becomes user-selectable. |
+| **Post-prototype** | **5** — +`regenerative-producers`, `corporate-partners` | **8** — +`internal-use-only`, `non-commercial`, `data-retention-limit`, `payment-required` | Sensitive-data policies graduate into the UI once the participant purpose-declaration UI ships and the cert-evidence workflow is formalised. The policy composer UI (see post-prototype workstreams) makes the full library user-selectable. |
 
 **Design principle:** access templates grow slower than contract templates. A participant choosing the wrong contract policy annoys their consumer; a participant choosing the wrong access policy accidentally exposes sensitive data. The project team keeps access gates project-team-seeded for longer.
 
@@ -202,8 +231,9 @@ The following are **not** technical decisions and will block the rollout if left
 | Canonical `participantType` enum | C1 close-out | SC + Project Team |
 | Hardcoded-vs-per-user membership mapper for prototype | C1 close-out | Project Team (recommendation: hardcoded for C1–C2, per-user post-prototype) |
 | `certificationStatus` values + informal self-cert assignments for the 3 C1 participants | C1 close-out | SC (self-certifies) |
-| Purpose-taxonomy subset for C1 (minimum: `InternalAnalysis`, `AgronomicModelTraining`, `EcosystemModelCalibration`) | C1 close-out | SC + Project Team |
-| DSA v1 pre-release clause wording for `internal-use-only` (`distribute` prohibition) **and** `non-commercial` (`commercialize` prohibition) | C1 close-out | SC + legal counsel |
+| Purpose-taxonomy subset for C1 (minimum: `InternalAnalysis`) | C1 close-out | SC + Project Team |
+| DSA v1 pre-release clause wording for `internal-use-only` (`distribute` prohibition) | C1 close-out | SC + legal counsel |
+| Purpose-taxonomy expansion for C2 (add `AgronomicModelTraining`, `EcosystemModelCalibration`, commercial-purpose values for `non-commercial`) | C2 start | SC + Project Team |
 | DSA v1 full clause wording for `attribution`, `anonymisation`, `reciprocal-insights` | C2 start | SC + legal counsel |
 | Audit mechanism for duty-based policies | C2 start | SC |
 | `contributionStatus` values and the SC workflow for flipping a participant to `"contributing"` | C2 start | SC + Project Team |
@@ -219,5 +249,5 @@ The following are **not** technical decisions and will block the rollout if left
 2. **Informal-vs-formal cert-evidence boundary** — C1 and C2 both rely on SC self-certification (lightweight for 3 → 6 participants). Institutional participants in post-prototype will challenge edge cases. Does the SC accept the risk of running informal evidence through all of C2, with formalisation starting only as WWF/TNC/SHI onboard?
 3. **Contribution-status automation threshold** — C2 assumes manual SC maintenance for 6 participants. At what participant count (post-prototype) does automated catalog crawling become necessary, and who owns building it?
 4. **Participant UI purpose declaration** — who owns this deliverable, and what's the target ship date? C1–C2 work around it with seeding-script wiring. Without the UI, the purpose-based policies (`internal-use-only`, `non-commercial`, `purpose-model-training`) stay project-team-seeded and cannot graduate into the UI template library.
-5. **Does shipping `internal-use-only` + `non-commercial` at C1 set the right default tone?** Strong protection for producers, but may feel restrictive to researchers expecting collaborative data sharing. Should C1 also surface a more open contract alternative (e.g. `time-limited` alone on some assets) so researchers have a gentler entry path?
+5. **Does shipping `internal-use-only` at C1 (alone, without the permissive alternative of members-only assets under `time-limited` only) set the right default tone?** Strong protection for producers, but may feel restrictive to researchers expecting collaborative data sharing. Is `members-only` + `time-limited` (no `internal-use-only`) an acceptable C1 alternative for some asset classes?
 6. **Grant runway for post-prototype** — will the Walmart Foundation grant extend past September 2026 enough to fund the payment-required work, or does that move to a follow-on grant? This decision becomes urgent at end-of-C2 since institutional onboarding starts right after.
