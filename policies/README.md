@@ -329,44 +329,46 @@ Each policy is rated on three axes:
 
 | Policy | ODRL expressible? | EDC enforceable? | Effort | Notes |
 |--------|:-:|:-:|--------|-------|
-| `members-only` | Yes | Yes, with custom function | **Low** — one `AtomicConstraintFunction` reading `glcdi_membership` from JWT. ~50 lines of Java. | Simplest custom function. Pattern reusable for all claim-based policies. |
-| `researchers-only` | Yes | Yes, with custom function | **Low** — same pattern as above, reads `glcdi_roles` array. Adds `isAnyOf` operator support. | Can share base class with membership function. |
-| `regenerative-producers` | Yes | Yes, with custom function | **Low** — combines two existing functions (type + certification). No new code pattern. | Three constraints evaluated as AND — EDC handles multi-constraint natively. |
-| `contributing-members` | Yes | Yes, with custom function | **Low** — identical pattern to certification status (user attribute → token claim → policy function). | Governance team must manually update `contributionStatus` in Keycloak. For prototype scale this is fine; automation is a future enhancement. |
+| [`members-only`](access/members-only.json) | Yes | Yes, with custom function | **Low** — one `AtomicConstraintFunction` reading `glcdi_membership` from JWT. ~50 lines of Java. | Simplest custom function. Pattern reusable for all claim-based policies. |
+| [`researchers-only`](access/researchers-only.json) | Yes | Yes, with custom function | **Low** — same pattern as above, reads `glcdi_roles` array. Adds `isAnyOf` operator support. | Can share base class with membership function. |
+| [`regenerative-producers`](access/regenerative-producers.json) | Yes | Yes, with custom function | **Low** — combines two existing functions (type + certification). No new code pattern. | Three constraints evaluated as AND — EDC handles multi-constraint natively. |
+| [`contributing-members`](access/contributing-members.json) | Yes | Yes, with custom function | **Low** — identical pattern to certification status (user attribute → token claim → policy function). | Governance team must manually update `contributionStatus` in Keycloak. For prototype scale this is fine; automation is a future enhancement. |
 
 #### Contract Policies
 
 | Policy | ODRL expressible? | EDC enforceable? | Effort | Notes |
 |--------|:-:|:-:|--------|-------|
-| `time-limited` | Yes | **Yes, natively** | **None** — `odrl:dateTime` constraints are built into vanilla EDC. | Zero custom code. Works today. |
-| `internal-use-only` | Yes | Partially | **None** for the `purpose` constraint (native). The `distribute` prohibition is **governance-level** — the connector cannot prevent the consumer from copying data after transfer. | Consumer agrees to prohibition at negotiation time. Legal enforcement via DSA. |
-| `purpose-model-training` | Yes | Partially | **None** — `purpose` constraint is native if the consumer declares purpose in the offer. Prohibition on distributing raw data is governance-level. | Consumer must include `purpose` in their contract offer for EDC to evaluate it. |
-| `non-commercial` | Yes | Partially | **None** — same `purpose` constraint mechanism. `commercialize` prohibition is governance-level. | |
-| `attribution` | Yes | **No** — governance only | **None** (no connector code needed). | ODRL `duty` with action `attribute`. The consumer agrees at negotiation; fulfillment is tracked by the governance team, not the connector. |
-| `anonymisation` | Yes | **No** — governance only | **None** (no connector code needed). | Same as attribution: duty-based, legally enforceable, not technically enforceable. |
-| `reciprocal-insights` | Partially — `glcdi:shareBack` is a custom action not in the ODRL vocabulary | **No** — governance only | **None** (no connector code needed). | The share-back duty is a contractual obligation. The connector cannot verify whether the consumer has shared insights. Enforcement relies on Steering Committee review and the DSA. The custom action `glcdi:shareBack` extends the ODRL vocabulary — this is valid per the ODRL specification (custom actions are allowed). |
-| `payment-required` | Yes | With custom function + external system | **High** — requires: (1) external payment/invoicing API, (2) custom policy function that calls the API during negotiation, (3) payment reconciliation logic. | Not needed for the prototype. ODRL provides the vocabulary but EDC has no payment plumbing. Target: post-prototype when corporate participants join. |
-| `data-retention-limit` | Yes | Partially | **Medium** — `odrl:elapsedTime` needs a custom function that tracks the transfer timestamp (vanilla EDC supports `dateTime` but not duration-from-event). The `delete` and `inform` obligations are governance-level. | The custom function is non-trivial: it must persist the transfer timestamp and compare it against the policy duration at subsequent evaluation points. |
+| [`time-limited`](contract/time-limited.json) | Yes | **Yes, natively** | **None** — `odrl:dateTime` constraints are built into vanilla EDC. | Zero custom code. Works today. |
+| [`internal-use-only`](contract/internal-use-only.json) | Yes | Partially | **None** for the `purpose` constraint (native). The `distribute` prohibition is **governance-level** — the connector cannot prevent the consumer from copying data after transfer. | Consumer agrees to prohibition at negotiation time. Legal enforcement via DSA. |
+| [`purpose-model-training`](contract/purpose-model-training.json) | Yes | Partially | **None** — `purpose` constraint is native if the consumer declares purpose in the offer. Prohibition on distributing raw data is governance-level. | Consumer must include `purpose` in their contract offer for EDC to evaluate it. |
+| [`non-commercial`](contract/non-commercial.json) | Yes | Partially | **None** — same `purpose` constraint mechanism. `commercialize` prohibition is governance-level. | |
+| [`attribution`](contract/attribution.json) | Yes | **No** — governance only | **None** (no connector code needed). | ODRL `duty` with action `attribute`. The consumer agrees at negotiation; fulfillment is tracked by the governance team, not the connector. |
+| [`anonymisation`](contract/anonymisation.json) | Yes | **No** — governance only | **None** (no connector code needed). | Same as attribution: duty-based, legally enforceable, not technically enforceable. |
+| [`reciprocal-insights`](contract/reciprocal-insights.json) | Partially — `glcdi:shareBack` is a custom action not in the ODRL vocabulary | **No** — governance only | **None** (no connector code needed). | The share-back duty is a contractual obligation. The connector cannot verify whether the consumer has shared insights. Enforcement relies on Steering Committee review and the DSA. The custom action `glcdi:shareBack` extends the ODRL vocabulary — this is valid per the ODRL specification (custom actions are allowed). |
+| [`payment-required`](contract/payment-required.json) | Yes | With custom function + external system | **High** — requires: (1) external payment/invoicing API, (2) custom policy function that calls the API during negotiation, (3) payment reconciliation logic. | Not needed for the prototype. ODRL provides the vocabulary but EDC has no payment plumbing. Target: post-prototype when corporate participants join. |
+| [`data-retention-limit`](contract/data-retention-limit.json) | Yes | Partially | **Medium** — `odrl:elapsedTime` needs a custom function that tracks the transfer timestamp (vanilla EDC supports `dateTime` but not duration-from-event). The `delete` and `inform` obligations are governance-level. | The custom function is non-trivial: it must persist the transfer timestamp and compare it against the policy duration at subsequent evaluation points. |
 
 #### Reciprocity Mechanisms
 
 | Mechanism | ODRL expressible? | EDC enforceable? | Effort | Feasibility |
 |-----------|:-:|:-:|--------|-------------|
-| **Contribute-to-access** (contributing-members) | Yes | Yes, with custom function | **Low** | Fully feasible. One Keycloak attribute + one policy function. Governance team updates status manually. Same pattern as certification. |
-| **Share-back insights** (reciprocal-insights) | Partially (custom action) | No — governance only | **None** (contractual) | Feasible as a governance obligation. Cannot be technically enforced. Consumer agrees at negotiation; Steering Committee monitors compliance. |
+| **Contribute-to-access** ([`contributing-members`](access/contributing-members.json)) | Yes | Yes, with custom function | **Low** | Fully feasible. One Keycloak attribute + one policy function. Governance team updates status manually. Same pattern as certification. |
+| **Share-back insights** ([`reciprocal-insights`](contract/reciprocal-insights.json)) | Partially (custom action) | No — governance only | **None** (contractual) | Feasible as a governance obligation. Cannot be technically enforced. Consumer agrees at negotiation; Steering Committee monitors compliance. |
 | **Balanced exchange** ("I share only if you share with me simultaneously") | Not expressible in ODRL | No | **Very high** | Not feasible with current EDC architecture. Contract negotiation is unilateral (consumer requests, provider evaluates). There is no protocol-level mechanism for bilateral "I'll accept if you also offer me X". Would require either: (a) a custom negotiation extension that queries the consumer's catalog mid-negotiation (fragile, adds latency), or (b) out-of-band coordination. **In practice, this reduces to contribute-to-access**: the governance team verifies both parties have published before granting `contributing` status. |
 
 ### Effort Summary
 
+Each policy appears in exactly one row. Totals: 4 access policies + 9 contract policies + 1 non-feasible mechanism = 14 items.
+
 | Effort level | Policies | What's needed |
 |:---:|---|---|
-| **None** (works today) | `time-limited` | Vanilla EDC — no custom code |
-| **None** (governance-level) | `attribution`, `anonymisation`, `reciprocal-insights`, `internal-use-only` (prohibition part), `non-commercial` (prohibition part) | Consumer agrees at negotiation. Enforcement via DSA and Steering Committee review. No connector code. |
-| **Low** (one policy function each) | `members-only`, `researchers-only`, `regenerative-producers`, `contributing-members` | Custom `AtomicConstraintFunction` in Java. ~50–100 lines each. All follow the same pattern: extract claim from JWT → compare to constraint. Can share a base class. **Total: ~200 lines of Java + tests.** |
-| **Low** (native + governance) | `purpose-model-training`, `non-commercial`, `internal-use-only` | `purpose` constraint is native (consumer declares purpose). Prohibitions are governance-level. |
-| **Medium** | `data-retention-limit` | Custom function for `elapsedTime` that persists transfer timestamps. More complex than claim-based functions. |
-| **High** | `payment-required` | External payment system + custom policy function + reconciliation. Post-prototype. |
-| **Not feasible** | Balanced exchange (bilateral negotiation) | Architectural limitation of DSP/EDC. Use contribute-to-access as the practical alternative. |
+| **None** (vanilla EDC) | [`time-limited`](contract/time-limited.json) | `odrl:dateTime` is built into vanilla EDC. Zero custom code. |
+| **Low** (native `odrl:purpose` + governance-level prohibition) | [`purpose-model-training`](contract/purpose-model-training.json), [`internal-use-only`](contract/internal-use-only.json), [`non-commercial`](contract/non-commercial.json) | No connector code, but not zero effort: the consumer must **declare a purpose** in the contract offer (client/config wiring), and the `distribute` / `commercialize` prohibitions need **DSA clauses** since the connector cannot prevent copying after transfer. |
+| **None** (governance-level only) | [`attribution`](contract/attribution.json), [`anonymisation`](contract/anonymisation.json), [`reciprocal-insights`](contract/reciprocal-insights.json) | ODRL duties. Consumer agrees at negotiation; Steering Committee monitors compliance. No connector code. |
+| **Low** (one `AtomicConstraintFunction` each, ~50–100 lines of Java) | [`members-only`](access/members-only.json), [`researchers-only`](access/researchers-only.json), [`regenerative-producers`](access/regenerative-producers.json), [`contributing-members`](access/contributing-members.json) | Extract claim from JWT → compare to constraint. All share the same pattern; can use a common base class. **Total: ~200 lines of Java + tests.** |
+| **Medium** | [`data-retention-limit`](contract/data-retention-limit.json) | Custom function for `odrl:elapsedTime` that persists the transfer timestamp and re-evaluates at subsequent checkpoints. |
+| **High** | [`payment-required`](contract/payment-required.json) | External payment/invoicing API + custom policy function calling it at negotiation + reconciliation logic. Post-prototype. |
+| **Not feasible** | Balanced exchange (bilateral negotiation) | Architectural limitation of DSP/EDC — negotiation is unilateral. Use contribute-to-access as the practical alternative. |
 
 ### Implementation Priority
 
@@ -374,21 +376,21 @@ Based on effort and value for the prototype:
 
 | Priority | Policy | Why |
 |:---:|---|---|
-| **P0** (do first) | `time-limited` | Zero effort, immediate value. Use it now. |
-| **P1** (prototype must-have) | `members-only`, `researchers-only` | Core access control. Without these, all offers are visible to everyone. Low effort. |
-| **P1** | `attribution`, `non-commercial` | Key trust-building obligations for producers. Governance-level only — no code needed, just DSA clauses. |
-| **P2** (prototype nice-to-have) | `regenerative-producers`, `contributing-members` | Finer-grained access. Same code pattern as P1 policies. |
-| **P2** | `purpose-model-training`, `internal-use-only` | Purpose constraints work natively if consumers declare purpose. |
-| **P2** | `reciprocal-insights`, `anonymisation` | Important governance obligations. No code — add to DSA. |
-| **P3** (post-prototype) | `data-retention-limit` | Valuable but needs non-trivial custom function. |
-| **P3** | `payment-required` | Needs external payment infrastructure. Target: corporate onboarding phase. |
+| **P0** (do first) | [`time-limited`](contract/time-limited.json) | Zero effort, immediate value. Use it now. |
+| **P1** (prototype must-have) | [`members-only`](access/members-only.json), [`researchers-only`](access/researchers-only.json) | Core access control. Without these, all offers are visible to everyone. Low effort. |
+| **P1** | [`attribution`](contract/attribution.json), [`non-commercial`](contract/non-commercial.json) | Key trust-building obligations for producers. Governance-level only — no code needed, just DSA clauses. |
+| **P2** (prototype nice-to-have) | [`regenerative-producers`](access/regenerative-producers.json), [`contributing-members`](access/contributing-members.json) | Finer-grained access. Same code pattern as P1 policies. |
+| **P2** | [`purpose-model-training`](contract/purpose-model-training.json), [`internal-use-only`](contract/internal-use-only.json) | Purpose constraints work natively if consumers declare purpose. |
+| **P2** | [`reciprocal-insights`](contract/reciprocal-insights.json), [`anonymisation`](contract/anonymisation.json) | Important governance obligations. No code — add to DSA. |
+| **P3** (post-prototype) | [`data-retention-limit`](contract/data-retention-limit.json) | Valuable but needs non-trivial custom function. |
+| **P3** | [`payment-required`](contract/payment-required.json) | Needs external payment infrastructure. Target: corporate onboarding phase. |
 | **N/A** | Balanced exchange | Not implementable. Use contribute-to-access instead. |
 
 ### Relation to GLCDI Use Cases
 
 | Blueprint Use Case | Access Policy | Contract Policy | Reciprocity |
 |--------------------|---------------|-----------------|-------------|
-| Regional benchmarking | contributing-members | attribution + non-commercial + reciprocal-insights | Contribute-to-access + share-back |
-| Agronomic model calibration | researchers-only | time-limited + purpose-model + anonymisation + attribution | Share-back (model outputs to producer) |
-| Peer-to-peer data sharing | members-only | internal-use-only or time-limited | Contributing-members for sensitive data |
-| Supply chain / ESG reporting | (future) corporate-partners | payment + anonymisation + retention + attribution | Payment as reciprocity mechanism |
+| Regional benchmarking | [`contributing-members`](access/contributing-members.json) | [`attribution`](contract/attribution.json) + [`non-commercial`](contract/non-commercial.json) + [`reciprocal-insights`](contract/reciprocal-insights.json) | Contribute-to-access + share-back |
+| Agronomic model calibration | [`researchers-only`](access/researchers-only.json) | [`time-limited`](contract/time-limited.json) + [`purpose-model-training`](contract/purpose-model-training.json) + [`anonymisation`](contract/anonymisation.json) + [`attribution`](contract/attribution.json) | Share-back (model outputs to producer) |
+| Peer-to-peer data sharing | [`members-only`](access/members-only.json) | [`internal-use-only`](contract/internal-use-only.json) or [`time-limited`](contract/time-limited.json) | [`contributing-members`](access/contributing-members.json) for sensitive data |
+| Supply chain / ESG reporting | (future) corporate-partners | [`payment-required`](contract/payment-required.json) + [`anonymisation`](contract/anonymisation.json) + [`data-retention-limit`](contract/data-retention-limit.json) + [`attribution`](contract/attribution.json) | Payment as reciprocity mechanism |
