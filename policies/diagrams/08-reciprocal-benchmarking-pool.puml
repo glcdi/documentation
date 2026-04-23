@@ -20,7 +20,7 @@ actor "Will Thompson\n(Caney Fork)\n//contributing//" as Will #E8F5E9
 == Setup: Contribution status in Keycloak ==
 
 note over KC
-  The Steering Committee maintains
+  The Dataspace Authority maintains
   a **contributionStatus** attribute
   for each participant:
 
@@ -119,7 +119,7 @@ note over Newbie
   1. Publish their own grazing/SOC data
      on their connector
   2. Notify the governance team
-  3. Steering Committee verifies and
+  3. Dataspace Authority verifies and
      updates contributionStatus
      from "observer" to "contributing"
   4. Next catalog query will show
@@ -130,7 +130,7 @@ end note
 
 Newbie -> Newbie : Publishes own grazing data\non their connector
 Newbie -> KC : Requests status update
-KC -> KC : Steering Committee verifies\npublished assets
+KC -> KC : Dataspace Authority verifies\npublished assets
 KC -> KC : Sets contributionStatus\n= "contributing"
 
 Newbie -> CF_EDC : DSP Catalog Query (new token)

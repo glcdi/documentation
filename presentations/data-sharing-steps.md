@@ -2,6 +2,23 @@
 
 One slide per step. Two parts: the **Provider** publishes data, the **Consumer** discovers and negotiates access.
 
+## TL;DR
+
+Sixteen slides walk through the end-to-end dataspace interaction, condensable to eight key steps:
+
+1. **Log in** — OIDC authentication via Keycloak federation (provider's local realm → governance realm).
+2. **Describe dataset** — provider creates an **Asset** (metadata + data-source endpoint); data stays on provider's infrastructure.
+3. **Select policies** — provider picks an **access policy template** (who can see it) and combines **contract policy templates** (what they can do with it).
+4. **Publish** — provider creates a **Contract Definition** linking the asset to its policies; dataset becomes visible to matching participants.
+5. **Discover** — consumer sends a DSP **Catalog Query**; provider's connector filters offers against access policies.
+6. **Negotiate** — consumer sends a **Contract Negotiation Request** with a declared purpose; contract policy is evaluated; on success, agreement is `FINALIZED`.
+7. **Transfer** — consumer issues a **Transfer Request**; data is delivered via the HTTP data plane.
+8. **Fulfill obligations** — consumer respects technical constraints (time limit blocks new transfers) and governance-level duties (anonymise, attribute, share back, no redistribution).
+
+**Key principle:** the provider defines the rules once at publication time. The connector enforces them automatically for every consumer — no per-request manual approval. Governance-level duties are tracked through the DSA and audited by the Dataspace Authority.
+
+The slides use two illustrative personas — a producer publishing SOC data, and a researcher consuming it for model training — to make each step concrete.
+
 ---
 
 ## Part 1: Publishing Data (Provider's perspective)
@@ -278,7 +295,7 @@ Elena now has the SOC data. Her **contractual obligations** are active:
 
 Some obligations are **technically enforced** (time limit — the connector won't allow new
 transfers after expiry). Others are **governance-enforced** (anonymisation, attribution —
-tracked by the Steering Committee).
+tracked by the Dataspace Authority).
 
 ---
 

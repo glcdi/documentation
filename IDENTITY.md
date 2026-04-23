@@ -187,7 +187,7 @@ that would issue a "regenerative-verified producer" credential that other partic
 trust. GLCDI would have to build this from scratch — which is a governance problem, not a
 technology problem.
 
-With OIDC + Keycloak, the proposal is that the **governance Keycloak serves as the trust anchor**. Under this proposal the Steering Committee would approve participants and the governance admin would assign roles — simple, auditable, and sufficient for a small participant set.
+With OIDC + Keycloak, the proposal is that the **governance Keycloak serves as the trust anchor**. Under this proposal the Dataspace Authority would approve participants and the governance admin would assign roles — simple, auditable, and sufficient for a small participant set.
 
 **5. OIDC gives us everything we need now**
 
@@ -249,7 +249,7 @@ from the simplest (what GLCDI uses now) to the most decentralised (future target
 |---|---|---|---|
 | **Identity provider** | Keycloak (centralised) | Keycloak issues VCs via OID4VCI | Participant's own DID + wallet |
 | **Credential format** | JWT access token with custom claims | JWT-VC or SD-JWT-VC | VC (format varies by ecosystem) |
-| **Trust anchor** | Governance Keycloak (proposed: Steering Committee would assign roles) | Governance authority issues VCs (Keycloak acts as issuer) | Gaia-X Compliance Service or Trust List |
+| **Trust anchor** | Governance Keycloak (proposed: Dataspace Authority would assign roles) | Governance authority issues VCs (Keycloak acts as issuer) | Gaia-X Compliance Service or Trust List |
 | **How provider verifies consumer** | Extract claims from OIDC token | Verify VC signature + extract claims | Resolve DID → verify VP → extract claims |
 | **Participant requirement** | Keycloak account | Keycloak account + VC in wallet | DID + wallet + VCs from trusted issuer |
 | **Onboarding complexity** | Low: create user, assign roles | Medium: create user, issue VC, participant stores in wallet | High: participant creates DID, requests VCs, configures wallet |

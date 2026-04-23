@@ -22,7 +22,7 @@
             "leftOperand": "glcdi:contributionStatus",
             "operator": "eq",
             "rightOperand": "contributing",
-            "comment": "Only participants who have themselves published at least one dataset to the dataspace can see this offer. The 'contributing' status is assigned by the governance team (Steering Committee) after verifying that the participant's connector has published assets. This enforces reciprocity: you must give to receive."
+            "comment": "Only participants who have themselves published at least one dataset to the dataspace can see this offer. The 'contributing' status is assigned by the governance team (Dataspace Authority) after verifying that the participant's connector has published assets. This enforces reciprocity: you must give to receive."
           }
         ]
       }

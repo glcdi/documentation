@@ -1,6 +1,6 @@
 # GLCDI Policy Rollout — Proposal
 
-A proposal for which policies could go live in which cohort, and what technical + governance work each wave would unlock. Everything below is put forward for discussion with the Steering Committee and the wider project team; nothing here is a decided commitment.
+A proposal for which policies could go live in which cohort, and what technical + governance work each wave would unlock. Everything below is put forward for discussion with the Dataspace Authority and the wider project team; nothing here is a decided commitment.
 
 This document joins three pieces that live separately elsewhere:
 - the **cohort timeline** (participants and focus) — [`../README.md` §Cohort Timeline](../README.md#cohort-timeline)

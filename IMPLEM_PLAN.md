@@ -6,6 +6,22 @@ development, integration into seeding scripts, and testing.
 
 Phases are ordered by dependency. Steps within a phase can largely be parallelised.
 
+## TL;DR
+
+Seven phases take GLCDI from today's single open-research policy to a fully enforced ODRL policy stack:
+
+1. **Vocabulary & Namespace** — register the `glcdi:` JSON-LD context and agree on controlled vocabularies (participant types, certification statuses, purpose taxonomy). Blocks Phase 3.
+2. **Keycloak Claims Configuration** — realm roles, user attributes, protocol mappers so consumer tokens carry `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`. Can start immediately.
+3. **EDC Policy Extension** — Java `glcdi-policy-functions` extension (~200 LOC) that reads those claims and evaluates GLCDI-specific constraints.
+4. **Seeding Scripts** — replace the current single `glcdi:policy:open-research` with per-asset access + contract policies on each participant connector.
+5. **Testing & Validation** — unit tests for policy functions + integration tests for catalog filtering, contract negotiation, and temporal expiry; end-to-end scenario tests for the three blueprint use cases.
+6. **Governance-Level Enforcement (non-technical)** — DSA clause wording, audit mechanism, consent-revocation procedure. Runs in parallel with 1–5; ratification by the Dataspace Authority (see [`AUTHORITY.md`](AUTHORITY.md)).
+7. **Future Enhancements (post-prototype)** — payment infrastructure, Verifiable Credentials integration, Federated Catalogue policy metadata, participant-facing policy UI.
+
+**Status:** Phases 1–6 are "not started" as of the current cohort. Phase 7 is explicitly deferred.
+
+**Dependency highlights:** Phase 3 depends on Phase 1's vocabulary being registered. Phase 4 depends on Phases 2–3. Phase 6 has no technical prerequisites and should advance alongside the technical phases. For cohort-by-cohort sequencing of *which* policies land *when*, see [`policies/plan.md`](policies/plan.md).
+
 ---
 
 ## Phase 1: GLCDI Vocabulary & Namespace
@@ -27,7 +43,7 @@ defined and resolvable.
 
 | Item | Detail |
 |------|--------|
-| **Task** | Propose the canonical list of `participantType` and `certificationStatus` values to the Steering Committee for agreement |
+| **Task** | Propose the canonical list of `participantType` and `certificationStatus` values to the Dataspace Authority for agreement |
 | **Proposed participant types** | `producer`, `researcher`, `data-steward`, `conservation-org`, `technology-provider`, `corporate`, `certification-body`, `supply-chain-partner`, `funder` |
 | **Proposed certification statuses** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Deliverable** | Enumeration documented in the vocabulary context and in the Trust Framework (v0) |
@@ -105,7 +121,7 @@ configuration while keeping the data model clean.
 | **Certification values** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Contribution values** | `contributing` (has published data), `observer` (onboarded but no data published yet), `pending` (awaiting verification) |
 | **Where** | Set per-user in Keycloak admin console or via Admin API. Not part of the realm export by default — attributes are per-user, not schema-level. |
-| **Proposed owner for contribution status** | For the prototype (small participant set): it is proposed that the Steering Committee sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service could query each participant's catalog and update the attribute. |
+| **Proposed owner for contribution status** | For the prototype (small participant set): it is proposed that the Dataspace Authority sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service could query each participant's catalog and update the attribute. |
 | **Status** | [ ] Not started |
 
 ### 2.3 Create protocol mappers for token serialisation
@@ -394,7 +410,7 @@ read from the token:
 **Proposed flow** (to be validated with the governance body before implementation):
 
 1. Participant submits onboarding request (name, organisation, type, certification evidence).
-2. The governance body (proposed: Steering Committee) reviews and approves via the approval UI.
+2. The governance body (proposed: Dataspace Authority) reviews and approves via the approval UI.
 3. On approval, the backend would call the Keycloak Admin API to:
    - Create or update the user
    - Assign `glcdi_member` + the appropriate type role (e.g., `glcdi_producer`)

@@ -18,6 +18,7 @@ into the three deployable sub-projects of the GLCDI workspace:
 ```
 management/
 ├── README.md           # This file — governance overview
+├── AUTHORITY.md        # Proposed responsibilities & operating mode of the Dataspace Authority
 ├── IDENTITY.md         # Identity, authentication & standards (OIDC, OID4VC, Keycloak)
 ├── STANDARDS.md        # Trust & control mechanisms — specification mapping (ODRL, DSP, DCAT, JSON-LD)
 ├── AGENTS.md           # Context file for AI agents
@@ -34,7 +35,7 @@ management/
 
 ## Governance Model (Proposal)
 
-The governance model described below is put forward as a proposal for the Steering Committee and wider project team to validate and refine. Nothing here is a decided commitment.
+The governance model described below is put forward as a proposal for the Dataspace Authority and wider project team to validate and refine. Nothing here is a decided commitment.
 
 ### Trust Framework
 
@@ -52,10 +53,10 @@ around:
 | Body | Proposed role | Proposed cadence |
 |------|---------------|------------------|
 | **Project Team** | Technical implementation, infrastructure, standards | Ongoing |
-| **Steering Committee** | Governance decisions, participant approval, Trust Framework review | To be agreed — indicative monthly |
+| **Dataspace Authority** | Governance decisions, participant approval, Trust Framework review | To be agreed — indicative monthly |
 | **Cohort participants** | Data sharing, feedback, co-design | Per cohort phase |
 
-The precise scope of Steering Committee involvement — which decisions it owns outright, which it advises on, and which it delegates to the project team — remains to be agreed with the Steering Committee itself.
+A standalone proposal for the Dataspace Authority's responsibilities, composition, operating mode, and explicit out-of-scope items lives in [`AUTHORITY.md`](AUTHORITY.md) — to be reviewed, amended, and ratified by the body itself once seated. The name "Dataspace Authority" is a working label; alternatives (Council, Committee, Trust Body) are on the table and discussed in that document.
 
 ### Cohort Timeline (Proposal)
 

@@ -3,6 +3,21 @@
 ODRL-based policy definitions for the GLCDI (Grazing Lands Carbon Data Initiative) dataspace,
 designed for Eclipse EDC 0.15.x connectors.
 
+## TL;DR
+
+A catalogue of 14 policies + 4 end-to-end scenarios that govern how data flows between GLCDI participants:
+
+- **Two-layer model.** Every asset has an **access policy** (who sees it in the catalog) and a **contract policy** (what they can do with it once negotiated).
+- **4 access policies** — `members-only`, `researchers-only`, `regenerative-producers`, `contributing-members`.
+- **9 contract policies** — `time-limited`, `internal-use-only`, `non-commercial`, `purpose-model-training`, `attribution`, `anonymisation`, `reciprocal-insights`, `data-retention-limit`, `payment-required`.
+- **4 combined scenarios** — ready-to-adapt policy packages for agronomic model calibration, regional benchmarking, reciprocal benchmarking, and corporate supply-chain / ESG reporting.
+- **8 PlantUML sequence diagrams** walking through each scenario from the end-user perspective.
+- **Constraint mechanism.** Policies evaluate claims from Keycloak tokens: `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`. Custom namespace: `https://w3id.org/glcdi/v0.1.0/ns/`.
+- **Enforcement split.** Native EDC handles `odrl:dateTime` and `odrl:purpose` out of the box. Claim-based constraints need a custom policy-functions extension (~200 LOC Java). Duty-based clauses (`attribution`, `anonymisation`, `reciprocal-insights`) are governance-level only — enforced via the DSA, not the connector.
+- **Implementation feasibility.** Per-policy ratings (None / Low / Medium / High) are in §Implementation Feasibility below; effort for the prototype stack is almost entirely Low. `data-retention-limit` is Medium, `payment-required` is High and post-prototype.
+
+For implementation sequencing see [`../IMPLEM_PLAN.md`](../IMPLEM_PLAN.md); for cohort-level rollout see [`plan.md`](plan.md).
+
 ## How EDC Policies Work
 
 In an EDC dataspace, two kinds of policies govern data sharing:
@@ -130,7 +145,7 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **What it does** | Restricts catalog visibility to participants who are (a) active members, (b) of type `producer`, and (c) hold a certification status of `organic-certified`, `regenerative-verified`, or `transitioning-organic`. |
 | **ODRL mechanism** | Three constraints combined (AND logic): membership check, participant type check, and certification status using `isAnyOf` for multiple accepted values. |
 | **GLCDI relevance** | Some producers may only want to share data with **peers who are on a similar regenerative journey**. A producer participant may, for example, want to "promote regenerative grazing" and "sell at a premium by participating in regenerative markets". Sharing sensitive grazing rotation data or SOC measurements only with fellow regenerative producers creates a trusted inner circle — addressing the stakeholder fear of "harmful use of data by buyers or competitors". Also relevant as the dataspace grows to include members associations of sustainable agriculture practitioners. |
-| **Implementation** | Requires `glcdi:certificationStatus` to be a verifiable claim. Could be populated during onboarding (self-declared + steering committee validation) or eventually tied to third-party certification (USDA Organic, ROC, etc.). |
+| **Implementation** | Requires `glcdi:certificationStatus` to be a verifiable claim. Could be populated during onboarding (self-declared + Dataspace Authority validation) or eventually tied to third-party certification (USDA Organic, ROC, etc.). |
 
 ### `access/researchers-only.json` — Research Institutions Only
 
@@ -150,7 +165,7 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **What it does** | Restricts catalog visibility to participants who have themselves published at least one dataset to the dataspace. Participants who have only consumed data (or are newly onboarded and haven't shared anything yet) cannot see the offer. |
 | **ODRL mechanism** | Two constraints: active membership + `glcdi:contributionStatus eq "contributing"`. |
 | **GLCDI relevance** | This is the primary mechanism for encoding **reciprocity expectations** — a key trust boundary identified in the blueprint's Cohort 1 objectives. The blueprint states that participants must establish "reciprocity expectations" as part of their trust boundaries. Producer participants may fear free-riding: sharing their hard-won SOC and grazing data while receiving nothing in return. This policy ensures that the benchmarking pool is a **commons of contributors**, not an extractive one-way flow. It's especially important for the **Regional Benchmarking** use case, where peer comparison only works if peers actually contribute. The `contributing` status acts as a lightweight "skin in the game" check. |
-| **Implementation** | Requires a `glcdi_contribution_status` claim in the Keycloak token (same pattern as `certificationStatus` — user attribute + protocol mapper). For the prototype with a small participant set, it is proposed that the Steering Committee sets this status manually after verifying that the participant's connector has published assets. For scaling, a periodic automated check could query each participant's catalog and update the attribute. |
+| **Implementation** | Requires a `glcdi_contribution_status` claim in the Keycloak token (same pattern as `certificationStatus` — user attribute + protocol mapper). For the prototype with a small participant set, it is proposed that the Dataspace Authority sets this status manually after verifying that the participant's connector has published assets. For scaling, a periodic automated check could query each participant's catalog and update the attribute. |
 
 ## Contract Policies
 
