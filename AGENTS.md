@@ -15,7 +15,7 @@ it feeds into the three deployable sub-projects (`edc-connector/`, `governance-s
 ```
 management/
 ├── AGENTS.md                          # This file
-├── TODO.md                            # Policy implementation plan (7 phases)
+├── IMPLEM_PLAN.md                     # Policy implementation plan (7 phases)
 └── policies/
     ├── README.md                      # Full policy documentation
     ├── access/                        # Access policies (catalog visibility)
@@ -154,7 +154,7 @@ See `policies/diagrams/` for detailed PlantUML sequence diagrams of each scenari
 |-----------|--------|
 | Policy JSON definitions | Done (this directory) |
 | Sequence diagrams | Done (7 diagrams) |
-| Implementation plan | Done (`TODO.md`) |
+| Implementation plan | Done (`IMPLEM_PLAN.md`) |
 | GLCDI vocabulary / namespace | Not started (TODO Phase 1) |
 | Keycloak realm roles | Not started (TODO Phase 2) |
 | Keycloak protocol mappers | Not started (TODO Phase 2) |
@@ -201,8 +201,6 @@ glcdi/
 ├── participant-agent-services/    # Per-participant stack (Docker Compose)
 ├── participant-ui/                # Frontend (early stage)
 ├── management/                    # ← You are here
-├── diagrams/                      # Architecture diagrams (PlantUML)
-└── TODO.md                        # Main project plan (6 phases, Phase 1 done)
 ```
 
 Parent workspace `~/workspace/dataspaces/` contains sister projects (TEMS, MVD, EDC core,
@@ -211,7 +209,7 @@ Federated Catalogue, vocabulary registry) that serve as reference implementation
 ## Important Caveats
 
 - **Policy functions don't exist yet** — the `glcdi:membership` and `glcdi:participantType`
-  constraints in policy files require a custom EDC extension (see `TODO.md` Phase 3)
+  constraints in policy files require a custom EDC extension (see `IMPLEM_PLAN.md` Phase 3)
 - **Governance-level obligations are not technically enforced** — anonymisation, attribution,
   deletion duties rely on the Data Sharing Agreement, not the connector
 - **`combined/` files are not directly POSTable** — they bundle access + contract + contract
@@ -219,4 +217,4 @@ Federated Catalogue, vocabulary registry) that serve as reference implementation
 - **Temporal constraints work natively** in EDC; all other custom constraints need the
   `glcdi-policy-functions` extension
 - **The `glcdi:` namespace is not yet registered** — it needs a JSON-LD context file
-  (see `TODO.md` Phase 1)
+  (see `IMPLEM_PLAN.md` Phase 1)

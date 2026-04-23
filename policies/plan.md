@@ -4,10 +4,12 @@ A proposal for which policies could go live in which cohort, and what technical 
 
 This document joins three pieces that live separately elsewhere:
 - the **cohort timeline** (participants and focus) — [`../README.md` §Cohort Timeline](../README.md#cohort-timeline)
-- the **technical implementation phases** (vocabulary → Keycloak → extension → seeding → testing → governance) — [`../TODO.md`](../TODO.md)
-- the **per-policy feasibility & priority** — [`README.md` §Implementation Feasibility](README.md#implementation-feasibility)
+- the **technical implementation phases** (vocabulary → Keycloak → extension → seeding → testing → governance) — [`../IMPLEM_PLAN.md`](../IMPLEM_PLAN.md)
+- the **per-policy feasibility & priority** — [`README.md` §Implementation Feasibility](README.md#implementation-feasibility). Effort ratings in the cohort tables below mirror that authoritative source.
 
-It is a proposed **sequencing** document, not a re-plan. The phase work is still defined in `../TODO.md`; this document proposes *when* each policy might become a blocker.
+For use-case → policy-stack mapping and end-to-end workflow illustrations, see [`README.md` §Relation to GLCDI Use Cases](README.md#relation-to-glcdi-use-cases) and [`README.md` §Sequence Diagrams](README.md#sequence-diagrams).
+
+It is a proposed **sequencing** document, not a re-plan. The phase work is still defined in `../IMPLEM_PLAN.md`; this document proposes *when* each policy might become a blocker.
 
 ---
 
@@ -41,7 +43,7 @@ The proposal is to roll out GLCDI policies across **two prototype onboarding coh
   - wiring the baseline policy stack into the seeding scripts
   - demonstrating the end-to-end workflow (authentication → filtered catalog → negotiation → transfer → expiry) to the governance body.
 - **Seeding scripts currently apply a single `glcdi:policy:open-research` policy** (`"action": "use"`, no constraints). No catalog filtering, no negotiation-time checks — any authenticated participant sees everything.
-- **No GLCDI-specific constraint is yet evaluated in the connector.** `../TODO.md` Phases 1–6 are "not started".
+- **No GLCDI-specific constraint is yet evaluated in the connector.** `../IMPLEM_PLAN.md` Phases 1–6 are "not started".
 - **Cohort 2 ramp-up is underway in parallel** — the composition of C2 is still under discussion; targeting a Q2 start.
 
 The rollout below proposes what remains to be delivered for C1 before it closes out, what C2 would add on top, and what a subsequent **post-prototype phase** could absorb — institutional onboarding, cert-evidence formalisation, the participant purpose-declaration UI, and the last three technical policies (`corporate-partners`, `data-retention-limit`, `payment-required`). The prototype itself targets just two onboarding cohorts: C1 and C2.
@@ -64,14 +66,14 @@ The rollout below proposes what remains to be delivered for C1 before it closes 
 
 | Policy | Type | Effort | Why this cohort |
 |--------|------|:------:|-----------------|
-| [`regenerative-producers`](access/regenerative-producers.json) | Access | **Low** | **Headline access policy.** Restricts sensitive grazing-practice data to certified producers. With the small C1 participant set, the proposal is that the governance body self-certifies informally — the formal cert-evidence workflow could wait for post-prototype institutional onboarding. Evaluates three constraints: membership + producer type + certification status. |
+| [`regenerative-producers`](access/regenerative-producers.json) | Access | **Low** | **Headline access policy.** With the small C1 participant set, the proposal is that the governance body self-certifies informally — the formal cert-evidence workflow could wait for post-prototype institutional onboarding. |
 | [`members-only`](access/members-only.json) | Access | **Low** | Minimal companion baseline so non-producer participants still see general-membership assets. Without it, C1 would have an empty catalogue for everyone except certified producers. |
-| [`internal-use-only`](contract/internal-use-only.json) | Contract (purpose) | **None** (native) + gov | **Headline contract policy — default tone.** Data shared under GLCDI is for internal analysis by the receiving participant, not for redistribution. Native EDC `odrl:purpose` handles the permission check (consumer must declare `InternalAnalysis`); the `distribute` prohibition is proposed to be DSA-enforced. |
-| [`time-limited`](contract/time-limited.json) | Contract | **None** | Works in vanilla EDC. Every C1 contract could carry a prototype-end expiry (`2026-09-30`), giving the governance body a natural re-contracting moment before C2. |
+| [`internal-use-only`](contract/internal-use-only.json) | Contract (purpose) | **None** (native) + gov | **Headline contract policy — default tone.** Data shared under GLCDI is for internal analysis, not redistribution. Native EDC `odrl:purpose` handles the permission check (consumer declares `InternalAnalysis`); the `distribute` prohibition is proposed to be DSA-enforced. |
+| [`time-limited`](contract/time-limited.json) | Contract | **None** | Every C1 contract could carry a prototype-end expiry (`2026-09-30`), giving the governance body a natural re-contracting moment before C2. |
 
 ### Proposed implementation approach for C1 close-out
 
-Mapped to `../TODO.md` phases:
+Mapped to `../IMPLEM_PLAN.md` phases:
 
 | TODO phase | Proposed C1 scope | Blocker for C1 close-out? |
 |------------|-------------------|:-:|
@@ -110,12 +112,12 @@ Mapped to `../TODO.md` phases:
 
 | Policy | Type | Effort | Why this cohort |
 |--------|------|:------:|-----------------|
-| [`researchers-only`](access/researchers-only.json) | Access | **Low** (function already built) | Role-based filtering for the Agronomic Model Calibration use case — lets research participants access raw SOC data that producer participants wouldn't share with general members. Reuses the participant-type function built for C1's `regenerative-producers`, so technical cost is near-zero. |
-| [`contributing-members`](access/contributing-members.json) | Access | **Low** (enforced) | **First enforced reciprocity gate.** Non-contributors would not see benchmarking-pool assets in the catalog. Requires `glcdi_contribution_status` user attribute; for ~6 participants the governance body could maintain it manually. |
-| [`non-commercial`](contract/non-commercial.json) | Contract (purpose) | **None** (native) + gov | Pairs with `internal-use-only` on sensitive producer data: beyond prohibiting redistribution, it would also rule out commercial exploitation. Addresses producer stakeholder concerns about "harmful use of data by buyers or competitors". Reuses the native-purpose mechanism C1 piloted. |
-| [`purpose-model-training`](contract/purpose-model-training.json) | Contract (purpose) | **None** (native) | Also reuses C1's native-purpose infrastructure. Rejects offers that don't declare `AgronomicModelTraining` / `EcosystemModelCalibration` — matches the researcher-model-feeding use case, assuming C2 onboards research participants. |
+| [`researchers-only`](access/researchers-only.json) | Access | **Low** (function already built) | Role-based filtering for the Agronomic Model Calibration use case. Reuses the participant-type function built for C1's `regenerative-producers`, so technical cost is near-zero. |
+| [`contributing-members`](access/contributing-members.json) | Access | **Low** (enforced) | **First enforced reciprocity gate.** Non-contributors would not see benchmarking-pool assets. Requires the new `glcdi_contribution_status` user attribute; for ~6 participants the governance body could maintain it manually. |
+| [`non-commercial`](contract/non-commercial.json) | Contract (purpose) | **None** (native) + gov | Pairs with `internal-use-only` on sensitive producer data — beyond prohibiting redistribution, also rules out commercial exploitation. Addresses producer stakeholder concerns about "harmful use of data by buyers or competitors". Reuses the native-purpose mechanism C1 piloted. |
+| [`purpose-model-training`](contract/purpose-model-training.json) | Contract (purpose) | **None** (native) | Also reuses C1's native-purpose infrastructure. Matches the researcher-model-feeding use case, assuming C2 onboards research participants. |
 | [`attribution`](contract/attribution.json) | Contract (duty) | **None** (gov) | Lowest-cost DSA clause. First duty the governance body would have to actually track — proves the governance pipeline can absorb compliance monitoring. |
-| [`anonymisation`](contract/anonymisation.json) | Contract (duty) | **None** (gov) | Required for the researcher-model-feeding combined scenario. DSA clause only. |
+| [`anonymisation`](contract/anonymisation.json) | Contract (duty) | **None** (gov) | Required for the researcher-model-feeding combined scenario. |
 | [`reciprocal-insights`](contract/reciprocal-insights.json) | Contract (duty) | **None** (gov) | Contract-level reciprocity obligation. Pairs with the access-level `contributing-members` above so both sides of reciprocity land in the same cohort. |
 
 ### Proposed implementation approach for C2
@@ -163,8 +165,8 @@ Mapped to `../TODO.md` phases:
 Post-prototype is where GLCDI would move from "works for a small trusted participant set" to "works for dozens of institutions and corporates at production scale". A non-exhaustive list of interesting topics to explore, in no particular priority order:
 
 - **Payment + retention infrastructure** — external payment/invoicing gateway integration, reconciliation, `data-retention-limit` custom function with persisted transfer timestamps, delete-attestation reporting.
-- **Verifiable Credentials integration** (`../TODO.md` §7.2) — move from Keycloak roles to VC-based identity for participant type, membership, and certification. Enables cross-dataspace portability and removes the governance-Keycloak bottleneck.
-- **Federated Catalogue policy metadata** (`../TODO.md` §7.3) — publish each participant's policies as catalogue metadata so consumers can filter by policy before negotiating. Would require adopting or forking an XFSC-style federated catalogue.
+- **Verifiable Credentials integration** (`../IMPLEM_PLAN.md` §7.2) — move from Keycloak roles to VC-based identity for participant type, membership, and certification. Enables cross-dataspace portability and removes the governance-Keycloak bottleneck.
+- **Federated Catalogue policy metadata** (`../IMPLEM_PLAN.md` §7.3) — publish each participant's policies as catalogue metadata so consumers can filter by policy before negotiating. Would require adopting or forking an XFSC-style federated catalogue.
 - **Participant UI — policy composer** — beyond a simple purpose-declaration dropdown: full composition UI where participants could attach any access + contract policy template to their assets, preview the effective policy, and see who would/wouldn't match. Would replace all project-team seeding.
 - **Certification-broker integration** — automated validation of `glcdi_certification_status` against third-party certification bodies (USDA Organic, Regenerative Organic Certified, etc.). Would replace the C1 self-certification and the C2 informal-review approach.
 - **Contribution-status automation** — replace manual governance maintenance of `glcdi_contribution_status` with a periodic catalogue crawler that detects when a participant has published its first asset. Scales beyond ~10 participants.
@@ -178,7 +180,7 @@ Post-prototype is where GLCDI would move from "works for a small trusted partici
 
 ### Implementation approach (proposed)
 
-Maps to `../TODO.md` Phase 7 (Future Enhancements) plus the workstreams above. Governance + UI workstreams could begin during or shortly after C2; payment + VC + federated-catalogue work is firmly post-grant.
+Maps to `../IMPLEM_PLAN.md` Phase 7 (Future Enhancements) plus the workstreams above. Governance + UI workstreams could begin during or shortly after C2; payment + VC + federated-catalogue work is firmly post-grant.
 
 **Not in scope for post-prototype (proposal):** compute-to-data (data never leaves the provider), zero-knowledge policy evaluation, cross-dataspace federation with sister dataspaces. All interesting topics for a further phase.
 

@@ -660,8 +660,8 @@ Phase 7 (Future) — independent, post-prototype
 
 ## Relation to Main Project Phases
 
-| This TODO phase | Maps to project TODO.md phase |
-|-----------------|-------------------------------|
+| This phase | Maps to main project phase |
+|------------|----------------------------|
 | Phase 1–2 | Between Phase 1 (done) and Phase 2 (infra) — can start now |
 | Phase 3 | During Phase 2–3, before first deployment |
 | Phase 4 | Replaces the simple policies in Phase 5 (seeding) |
