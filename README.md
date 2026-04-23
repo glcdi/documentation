@@ -30,39 +30,41 @@ management/
 
 ---
 
-## Governance Model
+## Governance Model (Proposal)
+
+The governance model described below is put forward as a proposal for the Steering Committee and wider project team to validate and refine. Nothing here is a decided commitment.
 
 ### Trust Framework
 
-GLCDI is a multi-stakeholder data space built on **consent-governed, permissioned data sharing**.
-Participants retain ownership and control over their data. The governance model is structured
+GLCDI is proposed to be a multi-stakeholder data space built on **consent-governed, permissioned data sharing**.
+Participants would retain ownership and control over their data. The proposed governance model is structured
 around:
 
-- **Membership** — participants are onboarded through a formal process (application, review
-  by Steering Committee, signed MOU/Data Sharing Agreement)
-- **Roles** — each participant has a declared type (producer, researcher, data steward, etc.)
-  that determines what data they can discover and under what terms
-- **Policies** — ODRL-based rules attached to data assets that enforce access control and
-  usage conditions at the technical level
-- **Trust Framework** — a living document (v0 in Q1 2026, v1 in Q2) that codifies the
-  governance norms, templates, and compliance expectations
+- **Membership** — the proposal is that participants are onboarded through a formal process (application, review by a governance body, signed MOU/Data Sharing Agreement).
+- **Roles** — each participant would have a declared type (producer, researcher, data steward, etc.) that determines what data they can discover and under what terms.
+- **Policies** — ODRL-based rules attached to data assets that enforce access control and usage conditions at the technical level.
+- **Trust Framework** — a living document (proposed v0 in Q1 2026, v1 in Q2) that would codify the governance norms, templates, and compliance expectations.
 
-### Governance Bodies
+### Governance Bodies (Proposed)
 
-| Body | Role | Cadence |
-|------|------|---------|
+| Body | Proposed role | Proposed cadence |
+|------|---------------|------------------|
 | **Project Team** | Technical implementation, infrastructure, standards | Ongoing |
-| **Steering Committee** | Governance decisions, participant approval, Trust Framework review | Monthly |
+| **Steering Committee** | Governance decisions, participant approval, Trust Framework review | To be agreed — indicative monthly |
 | **Cohort participants** | Data sharing, feedback, co-design | Per cohort phase |
 
-### Cohort Timeline
+The precise scope of Steering Committee involvement — which decisions it owns outright, which it advises on, and which it delegates to the project team — remains to be agreed with the Steering Committee itself.
 
-| Phase | Period | Participants | Focus |
-|-------|--------|-------------|-------|
-| Cohort 1 | Q1 2026 | Point Blue, Caney Fork, White Buffalo | Foundational validation, Trust Framework v0 |
-| Cohort 2 | Q2 2026 | + PASA, University of Florida, TSIP | Cross-context testing, Trust Framework v1 |
-| Cohort 3 | Q3 2026 | + World Wildlife Fund, The Nature Conservancy, Soil Health Institute | Institutional stress-testing |
-| Post-prototype | 2027+ | + American Farmland Trust, US Roundtable for Sustainable Beef, corporates | Broader onboarding |
+### Cohort Timeline (Proposal)
+
+Specific participant composition per cohort is under discussion and intentionally omitted here. The proposed shape is:
+
+| Phase | Period | Participant count (indicative) | Focus |
+|-------|--------|-------------------------------|-------|
+| Cohort 1 | Q1 2026 | ~3 (prototype onboarding) | Foundational validation, Trust Framework v0 |
+| Cohort 2 | Q2 2026 | ~6 (C1 + a proposed second wave, TBD) | Cross-context testing, Trust Framework v1 |
+| Cohort 3 | Q3 2026 | Expanded institutional participation (TBD) | Institutional stress-testing |
+| Post-prototype | 2027+ | Rolling institutional + corporate onboarding (TBD) | Broader onboarding |
 
 ---
 
@@ -83,15 +85,16 @@ GLCDI uses a **federated identity model** with Keycloak as the identity provider
                         │   - Certification status       │
                         │                              │
                         │   Identity Providers:          │
-                        │   ├── caney-fork (OIDC)       │
-                        │   └── point-blue (OIDC)       │
+                        │   ├── participant-a (OIDC)    │
+                        │   ├── participant-b (OIDC)    │
+                        │   └── …                        │
                         └──────────┬───────────────────┘
                                    │ OIDC broker
                     ┌──────────────┼──────────────┐
                     │              │              │
           ┌─────────▼──┐  ┌───────▼────┐  ┌─────▼────────┐
-          │ Caney Fork  │  │ Point Blue │  │ White Buffalo │
-          │ Keycloak    │  │ Keycloak   │  │ Keycloak     │
+          │ Participant │  │ Participant│  │ Participant  │
+          │ A Keycloak  │  │ B Keycloak │  │ C Keycloak   │
           │ (edc realm) │  │ (edc realm)│  │ (edc realm)  │
           │             │  │            │  │              │
           │ Local auth  │  │ Local auth │  │ Local auth   │
@@ -120,30 +123,34 @@ Each participant's identity token carries three GLCDI-specific claims:
 | `glcdi_member` | All onboarded participants | Access to `members-only` offers |
 | `glcdi_producer` | Ranches, farming organisations | Access to `regenerative-producers` offers (with certification), benchmarking |
 | `glcdi_researcher` | Universities, research NGOs | Access to `researchers-only` offers (e.g., raw SOC data for model training) |
-| `glcdi_data_steward` | Monitoring alliances (Point Blue, TSIP) | Access to `researchers-only` offers, data stewardship role |
+| `glcdi_data_steward` | Monitoring alliances | Access to `researchers-only` offers, data stewardship role |
 | `glcdi_conservation_org` | Conservation organisations | General membership access |
 | `glcdi_technology_provider` | Ag-tech platforms, MRV tools | General membership access |
 | `glcdi_corporate` | Food companies, ESG teams | Access to `corporate-partners` offers |
 | `glcdi_certification_body` | Certification/verification bodies | Access to `corporate-partners` offers |
 | `glcdi_supply_chain_partner` | Procurement, Scope 3 analysts | Access to `corporate-partners` offers |
-| `glcdi_funder` | Walmart Foundation, USDA, NSF | General membership access |
+| `glcdi_funder` | Funding bodies / public sector partners | General membership access |
 
-### Prototype Participant Assignments
+### Proposed Participant Role Assignments
 
-| Participant | Roles | Certification |
-|-------------|-------|---------------|
-| Caney Fork Farms | `glcdi_member` + `glcdi_producer` | `regenerative-verified` |
-| Point Blue Conservation Science | `glcdi_member` + `glcdi_researcher` | `not-applicable` |
-| White Buffalo Land Trust | `glcdi_member` + `glcdi_producer` | `regenerative-verified` |
-| TSIP (Q2) | `glcdi_member` + `glcdi_data_steward` | `not-applicable` |
-| University of Florida (Q2) | `glcdi_member` + `glcdi_researcher` | `not-applicable` |
+Specific participant-to-role assignments are left to onboarding time and are proposed (not yet finalised) to follow this pattern:
 
-### Onboarding Flow
+| Participant type | Proposed roles | Proposed certification |
+|------------------|---------------|-----------------------|
+| Regenerative producer | `glcdi_member` + `glcdi_producer` | `regenerative-verified` (or equivalent) |
+| Research institution | `glcdi_member` + `glcdi_researcher` | `not-applicable` |
+| Data steward / monitoring alliance | `glcdi_member` + `glcdi_data_steward` | `not-applicable` |
+
+Additional participant types (`conservation_org`, `technology_provider`, `corporate`, `certification_body`, `supply_chain_partner`, `funder`) would follow the same pattern as their declared type role is added, with certification status set to `not-applicable` unless they hold a recognised regenerative/organic credential.
+
+### Onboarding Flow (Proposed)
+
+This is the proposed onboarding flow, to be validated with the governance body before implementation:
 
 ```
 1. Participant submits application  ──→  Onboarding app (governance-services)
-2. Steering Committee reviews       ──→  Approval UI
-3. On approval:
+2. Governance body reviews          ──→  Approval UI (proposed)
+3. On approval (proposed actions):
    a. Keycloak user created/updated
    b. glcdi_member role assigned
    c. Participant type role assigned (e.g., glcdi_producer)
@@ -230,9 +237,7 @@ that would issue a "regenerative-verified producer" credential that other partic
 trust. GLCDI would have to build this from scratch — which is a governance problem, not a
 technology problem.
 
-With OIDC + Keycloak, the **governance Keycloak is the trust anchor**. The Steering Committee
-approves participants; the governance admin assigns roles. This is simple, auditable, and
-sufficient for 3–10 participants.
+With OIDC + Keycloak, the proposal is that the **governance Keycloak serves as the trust anchor**. Under this proposal the Steering Committee would approve participants and the governance admin would assign roles — simple, auditable, and sufficient for a small participant set.
 
 **5. OIDC gives us everything we need now**
 
@@ -292,7 +297,7 @@ from the simplest (what GLCDI uses now) to the most decentralised (future target
 |---|---|---|---|
 | **Identity provider** | Keycloak (centralised) | Keycloak issues VCs via OID4VCI | Participant's own DID + wallet |
 | **Credential format** | JWT access token with custom claims | JWT-VC or SD-JWT-VC | VC (format varies by ecosystem) |
-| **Trust anchor** | Governance Keycloak (Steering Committee assigns roles) | Governance authority issues VCs (Keycloak acts as issuer) | Gaia-X Compliance Service or Trust List |
+| **Trust anchor** | Governance Keycloak (proposed: Steering Committee would assign roles) | Governance authority issues VCs (Keycloak acts as issuer) | Gaia-X Compliance Service or Trust List |
 | **How provider verifies consumer** | Extract claims from OIDC token | Verify VC signature + extract claims | Resolve DID → verify VP → extract claims |
 | **Participant requirement** | Keycloak account | Keycloak account + VC in wallet | DID + wallet + VCs from trusted issuer |
 | **Onboarding complexity** | Low: create user, assign roles | Medium: create user, issue VC, participant stores in wallet | High: participant creates DID, requests VCs, configures wallet |

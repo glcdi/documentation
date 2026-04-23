@@ -27,7 +27,7 @@ defined and resolvable.
 
 | Item | Detail |
 |------|--------|
-| **Task** | Agree on the canonical list of `participantType` and `certificationStatus` values with the Steering Committee |
+| **Task** | Propose the canonical list of `participantType` and `certificationStatus` values to the Steering Committee for agreement |
 | **Proposed participant types** | `producer`, `researcher`, `data-steward`, `conservation-org`, `technology-provider`, `corporate`, `certification-body`, `supply-chain-partner`, `funder` |
 | **Proposed certification statuses** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Deliverable** | Enumeration documented in the vocabulary context and in the Trust Framework (v0) |
@@ -105,7 +105,7 @@ configuration while keeping the data model clean.
 | **Certification values** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Contribution values** | `contributing` (has published data), `observer` (onboarded but no data published yet), `pending` (awaiting verification) |
 | **Where** | Set per-user in Keycloak admin console or via Admin API. Not part of the realm export by default — attributes are per-user, not schema-level. |
-| **Who updates contribution status** | For the prototype (3–5 participants): the Steering Committee sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service queries each participant's catalog and updates the attribute. |
+| **Proposed owner for contribution status** | For the prototype (small participant set): it is proposed that the Steering Committee sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service could query each participant's catalog and update the attribute. |
 | **Status** | [ ] Not started |
 
 ### 2.3 Create protocol mappers for token serialisation
@@ -231,13 +231,14 @@ hardcoded claim mapper on the client scope that applies to all authenticated use
 | **Task** | Assign the correct realm roles and user attributes to each prototype participant's service account or user |
 | **Status** | [ ] Not started |
 
-| Participant | Realm Roles | Certification Status | Contribution Status |
-|-------------|-------------|---------------------|---------------------|
-| Caney Fork Farms | `glcdi_member`, `glcdi_producer` | `regenerative-verified` | `contributing` (after seeding) |
-| Point Blue Conservation Science | `glcdi_member`, `glcdi_researcher` | `not-applicable` | `contributing` (after seeding) |
-| White Buffalo Land Trust | `glcdi_member`, `glcdi_producer` | `regenerative-verified` | `observer` (until data published) |
-| TSIP (if onboarded Q2) | `glcdi_member`, `glcdi_data_steward` | `not-applicable` | `observer` (until data published) |
-| University of Florida (if onboarded Q2) | `glcdi_member`, `glcdi_researcher` | `not-applicable` | `observer` (until data published) |
+The proposed assignment *pattern*, by participant type (specific participant identities are TBD and to be confirmed at onboarding):
+
+| Participant type | Proposed realm roles | Proposed certification status | Proposed contribution status |
+|------------------|----------------------|------------------------------|------------------------------|
+| Regenerative producer | `glcdi_member`, `glcdi_producer` | `regenerative-verified` | `contributing` (after seeding) |
+| Research institution | `glcdi_member`, `glcdi_researcher` | `not-applicable` | `contributing` (after seeding) |
+| Data steward / monitoring alliance | `glcdi_member`, `glcdi_data_steward` | `not-applicable` | `observer` (until data published) |
+| Newly onboarded participant (any type, no data yet) | `glcdi_member` + type role | per declared type | `observer` (until data published) |
 
 **Via Keycloak Admin API:**
 
@@ -252,9 +253,9 @@ TOKEN=$(curl -s -X POST "$KEYCLOAK_URL/auth/realms/master/protocol/openid-connec
   -d "password=admin" \
   -d "grant_type=password" | jq -r '.access_token')
 
-# Get user ID (example: Caney Fork service account)
+# Get user ID (example: a producer participant's service account — substitute the real username)
 USER_ID=$(curl -s -H "Authorization: Bearer $TOKEN" \
-  "$KEYCLOAK_URL/auth/admin/realms/$REALM/users?username=caney-fork-sa" \
+  "$KEYCLOAK_URL/auth/admin/realms/$REALM/users?username=<participant-sa>" \
   | jq -r '.[0].id')
 
 # Get role IDs
@@ -285,7 +286,7 @@ curl -s -X PUT -H "Authorization: Bearer $TOKEN" \
 
 | Item | Detail |
 |------|--------|
-| **Task** | When a participant authenticates via their local Keycloak (e.g., caney-fork IdP) and is brokered to governance Keycloak, the GLCDI roles and attributes must be present in the resulting token |
+| **Task** | When a participant authenticates via their local Keycloak IdP and is brokered to governance Keycloak, the GLCDI roles and attributes must be present in the resulting token |
 | **Status** | [ ] Not started |
 
 There are two approaches depending on where the source of truth for roles lives:
@@ -306,14 +307,14 @@ Roles are assigned on the participant's local Keycloak and imported into governa
 federation. This requires:
 
 1. **On participant Keycloak** (`edc` realm): add the same `glcdi_*` realm roles and assign them.
-2. **On governance Keycloak** (IdP configuration for `caney-fork`): add an "Attribute Importer"
+2. **On governance Keycloak** (IdP configuration for the participant): add an "Attribute Importer"
    or "Claim to Role" mapper:
 
 ```json
 {
   "name": "import-glcdi-roles",
   "identityProviderMapper": "oidc-advanced-role-idp-mapper",
-  "identityProviderAlias": "caney-fork",
+  "identityProviderAlias": "<participant-alias>",
   "config": {
     "syncMode": "INHERIT",
     "claims": "[{\"key\":\"glcdi_roles\",\"value\":\"glcdi_producer\"}]",
@@ -322,8 +323,8 @@ federation. This requires:
 }
 ```
 
-> **Recommendation:** Start with Option A (governance as source of truth). It's the right
-> choice for a prototype with 3-5 participants managed by a central governance team.
+> **Recommendation:** Start with Option A (governance as source of truth). It is proposed as the right
+> choice for a prototype with a small participant set managed by a central governance team.
 > Move to Option B when participants need to self-manage their roles (post-prototype scaling).
 
 ### 2.6 Verify token contents
@@ -336,7 +337,7 @@ federation. This requires:
 **Manual verification:**
 
 ```bash
-# Request a token for Caney Fork's service account
+# Request a token for a participant's service account
 TOKEN=$(curl -s -X POST \
   "https://governance.glcdi.startinblox.com/auth/realms/glcdi/protocol/openid-connect/token" \
   -d "client_id=edc-api-client" \
@@ -387,21 +388,21 @@ read from the token:
 | Item | Detail |
 |------|--------|
 | **Task** | When a new participant is onboarded via the onboarding app, automatically assign appropriate GLCDI roles |
-| **Where** | `governance-services/onboarding/backend/` — the DjangoLDP approval workflow should call the Keycloak Admin API to assign roles upon approval |
+| **Where** | `governance-services/onboarding/backend/` — the proposal is that the DjangoLDP approval workflow calls the Keycloak Admin API to assign roles upon approval |
 | **Status** | [ ] Not started |
 
-**Flow:**
+**Proposed flow** (to be validated with the governance body before implementation):
 
-1. Participant submits onboarding request (name, organisation, type, certification evidence)
-2. Steering Committee reviews and approves via the approval UI
-3. On approval, the backend calls the Keycloak Admin API to:
+1. Participant submits onboarding request (name, organisation, type, certification evidence).
+2. The governance body (proposed: Steering Committee) reviews and approves via the approval UI.
+3. On approval, the backend would call the Keycloak Admin API to:
    - Create or update the user
    - Assign `glcdi_member` + the appropriate type role (e.g., `glcdi_producer`)
    - Set `glcdi_certification_status` attribute (validated by governance team)
-4. Participant receives confirmation and can now authenticate
+4. Participant receives confirmation and can now authenticate.
 
-This automates the role assignment from step 2.4, removing the need for manual admin
-console operations as the dataspace grows beyond the initial 3 participants.
+This would automate the role assignment from step 2.4, removing the need for manual admin
+console operations as the dataspace grows beyond the initial small participant set.
 
 ---
 
@@ -474,22 +475,24 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 Replace the current `glcdi:policy:open-research` (simple "use" permission with no constraints)
 with the richer policies from `./policies/`.
 
-### 4.1 Update `seed-caney-fork.sh`
+### 4.1 Update producer-participant seeding scripts
 
 | Item | Detail |
 |------|--------|
-| **Task** | Replace the single open-research policy with appropriate policies per asset |
+| **Task** | Replace the single open-research policy with appropriate policies per asset on each producer participant's seeding script |
+| **Typical producer asset classes and proposed policies:** | |
 | **SOC measurements** | Access: `researchers-only` / Contract: `purpose-model-training` + `time-limited` + `attribution` (for model calibration use case) |
 | **Grazing rotation** | Access: `members-only` / Contract: `non-commercial` + `attribution` (for benchmarking use case) |
 | **Paddock boundaries** | Access: `members-only` / Contract: `internal-use-only` + `time-limited` (sensitive spatial data) |
 | **NDVI time series** | Access: `members-only` / Contract: `attribution` (lower sensitivity, broader sharing) |
 | **Status** | [ ] Not started |
 
-### 4.2 Update `seed-point-blue.sh`
+### 4.2 Update research-participant seeding scripts
 
 | Item | Detail |
 |------|--------|
 | **Task** | Replace open-research policy with policies appropriate for a research institution's data |
+| **Typical research asset classes and proposed policies:** | |
 | **Rangeland SOC inventory** | Access: `members-only` / Contract: `attribution` + `non-commercial` |
 | **GHG flux measurements** | Access: `researchers-only` / Contract: `purpose-model-training` + `attribution` |
 | **Biodiversity surveys** | Access: `members-only` / Contract: `attribution` + `non-commercial` |
@@ -523,8 +526,8 @@ with the richer policies from `./policies/`.
 | Item | Detail |
 |------|--------|
 | **Task** | Verify that catalog queries correctly filter offers based on access policies |
-| **Test scenario 1** | Caney Fork (producer) queries Point Blue's catalog → sees assets with `members-only` access, does NOT see assets with `researchers-only` access |
-| **Test scenario 2** | Point Blue (researcher) queries Caney Fork's catalog → sees all assets (both `members-only` and `researchers-only`) |
+| **Test scenario 1** | A producer participant queries a research participant's catalog → sees assets with `members-only` access, does NOT see assets with `researchers-only` access |
+| **Test scenario 2** | A research participant queries a producer participant's catalog → sees all assets (both `members-only` and `researchers-only`) |
 | **Test scenario 3** | Unauthenticated or non-member query → sees nothing |
 | **Where** | Extend `test-dsp-catalog-query.sh` or create `test-policy-filtering.sh` |
 | **Status** | [ ] Not started |
@@ -534,9 +537,9 @@ with the richer policies from `./policies/`.
 | Item | Detail |
 |------|--------|
 | **Task** | Verify that contract negotiation enforces contract policy constraints |
-| **Test scenario 1** | Point Blue negotiates for SOC data with `purpose=AgronomicModelTraining` → negotiation succeeds |
-| **Test scenario 2** | Point Blue negotiates for SOC data with `purpose=Scope3Reporting` → negotiation is rejected (wrong purpose) |
-| **Test scenario 3** | Caney Fork negotiates for Point Blue benchmarking data with `purpose=RegionalBenchmarking` → succeeds |
+| **Test scenario 1** | A research participant negotiates for SOC data with `purpose=AgronomicModelTraining` → negotiation succeeds |
+| **Test scenario 2** | A research participant negotiates for SOC data with `purpose=Scope3Reporting` → negotiation is rejected (wrong purpose) |
+| **Test scenario 3** | A producer participant negotiates for a research participant's benchmarking data with `purpose=RegionalBenchmarking` → succeeds |
 | **Where** | Extend `negotiate-and-transfer.sh` or create `test-contract-policies.sh` |
 | **Status** | [ ] Not started |
 
@@ -554,42 +557,43 @@ with the richer policies from `./policies/`.
 | Item | Detail |
 |------|--------|
 | **Task** | Run the full agronomic model calibration flow end-to-end |
-| **Steps** | 1. Register policies from `combined/researcher-model-feeding.json` on Caney Fork's connector. 2. Create contract definition linking SOC asset to these policies. 3. From Point Blue's connector, query Caney Fork's catalog → SOC asset visible. 4. Negotiate contract with `purpose=AgronomicModelTraining` → FINALIZED. 5. Initiate data transfer → succeeds. 6. Repeat from a producer connector → catalog query should NOT show the asset (researchers-only access). |
+| **Steps** | 1. Register policies from `combined/researcher-model-feeding.json` on a producer participant's connector. 2. Create contract definition linking SOC asset to these policies. 3. From a research participant's connector, query the producer's catalog → SOC asset visible. 4. Negotiate contract with `purpose=AgronomicModelTraining` → FINALIZED. 5. Initiate data transfer → succeeds. 6. Repeat from another producer connector → catalog query should NOT show the asset (researchers-only access). |
 | **Deliverable** | `test-model-calibration-scenario.sh` script |
 | **Status** | [ ] Not started |
 
 ---
 
-## Phase 6: Governance-Level Enforcement (Non-Technical)
+## Phase 6: Governance-Level Enforcement (Non-Technical) — Proposal
 
-Some policy obligations cannot be technically enforced by the connector. These need
-governance-level support through the Trust Framework and Data Sharing Agreements.
+Some policy obligations cannot be technically enforced by the connector. These would need
+governance-level support through the Trust Framework and Data Sharing Agreements. The items
+in this phase are proposals for the governance body to consider and refine.
 
 ### 6.1 Embed policy obligations in Data Sharing Agreement templates
 
 | Item | Detail |
 |------|--------|
-| **Task** | Update MOU/DSA templates to include clauses that map to ODRL obligations |
-| **Clauses needed** | Anonymisation requirements (what counts as anonymised, at what geographic granularity), attribution format and placement, data retention/deletion procedures and confirmation process, non-redistribution commitments, purpose limitations |
-| **Deliverable** | Updated DSA template in the Trust Framework (v0 → v1) |
+| **Task** | Propose updates to MOU/DSA templates that include clauses mapping to ODRL obligations; validate with legal counsel and the governance body |
+| **Proposed clauses** | Anonymisation requirements (what counts as anonymised, at what geographic granularity), attribution format and placement, data retention/deletion procedures and confirmation process, non-redistribution commitments, purpose limitations |
+| **Deliverable** | Updated DSA template in the Trust Framework (v0 → v1), pending governance-body approval |
 | **Status** | [ ] Not started |
 
 ### 6.2 Define audit and compliance mechanisms
 
 | Item | Detail |
 |------|--------|
-| **Task** | Establish how governance-level obligations (anonymisation, deletion, attribution) will be verified |
-| **Options** | Self-attestation (lightweight, suitable for prototype), periodic review by Steering Committee, automated checks where possible (e.g., scanning published papers for attribution) |
-| **Deliverable** | Compliance section in Trust Framework v1 |
+| **Task** | Propose how governance-level obligations (anonymisation, deletion, attribution) could be verified, for governance-body sign-off |
+| **Options to consider** | Self-attestation (lightweight, suitable for prototype), periodic review by the governance body, automated checks where possible (e.g., scanning published papers for attribution) |
+| **Deliverable** | Compliance section in Trust Framework v1, pending governance-body approval |
 | **Status** | [ ] Not started |
 
 ### 6.3 Design consent revocation flow
 
 | Item | Detail |
 |------|--------|
-| **Task** | Define what happens when a producer wants to revoke consent for a previously shared dataset |
-| **Considerations** | Contracts already finalized cannot be technically un-done, but new transfers can be blocked. Retention limits (e.g., `data-retention-limit.json`) provide a natural expiry. The revocation should trigger a notification to the consumer with a deletion request. |
-| **Deliverable** | Revocation procedure documented in Trust Framework |
+| **Task** | Propose what would happen when a producer wants to revoke consent for a previously shared dataset |
+| **Considerations** | Contracts already finalized cannot be technically un-done, but new transfers can be blocked. Retention limits (e.g., `data-retention-limit.json`) provide a natural expiry. It is proposed that revocation trigger a notification to the consumer with a deletion request. |
+| **Deliverable** | Revocation procedure documented in Trust Framework, pending governance-body approval |
 | **Status** | [ ] Not started |
 
 ---

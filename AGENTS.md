@@ -49,7 +49,7 @@ management/
 
 The **Grazing Lands Carbon Data Initiative (GLCDI)** is a federated data space that links
 soil organic carbon (SOC) measurements with grazing management records across U.S. grazing
-lands. Funded by the Walmart Foundation, the prototype runs **January–September 2026**.
+lands. The prototype runs **January–September 2026**.
 
 Three use cases drive the prototype:
 
@@ -57,17 +57,17 @@ Three use cases drive the prototype:
 2. **Agronomic model calibration** — researchers train models predicting SOC response
 3. **Peer-to-peer data sharing** — consent-governed exchange between participants
 
-## Key Participants
+## Key Participant Types
 
-| Participant | Type | Token role | Assets |
-|-------------|------|-----------|--------|
-| Caney Fork Farms | Producer (ranch) | `glcdi_producer` | SOC measurements, grazing rotation, paddock boundaries, NDVI |
-| Point Blue Conservation Science | Researcher (NGO) | `glcdi_researcher` | Rangeland SOC, GHG flux, biodiversity surveys, weather, carbon credits |
-| White Buffalo Land Trust | Producer (NGO/ranch) | `glcdi_producer` | Monitoring datasets, grazing records |
-| TSIP (Q2) | Data steward | `glcdi_data_steward` | SOC sampling metadata |
-| University of Florida (Q2) | Researcher | `glcdi_researcher` | TBD |
+Specific participant identities per cohort are under discussion and intentionally omitted here. The prototype expects to include a mix of the following participant types, each mapping to a GLCDI role:
 
-Future (post-prototype): corporate supply-chain partners, certification bodies, funders.
+| Participant type | Token role | Typical assets |
+|------------------|-----------|----------------|
+| Producer (ranch / farming organisation) | `glcdi_producer` | SOC measurements, grazing rotation, paddock boundaries, NDVI |
+| Research institution (university / NGO) | `glcdi_researcher` | Rangeland SOC, GHG flux, biodiversity surveys, weather, carbon credits |
+| Data steward / monitoring alliance | `glcdi_data_steward` | SOC sampling metadata, curated datasets |
+
+Future (post-prototype): corporate supply-chain partners, certification bodies, funders. Specific institutional and corporate participants TBD.
 
 ## How Policies Work in This Dataspace
 
@@ -131,7 +131,7 @@ User → Participant Keycloak (local auth) → Governance Keycloak (OIDC broker)
 
 The **governance Keycloak** (`governance.glcdi.startinblox.com`, realm `glcdi`) is the source
 of truth for roles and membership. Participants authenticate at their local Keycloak, which
-brokers to governance via OIDC identity providers (`caney-fork`, `point-blue`).
+brokers to governance via per-participant OIDC identity providers (one alias per onboarded participant).
 
 ### Data Exchange Flow (with policy evaluation)
 
