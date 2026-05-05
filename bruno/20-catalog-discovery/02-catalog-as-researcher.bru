@@ -1,25 +1,29 @@
 meta {
-  name: Catalog query as non-matching identity (white-buffalo)
+  name: Catalog query as researcher (point-blue) — negative case (filtered out)
   type: http
   seq: 2
 }
 
 post {
-  url: {{white_buffalo_host}}/management/v3/catalog/request
+  url: {{point_blue_host}}/management/v3/catalog/request
   body: json
   auth: none
 }
 
-# Identity-driven negative case: white-buffalo is a member but not a
-# researcher and not a regenerative producer. The access policy on the
-# fixture asset should hide it from this consumer.
+# Identity-driven negative case. point-blue carries `glcdi_member` +
+# `glcdi_researcher` but no `glcdi_regenerative_producer` role. The
+# provider's `regenerative-producers-only` access policy explicitly
+# requires `glcdi_regenerative_producer`, so this consumer must NOT
+# see the M1 fixture asset in the returned catalog.
 #
 # Expected behaviour: HTTP 200 (catalog query itself succeeds), but the
-# returned dataset list does NOT include the M1 fixture asset.
+# returned dataset list does NOT include the M1 fixture asset — proof
+# that the access policy is filtering correctly. This is the M1
+# acceptance criterion in IMPLEM_PLAN.md § Milestone M1.
 headers {
   Content-Type: application/json
-  X-Api-Key: {{white_buffalo_api_key}}
-  Authorization: Bearer {{white_buffalo_token}}
+  X-Api-Key: {{point_blue_api_key}}
+  Authorization: Bearer {{point_blue_token}}
 }
 
 body:json {

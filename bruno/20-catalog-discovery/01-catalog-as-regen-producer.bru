@@ -1,0 +1,60 @@
+meta {
+  name: Catalog query as regenerative producer (white-buffalo) — positive case
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{white_buffalo_host}}/management/v3/catalog/request
+  body: json
+  auth: none
+}
+
+# Identity-driven positive case. white-buffalo carries
+# `glcdi_member` + `glcdi_regenerative_producer` realm roles and
+# `glcdi_certification_status = regenerative-verified`. The provider's
+# `regenerative-producers-only` access policy admits this consumer, so
+# the M1 fixture asset MUST appear in the returned catalog.
+#
+# Claims arrive via the DSP layer; iam-oauth2 (IMPLEM_PLAN.md § 3.5)
+# extracts them from the Bearer token into EDC's ClaimToken for policy
+# evaluation.
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{white_buffalo_api_key}}
+  Authorization: Bearer {{white_buffalo_token}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "CatalogRequest",
+    "counterPartyAddress": "{{caney_fork_dsp}}",
+    "counterPartyId": "{{caney_fork_participant_id}}",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "@type": "QuerySpec",
+      "offset": 0,
+      "limit": 50
+    }
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("catalog contains the M1 fixture asset", function() {
+    const body = res.getBody();
+    const expectedId = bru.getEnvVar("m1_asset_id");
+    // EDC catalog response shape: a `dcat:Catalog` containing
+    // `dcat:dataset` (which can be an array or a single object).
+    const datasetsRaw = body["dcat:dataset"] ?? body.datasets ?? [];
+    const datasets = Array.isArray(datasetsRaw) ? datasetsRaw : [datasetsRaw];
+    const ids = datasets.map(d => d["@id"] ?? d.id);
+    expect(ids).to.include(expectedId);
+  });
+}

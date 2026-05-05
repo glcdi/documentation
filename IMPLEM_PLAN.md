@@ -144,11 +144,19 @@ To support multiple operators per organisation later without a refactor, model o
 
 In the Authority KC's `glcdi` realm:
 
-- Create groups: `caney-fork-team`, `point-blue-team`, `white-buffalo-team`.
-- Assign realm roles (`glcdi_member`, `glcdi_researcher` or `glcdi_regenerative_producer` — per Phase 2) and group attributes (`glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`) at the **group level**, not the user level.
+- Create groups and their claim assignments at the **group level** (not on individual users):
+
+  | Group | Realm roles | `glcdi_organisation` | `glcdi_certification_status` | `glcdi_contribution_status` |
+  |-------|-------------|----------------------|------------------------------|-----------------------------|
+  | `caney-fork-team` | `glcdi_member`, `glcdi_regenerative_producer` | `caney-fork` | `regenerative-verified` | `contributing` (after first asset publish) |
+  | `white-buffalo-team` | `glcdi_member`, `glcdi_regenerative_producer` | `white-buffalo` | `regenerative-verified` | `contributing` (after first asset publish) |
+  | `point-blue-team` | `glcdi_member`, `glcdi_researcher` | `point-blue` | `not-applicable` | `observer` |
+
 - Configure protocol mappers (§ 2.3) to serialise both group roles and group attributes into the JWT.
 - Create one starter user per group: `caney-fork` (member of `caney-fork-team`), `point-blue` (member of `point-blue-team`), `white-buffalo` (member of `white-buffalo-team`). Set initial credentials.
 - Adding a second operator for an org later = "create user, add to existing group". No new claim wiring needed.
+
+**Casing convention:** all attribute *values* (certification statuses, contribution statuses, participant types) use lowercase / kebab-case (e.g. `regenerative-verified`, `not-applicable`, `contributing`, `observer`) — this matches the existing policy JSON in `policies/` and the JSON-LD context in [`context.jsonld`](context.jsonld). Realm role names use snake_case with `glcdi_` prefix (Keycloak / OAuth convention). Purpose taxonomy values stay PascalCase per § 1.3 (`InternalAnalysis`, `ScientificResearch`, …).
 
 **Connector service accounts** (one per participant org — used by the *connector itself* for DSP-level identity, see § 1.5.8 + § 3.5):
 
@@ -799,14 +807,17 @@ Audit and adapt `participant-ui/` for the simplified topology:
 
 **Gate before Phase 7.1 (Payment-required workflow) starts.**
 
-M1 is demonstrable when, against a deployed two-participant cluster (e.g. `caney-fork` provider + `point-blue` researcher), the following all pass:
+M1 is demonstrable when, against a deployed three-participant cluster — **`caney-fork`** (regenerative producer, provider), **`white-buffalo`** (regenerative producer, positive consumer), **`point-blue`** (researcher, negative-test consumer) — the following all pass:
 
-- [ ] Authority Keycloak has `caney-fork`, `point-blue`, `white-buffalo` users with the appropriate `glcdi_member`, `glcdi_researcher`, `glcdi_regenerative_producer` claims (per § 1.5.6 + Phase 2).
-- [ ] A provider connector publishes an asset whose **access policy** is `regenerative-producers-only` (Phase 4) and whose **contract policy** is `internal-use-only` (Phase 4).
-- [ ] A researcher (with `glcdi_researcher` claim) sees the asset in the catalog query.
-- [ ] A non-regenerative producer (with only `glcdi_member`) does **not** see the asset.
-- [ ] Contract negotiation succeeds when the consumer declares `purpose = InternalAnalysis`; fails when they declare a different purpose.
-- [ ] Transfer succeeds against the agreed contract.
+- [ ] Authority Keycloak has `caney-fork-team`, `white-buffalo-team`, `point-blue-team` groups with claims:
+  - `caney-fork-team` and `white-buffalo-team`: `glcdi_member`, `glcdi_regenerative_producer` realm roles; `glcdi_certification_status = regenerative-verified`.
+  - `point-blue-team`: `glcdi_member`, `glcdi_researcher` realm roles; no certification status.
+  - One starter user per group: `caney-fork`, `white-buffalo`, `point-blue` (per § 1.5.6).
+- [ ] `caney-fork` connector publishes an asset whose **access policy** is `regenerative-producers-only` (Phase 4) and whose **contract policy** is `internal-use-only` (Phase 4).
+- [ ] `white-buffalo` (regen producer) sees the asset in the catalog query against `caney-fork`. **Positive case.**
+- [ ] `point-blue` (researcher) does **not** see the asset in the catalog query — filtered out by the access policy. **Negative case (the policy is doing its job).**
+- [ ] `white-buffalo` negotiates with `caney-fork` declaring `purpose = InternalAnalysis` → reaches `FINALIZED`. With a different purpose → reaches `TERMINATED`.
+- [ ] Transfer succeeds against the agreed contract (`white-buffalo` ← `caney-fork`).
 - [ ] The Bruno collection (§ 4.5.E) executes all of the above non-interactively — green run.
 - [ ] The participant UI (§ 4.5.F) surfaces asset / policy / contract / history components correctly under API-key login.
 - [ ] Per-participant Keycloak is gone from the deployed compose stack (§ 1.5.2); single-tier OIDC against the Authority Keycloak; `X-Api-Key` for the management API.

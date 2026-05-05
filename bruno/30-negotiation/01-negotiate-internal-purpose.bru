@@ -5,20 +5,22 @@ meta {
 }
 
 post {
-  url: {{point_blue_host}}/management/v3/contractnegotiations
+  url: {{white_buffalo_host}}/management/v3/contractnegotiations
   body: json
   auth: none
 }
 
 headers {
   Content-Type: application/json
-  X-Api-Key: {{point_blue_api_key}}
-  Authorization: Bearer {{point_blue_token}}
+  X-Api-Key: {{white_buffalo_api_key}}
+  Authorization: Bearer {{white_buffalo_token}}
 }
 
-# point-blue (researcher) negotiates for the M1 fixture asset, declaring
-# `purpose = InternalAnalysis`. The contract policy (internal-use-only)
-# accepts this purpose, so the negotiation should reach FINALIZED.
+# white-buffalo (regenerative producer — the M1 positive consumer)
+# negotiates for the M1 fixture asset, declaring `purpose = InternalAnalysis`.
+# The contract policy (internal-use-only) accepts this purpose, so the
+# negotiation should reach FINALIZED. point-blue cannot negotiate this asset
+# because it is filtered out at the access-policy layer (see § 20-catalog-discovery/02).
 #
 # DESIGN NOTE: the offer policy here must structurally match the offer the
 # provider would emit (same access/contract policy IDs and constraints) —

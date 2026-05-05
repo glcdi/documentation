@@ -5,18 +5,18 @@ meta {
 }
 
 post {
-  url: {{point_blue_host}}/management/v3/contractnegotiations
+  url: {{white_buffalo_host}}/management/v3/contractnegotiations
   body: json
   auth: none
 }
 
 headers {
   Content-Type: application/json
-  X-Api-Key: {{point_blue_api_key}}
-  Authorization: Bearer {{point_blue_token}}
+  X-Api-Key: {{white_buffalo_api_key}}
+  Authorization: Bearer {{white_buffalo_token}}
 }
 
-# Same consumer (point-blue) and same asset, but the consumer declares
+# Same consumer (white-buffalo) and same asset, but the consumer declares
 # `purpose = ResearchAnalysis`. The contract policy only admits
 # `glcdi:InternalAnalysis`, so the provider should reject and the
 # negotiation should reach TERMINATED.
