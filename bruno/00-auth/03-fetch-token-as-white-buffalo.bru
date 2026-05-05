@@ -1,0 +1,67 @@
+meta {
+  name: Fetch token as white-buffalo
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{authority_host}}/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: glcdi-connector-white-buffalo
+  client_secret: {{white_buffalo_client_secret}}
+}
+
+# white-buffalo is the negative-control participant: a member but neither
+# researcher nor regenerative producer. Used in 20-catalog-discovery/02 to
+# confirm the access policy filters the asset out for non-matching identities.
+#
+# DESIGN NOTE: white-buffalo's claim profile is "member only". If Phase 2
+# settles on a different shape (e.g. an explicit non-regenerative `producer`
+# with `glcdi_certification_status = conventional`), the negative-path
+# expectation in 20-catalog-discovery/02-catalog-as-non-researcher.bru also
+# needs to be revisited.
+script:post-response {
+  const token = res.getBody()?.access_token;
+  if (token) {
+    bru.setEnvVar("white_buffalo_token", token);
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response carries access_token", function() {
+    expect(res.getBody()).to.have.property("access_token");
+  });
+
+  test("token is glcdi_member but not researcher / regenerative producer", function() {
+    const token = res.getBody().access_token;
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString("utf-8")
+    );
+    expect(payload).to.have.property("glcdi_membership", "active");
+    expect(payload.glcdi_roles).to.include("glcdi_member");
+    expect(payload.glcdi_roles).to.not.include("glcdi_researcher");
+    // The asset's access policy requires certification status in
+    // {organic-certified, regenerative-verified, transitioning-organic};
+    // assert white-buffalo does not meet it.
+    if (payload.glcdi_certification_status) {
+      expect([
+        "organic-certified",
+        "regenerative-verified",
+        "transitioning-organic"
+      ]).to.not.include(payload.glcdi_certification_status);
+    }
+  });
+}

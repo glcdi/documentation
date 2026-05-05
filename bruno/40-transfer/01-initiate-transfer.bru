@@ -1,0 +1,69 @@
+meta {
+  name: Initiate transfer process against the agreed contract
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{point_blue_host}}/management/v3/transferprocesses
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{point_blue_api_key}}
+  Authorization: Bearer {{point_blue_token}}
+}
+
+# Initiates a data-plane transfer against the contract agreement that
+# resulted from 30-negotiation/01 (purpose=InternalAnalysis path). Requires
+# `m1_contract_agreement_id` to be populated — this happens after the
+# negotiation reaches FINALIZED and the agreement id is captured by the
+# (future) 30-negotiation/01b polling file.
+#
+# DESIGN NOTE: the `transferType` value is the EDC 0.15.x form. Older
+# connectors used a separate `dataDestination.type` only; if the fork pins
+# an older version, simplify accordingly.
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "TransferRequest",
+    "counterPartyAddress": "{{caney_fork_dsp}}",
+    "contractId": "{{m1_contract_agreement_id}}",
+    "assetId": "{{m1_asset_id}}",
+    "protocol": "dataspace-protocol-http",
+    "transferType": "HttpData-PULL",
+    "dataDestination": {
+      "type": "HttpProxy"
+    }
+  }
+}
+
+script:post-response {
+  const id = res.getBody()?.["@id"] ?? res.getBody()?.id;
+  if (id) {
+    bru.setEnvVar("m1_transfer_process_id", id);
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response carries a transfer process id", function() {
+    const body = res.getBody();
+    const id = body["@id"] ?? body.id;
+    expect(id).to.be.a("string");
+  });
+
+  // NOTE: as with negotiation, transfer state transitions are async.
+  // Initial state is REQUESTING → STARTED → COMPLETED. A follow-up poll
+  // file (40-transfer/01b-poll-completed.bru) is left as a TODO for
+  // Phase 4.5.E. With HttpProxy + EDR-style flows, COMPLETED can be a
+  // long-lived state — depending on the data-plane shape the assertion
+  // may need to be STARTED rather than COMPLETED.
+}

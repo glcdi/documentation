@@ -1,0 +1,48 @@
+meta {
+  name: Create contract definition (binds asset to access + contract policies)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/contractdefinitions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+  Authorization: Bearer {{caney_fork_token}}
+}
+
+# Wires the asset created in step 01 to the access policy from step 02 and the
+# contract policy from step 03. The `assetsSelector` filters by the asset's
+# `@id`; in production this would typically filter by an asset class property
+# instead (e.g. `glcdi:assetClass = soc-measurements`) so a single contract
+# definition covers many assets.
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@id": "{{m1_contract_definition_id}}",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "{{m1_access_policy_id}}",
+    "contractPolicyId": "{{m1_contract_policy_id}}",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "{{m1_asset_id}}"
+      }
+    ]
+  }
+}
+
+tests {
+  test("status is 200 or 201", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201]);
+  });
+}

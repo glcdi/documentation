@@ -1,0 +1,60 @@
+meta {
+  name: Create asset (caney-fork — grazing-soc-2024)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+# Pure CRUD seeding step: X-Api-Key only is sufficient (IMPLEM_PLAN.md § 1.5.8).
+# The Bearer token is included as defence-in-depth and so this folder still
+# exercises the dual-credential path that identity-driven scenarios require.
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+  Authorization: Bearer {{caney_fork_token}}
+}
+
+# Minimal asset descriptor with the M1 fixture URN. The data-address shape
+# below uses HttpData as a representative sink — adjust to match Phase 4's
+# seeding scripts when they land. The `@id` follows the URN convention from
+# PAYMENT_GATING.md § 3.7.
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "{{m1_asset_id}}",
+    "@type": "Asset",
+    "properties": {
+      "name": "Caney Fork grazing SOC 2024",
+      "description": "Soil organic carbon measurements, Caney Fork ranch, 2024 season — M1 fixture asset.",
+      "contenttype": "application/json",
+      "glcdi:assetClass": "soc-measurements"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "grazing-soc-2024",
+      "baseUrl": "http://provider-data-source/grazing-soc-2024.json",
+      "proxyPath": "true"
+    }
+  }
+}
+
+tests {
+  test("status is 200 or 201", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201]);
+  });
+
+  test("response echoes the asset id", function() {
+    const body = res.getBody();
+    if (body && body["@id"]) {
+      expect(body["@id"]).to.equal(bru.getEnvVar("m1_asset_id"));
+    }
+  });
+}

@@ -1,0 +1,65 @@
+meta {
+  name: Catalog query as researcher (point-blue)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{point_blue_host}}/management/v3/catalog/request
+  body: json
+  auth: none
+}
+
+# Identity-driven: point-blue carries `glcdi_researcher`. The provider's
+# regenerative-only access policy inspects the consumer's claims via the
+# DSP layer (claim extraction in iam-oauth2 — IMPLEM_PLAN.md § 3.5).
+#
+# DESIGN NOTE — IMPORTANT MISMATCH TO CONFIRM: the M1 access policy in
+# 10-provider-seeding/02 requires `participantType eq "producer"` AND
+# `certificationStatus isAnyOf [organic-certified, regenerative-verified, ...]`.
+# point-blue is a *researcher*, so by the strict reading of the policy
+# point-blue would NOT see the asset either. The IMPLEM_PLAN M1 acceptance
+# criteria (§ Milestone M1) say the researcher should see the asset, so either
+# (a) the M1 policy needs to also admit `glcdi_researcher` (most likely), or
+# (b) the M1 policy is "regenerative producers only" and the catalog scenario
+# expects only caney-fork-style identities to see it. Phase 4 owns this call —
+# update both the policy body in 02 and the assertion below in lockstep.
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{point_blue_api_key}}
+  Authorization: Bearer {{point_blue_token}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "CatalogRequest",
+    "counterPartyAddress": "{{caney_fork_dsp}}",
+    "counterPartyId": "{{caney_fork_participant_id}}",
+    "protocol": "dataspace-protocol-http",
+    "querySpec": {
+      "@type": "QuerySpec",
+      "offset": 0,
+      "limit": 50
+    }
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("catalog contains the M1 fixture asset", function() {
+    const body = res.getBody();
+    const expectedId = bru.getEnvVar("m1_asset_id");
+    // EDC catalog response shape: a `dcat:Catalog` containing
+    // `dcat:dataset` (which can be an array or a single object).
+    const datasetsRaw = body["dcat:dataset"] ?? body.datasets ?? [];
+    const datasets = Array.isArray(datasetsRaw) ? datasetsRaw : [datasetsRaw];
+    const ids = datasets.map(d => d["@id"] ?? d.id);
+    expect(ids).to.include(expectedId);
+  });
+}

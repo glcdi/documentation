@@ -1,0 +1,23 @@
+meta {
+  name: Management API call with no X-Api-Key — expect 401
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{caney_fork_host}}/management/v3/assets
+  body: none
+  auth: none
+}
+
+# Deliberately omits X-Api-Key and Authorization. The X-Api-Key floor
+# (IMPLEM_PLAN.md § 1.5.8) means the connector should refuse with 401.
+headers {
+  Accept: application/json
+}
+
+tests {
+  test("status is 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

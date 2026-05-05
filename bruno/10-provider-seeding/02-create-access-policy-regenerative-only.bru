@@ -1,0 +1,70 @@
+meta {
+  name: Create access policy (regenerative-only)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+  Authorization: Bearer {{caney_fork_token}}
+}
+
+# Mirrors management/policies/access/regenerative-producers.json — the access
+# policy that gates catalog visibility for the M1 fixture asset.
+#
+# DESIGN NOTE: certification-status values here use the kebab-case values from
+# IMPLEM_PLAN.md § 2.4 (`regenerative-verified` etc.). The user's task brief
+# mentions PascalCase `RegenerativeVerified`; both forms appear in the
+# vocabulary (context.jsonld defines both). Phase 2 needs to pick one canonical
+# form for the runtime claim and update the policy + the Keycloak attribute
+# values together. Update this body when that lands.
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "{{m1_access_policy_id}}",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@context": "https://cdn.startinblox.com/owl/glcdi/context.jsonld",
+      "@type": "Set",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "glcdi:membership",
+              "operator": "eq",
+              "rightOperand": "active"
+            },
+            {
+              "leftOperand": "glcdi:participantType",
+              "operator": "eq",
+              "rightOperand": "producer"
+            },
+            {
+              "leftOperand": "glcdi:certificationStatus",
+              "operator": "isAnyOf",
+              "rightOperand": ["organic-certified", "regenerative-verified", "transitioning-organic"]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+tests {
+  test("status is 200 or 201", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201]);
+  });
+}

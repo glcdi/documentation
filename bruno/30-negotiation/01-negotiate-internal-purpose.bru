@@ -1,0 +1,96 @@
+meta {
+  name: Negotiate contract — purpose=InternalAnalysis (positive path)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{point_blue_host}}/management/v3/contractnegotiations
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{point_blue_api_key}}
+  Authorization: Bearer {{point_blue_token}}
+}
+
+# point-blue (researcher) negotiates for the M1 fixture asset, declaring
+# `purpose = InternalAnalysis`. The contract policy (internal-use-only)
+# accepts this purpose, so the negotiation should reach FINALIZED.
+#
+# DESIGN NOTE: the offer policy here must structurally match the offer the
+# provider would emit (same access/contract policy IDs and constraints) —
+# in practice the consumer first does a catalog query (20-catalog-discovery/01)
+# and reuses the policy block from the catalog response. For the skeleton we
+# inline a representative shape; Phase 4.5.E should refactor this to a
+# pre-request script that fetches the offer from the catalog and uses it
+# verbatim.
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@type": "ContractRequest",
+    "counterPartyAddress": "{{caney_fork_dsp}}",
+    "protocol": "dataspace-protocol-http",
+    "policy": {
+      "@context": "https://cdn.startinblox.com/owl/glcdi/context.jsonld",
+      "@type": "odrl:Offer",
+      "@id": "{{m1_contract_policy_id}}:offer",
+      "assigner": "{{caney_fork_participant_id}}",
+      "target": "{{m1_asset_id}}",
+      "permission": [
+        {
+          "action": "use",
+          "constraint": [
+            {
+              "leftOperand": "odrl:purpose",
+              "operator": "eq",
+              "rightOperand": "glcdi:InternalAnalysis"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+# Captures the negotiation id so the follow-up state polling and the
+# transfer step in 40-transfer/ can reference it.
+script:post-response {
+  const id = res.getBody()?.["@id"] ?? res.getBody()?.id;
+  if (id) {
+    bru.setEnvVar("m1_negotiation_id", id);
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response carries a negotiation id", function() {
+    const body = res.getBody();
+    const id = body["@id"] ?? body.id;
+    expect(id).to.be.a("string");
+  });
+
+  // NOTE on state assertion:
+  // Initial response carries state CONSUMER_REQUESTING. Reaching FINALIZED
+  // takes several round-trips between connectors. Two options:
+  //
+  //   (a) Single-shot here: assert only that an id was returned. Add a
+  //       follow-up GET file (e.g. 30-negotiation/01b-poll-finalized.bru)
+  //       that polls /management/v3/contractnegotiations/{id} until the
+  //       state is FINALIZED or a timeout passes.
+  //
+  //   (b) Polling in this same file: use Bruno's runtime to retry until
+  //       FINALIZED. Bruno's CLI supports this less ergonomically than UI.
+  //
+  // The skeleton chooses (a) for clarity; the follow-up poll is left as a
+  // TODO for Phase 4.5.E to add once the rest of the chain is runnable.
+}
