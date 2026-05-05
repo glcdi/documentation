@@ -19,6 +19,7 @@ into the three deployable sub-projects of the GLCDI workspace:
 management/
 ├── README.md           # This file — governance overview
 ├── AUTHORITY.md        # Proposed responsibilities & operating mode of the Dataspace Authority
+├── AUTHORITY_MIGRATION.md # Operator checklist for renaming the live governance-* infrastructure
 ├── IDENTITY.md         # Identity, authentication & standards (OIDC, OID4VC, Keycloak)
 ├── STANDARDS.md        # Trust & control mechanisms — specification mapping (ODRL, DSP, DCAT, JSON-LD)
 ├── AGENTS.md           # Context file for AI agents
