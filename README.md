@@ -22,6 +22,7 @@ management/
 ├── AUTHORITY_MIGRATION.md # Operator checklist for renaming the live governance-* infrastructure
 ├── IDENTITY.md         # Identity, authentication & standards (OIDC, OID4VC, Keycloak)
 ├── STANDARDS.md        # Trust & control mechanisms — specification mapping (ODRL, DSP, DCAT, JSON-LD)
+├── PAYMENT_GATING.md   # Implementation design for the payment-required contract policy (proposal)
 ├── AGENTS.md           # Context file for AI agents
 ├── IMPLEM_PLAN.md      # Implementation plan (7 phases)
 └── policies/
@@ -98,7 +99,8 @@ the enforcement boundary:
 |-----------|------------|---------|
 | **Access policy filtering** | EDC connector (automatic) | Hiding offers from non-researchers, non-members |
 | **Contract constraint evaluation** | EDC connector (at negotiation) | Purpose check, temporal check |
-| **Payment verification** | Custom policy function + external system | Payment-required policy |
+| **Payment status recording & transfer gating** | Connector extension (v0 request filter on transfer initiation; v1 ODRL constraint functions) + external billing/payment system + v2 scheduled DSP termination of overdue agreements | `payment-required` policy. Design: [`PAYMENT_GATING.md`](PAYMENT_GATING.md). Sequence: [`policies/diagrams/09-payment-gated-data-exchange.puml`](policies/diagrams/09-payment-gated-data-exchange.puml) |
+| **Refund obligation (recording vs. execution)** | Recording: connector (clause is part of the immutable DSP agreement; audit endpoints expose it). Adjudication: Dataspace Authority. Execution: external billing/payment system | Refund clause in `payment-required` agreement; see [`PAYMENT_GATING.md` § 3.3](PAYMENT_GATING.md) |
 | **Anonymisation** | Data Sharing Agreement (legal) | Anonymisation obligation |
 | **Attribution** | Data Sharing Agreement (legal) | Citation duty |
 | **Data deletion** | Data Sharing Agreement (legal) | Retention limit obligation |

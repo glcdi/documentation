@@ -2,7 +2,7 @@
 
 A proposal for how a payment-required contract policy could be enforced end-to-end across the EDC connector and external payment infrastructure. Everything below is a working design for the project team and Dataspace Authority to validate; nothing here is a decided commitment.
 
-This document complements [`policies/contract/payment-required.json`](policies/contract/payment-required.json) (the policy template) and [`policies/README.md`](policies/README.md) (the policy catalogue with feasibility ratings). The focus here is **how EDC would enforce it** — the connector extension shape, the storage model, the gating mechanism, and the parts that fundamentally cannot be enforced by code and must live in the DSA.
+This document complements [`policies/contract/payment-required.json`](policies/contract/payment-required.json) (the policy template), [`policies/README.md`](policies/README.md) (the policy catalogue with feasibility ratings), and [`policies/diagrams/09-payment-gated-data-exchange.puml`](policies/diagrams/09-payment-gated-data-exchange.puml) (sequence diagram for the end-to-end flow). The focus here is **how EDC would enforce it** — the connector extension shape, the storage model, the gating mechanism, and the parts that fundamentally cannot be enforced by code and must live in the DSA.
 
 ---
 

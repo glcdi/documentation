@@ -69,6 +69,7 @@ Grouped by theme. "Proposed" means the project team is putting this forward as a
 | Define audit mechanism | Choose between self-attestation, periodic review, and automated checks; document the chosen mix in Trust Framework v1 | [`IMPLEM_PLAN.md` § 6.2](IMPLEM_PLAN.md) |
 | Handle incident and breach reports | Receive complaints, investigate, propose remediation; escalate to legal counsel only where the DSA warrants it | *to be documented in Trust Framework* |
 | Approve consent revocation procedures | Document how a producer revokes consent for a previously shared dataset (contracts, deletion notification, audit trail) | [`IMPLEM_PLAN.md` § 6.3](IMPLEM_PLAN.md) |
+| Adjudicate refund claims & monitor `payment-required` obligations (post-prototype) | Receive consumer claims that payment was completed but access was denied; review the per-connector audit endpoints (`/v3/contractnegotiations/{id}/obligations` and `/audit`); rule on whether refund is owed. The connector records the refund obligation as part of the immutable agreement; the Authority adjudicates; the external billing/payment system executes the refund. An aggregating audit service + UI on the Authority side is **proposed** as the operational consumer of these endpoints | [`PAYMENT_GATING.md` § 3.3](PAYMENT_GATING.md), [`IMPLEM_PLAN.md` § 7.1](IMPLEM_PLAN.md) |
 
 ### E. Cohort & phase decisions
 

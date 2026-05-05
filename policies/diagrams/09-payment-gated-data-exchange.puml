@@ -1,0 +1,128 @@
+@startuml Payment-Gated Data Exchange
+title **Use Case: Payment-Gated Data Exchange (post-prototype)**\nA consumer is gated from data transfer until external payment is confirmed via the connector
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam sequenceParticipantBorderColor #424242
+skinparam sequenceLifeLineBorderColor #9E9E9E
+skinparam noteBackgroundColor #FFF9C4
+skinparam noteBorderColor #F9A825
+skinparam sequenceGroupBackgroundColor #FFF3E0
+skinparam sequenceGroupBorderColor #EF6C00
+skinparam sequenceDividerBackgroundColor #F3E5F5
+
+actor "Consumer\n(corporate analyst)" as Consumer #FFF3E0
+participant "Consumer\nEDC Connector" as C_EDC #E3F2FD
+participant "Provider\nEDC Connector\n+ payment-status\nextension" as P_EDC #E8F5E9
+actor "Provider\nFinance/Ops\n(email recipient)" as Finance #E8F5E9
+participant "External Billing /\nPayment system" as Pay #F3E5F5
+
+== Setup ==
+
+note over P_EDC
+  Provider publishes asset with the
+  **payment-required** contract policy:
+  - Permission: **use**, with duty to **pay** by deadline
+  - Prohibition: use if payAmount != agreed OR past deadline
+  - Obligation: provider compensates if consumer paid
+    but access was denied (refund clause)
+  - Consequence: invalidate agreement on duty breach
+  See PAYMENT_GATING.md §1 for the full template.
+end note
+
+== Catalog Discovery & Contract Negotiation (compressed) ==
+
+Consumer -> C_EDC : Browse provider catalog
+C_EDC -> P_EDC : DSP Catalog Query
+P_EDC --> C_EDC : Catalog with offer (payment-required)
+C_EDC --> Consumer : Offer with terms\n(amount, deadline, refund clause)
+Consumer -> C_EDC : Accept terms
+C_EDC -> P_EDC : DSP Contract Negotiation
+P_EDC -> P_EDC : Negotiation reaches **FINALIZED**
+
+== Finalization & Email Notification ==
+
+group NegotiationFinalizedObserver
+  P_EDC -> P_EDC : Stamp privateProperties:\npayment.status = "pending"\npayment.amount, payment.currency,\npayment.deadline\n(sourced from the policy template)
+  P_EDC -> Finance : **Email** with negotiation ID,\nagreement summary, amount,\ndeadline, payment-update endpoint
+end
+note right of Finance
+  Async send off the state-machine
+  thread. SMTP host + recipient
+  pulled from extension config
+  (PAYMENT_GATING.md §6.1).
+end note
+
+== Premature Transfer Attempt — rejected by the gate ==
+
+Consumer -> C_EDC : Request transfer (before payment)
+C_EDC -> P_EDC : POST /v3/transferprocesses
+group PaymentRequiredFilter
+  P_EDC -> P_EDC : Read privateProperties:\npayment.status == "pending"\n=> **REJECT**
+end
+P_EDC --> C_EDC : **HTTP 402 Payment Required**
+C_EDC --> Consumer : Transfer rejected — payment pending
+
+== External Payment ==
+
+Finance -> Pay : Issue invoice for negotiation
+Pay --> Consumer : Invoice (out-of-band channel\nowned by the billing system)
+Consumer -> Pay : Pay invoice
+Pay --> Finance : Payment confirmed\n(externalRef: e.g. stripe_pi_3MXa...)
+
+== Payment Status Update — back-channel into the connector ==
+
+Finance -> P_EDC : POST /v3/contractnegotiations/{id}/payment\nX-Api-Key: ...\n{paid: true, amount: "100.00",\n currency: "USD", externalRef: "..."}
+group PaymentController
+  P_EDC -> P_EDC : Verify FINALIZED + has Agreement
+  P_EDC -> P_EDC : Idempotent on externalRef
+  P_EDC -> P_EDC : Write privateProperties:\npayment.status = "paid"\npayment.paidAt = now()\npayment.externalRef
+end
+P_EDC --> Finance : 200 OK
+
+== Successful Transfer ==
+
+Consumer -> C_EDC : Request transfer
+C_EDC -> P_EDC : POST /v3/transferprocesses
+group PaymentRequiredFilter (v0)
+  P_EDC -> P_EDC : payment.status == "paid" ✓\nnow() <= payment.deadline ✓\n=> **PASS**
+end
+group ODRL constraint functions (v1, forward-compatible)
+  P_EDC -> P_EDC : payAmount == agreed? **YES**\npaymentStatus == completed? **YES**\ndateTime <= deadline? **YES**
+end
+P_EDC -> P_EDC : DSP Transfer initiated
+P_EDC --> C_EDC : Data payload
+C_EDC --> Consumer : Transfer complete
+
+== Audit substrate (always available) ==
+
+note over P_EDC
+  Dataspace Authority (and either party)
+  can call (with X-Api-Key):
+  - **GET** /v3/contractnegotiations/{id}/obligations
+    → returns clauses extracted from the agreement
+       (duty, prohibition, obligation, consequence)
+  - **GET** /v3/contractnegotiations/{id}/audit
+    → returns payment.* transitions, lifecycle states,
+       transfer-process attempts, terminationReason
+  Substrate for refund-claim adjudication and
+  Trust Framework compliance reviews.
+  An aggregating service + UI on the Authority side
+  is **proposed** (PAYMENT_GATING.md §3.3) — not built yet.
+end note
+
+== If deadline passes without payment (v2) ==
+
+/ note over P_EDC, Consumer
+  **DutyDeadlineEnforcer (v2)** runs hourly:
+  1. Find negotiations where deadline elapsed and payment.status != paid
+  2. Stamp payment.terminationReason = "payment.duty.deadline-exceeded:<duty-uri>"
+  3. POST /v3/contractnegotiations/{id}/terminate
+     → DSP **ContractNegotiationTermination** propagates to the consumer's connector
+     → both sides converge on **TERMINATED**
+  4. Cascade-terminate any in-flight transfer-processes
+  Once terminated, EDC core refuses any future transfer creation
+  upstream of the v0 filter — the deadline check in the filter becomes redundant.
+end note
+
+@enduml

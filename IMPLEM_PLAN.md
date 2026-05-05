@@ -622,10 +622,12 @@ Items from `./policies/` that are relevant for later phases but not required for
 
 | Item | Detail |
 |------|--------|
-| **Task** | Implement the `payment-required` contract policy |
-| **Requires** | External payment/invoicing system, custom EDC policy function to verify payment status before approving negotiation |
+| **Task** | Implement the `payment-required` contract policy via a `payment-status` EDC extension |
+| **Design** | [`PAYMENT_GATING.md`](PAYMENT_GATING.md) — three-stage rollout: **v0** privateProperties storage + JAX-RS update endpoint + request filter on transfer initiation + email notification to provider's finance contact + audit/obligation read endpoints; **v1** ODRL constraint functions (`payAmount`, `paymentStatus`, `dateTime`) so the policy is machine-evaluated; **v2** scheduled `DutyDeadlineEnforcer` that terminates overdue agreements via DSP `ContractNegotiationTermination`. Sequence: [`policies/diagrams/09-payment-gated-data-exchange.puml`](policies/diagrams/09-payment-gated-data-exchange.puml). |
+| **Requires** | External billing/payment system (issues invoices, processes payment, calls back into the connector's payment-update endpoint). SMTP for v0 notifications. No new EDC fork — the extension lives alongside the existing controlplane build. |
 | **When** | Post-prototype, when corporate participants join and a sustainability model is needed |
-| **Status** | [ ] Not started |
+| **Governance handoff** | Refund obligation: connector records (immutable agreement + audit endpoints), Dataspace Authority adjudicates, external billing system executes. See [`PAYMENT_GATING.md` § 3.3](PAYMENT_GATING.md) and the cross-reference proposed in [`AUTHORITY.md` § D](AUTHORITY.md). |
+| **Status** | [ ] v0 not started · [ ] v1 not started · [ ] v2 not started |
 
 ### 7.2 Verifiable Credentials integration
 
