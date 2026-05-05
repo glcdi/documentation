@@ -307,9 +307,11 @@ explicit mappers to surface claims in the format the EDC policy functions expect
 | Item | Detail |
 |------|--------|
 | **Task** | Add protocol mappers to relevant Keycloak clients so that GLCDI claims appear as top-level claims in access tokens |
-| **Status** | [ ] Not started |
+| **Approach** | Realm-level **client scope** `glcdi-claims` carries all five mappers (one for `glcdi_roles` from realm roles; four `oidc-usermodel-attribute-mapper` entries for `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`). The scope is added to `defaultClientScopes` on `glcdi-ui` and on each `glcdi-connector-<org>` client — no per-client mapper duplication. |
+| **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` — `clientScopes[]` array (the `glcdi-claims` scope) plus `defaultClientScopes` on each consuming client. |
+| **Status** | [x] `glcdi-claims` client scope declared (5 mappers) · [x] Wired into `defaultClientScopes` on `glcdi-ui` + 3 connector clients · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
 
-**Three mappers to create, on each of these clients:** `edc-api-client`, `participant-broker`, `catalog-ui-governance`
+**Five mappers in the `glcdi-claims` client scope (declarative, in the realm JSON):**
 
 #### Mapper 1: Realm roles → `glcdi_roles` claim
 
@@ -419,10 +421,10 @@ hardcoded claim mapper on the client scope that applies to all authenticated use
 
 | Item | Detail |
 |------|--------|
-| **Task** | Assign the correct realm roles and user attributes to each prototype participant — at the **group level** per § 1.5.6, not per user — so multiple users per organisation inherit the same claims automatically |
-| **Status** | [ ] Not started |
+| **Task** | Assign the correct realm roles and user attributes to each prototype participant — realm roles inherited from group membership (`<org>-team`); user attributes set per user (stock Keycloak doesn't have a built-in mapper for group attributes, see [`DEPLOYMENT.md` § 2.2 "About the per-user attributes"](DEPLOYMENT.md)) |
+| **Status** | [x] Declared in realm JSON: 3 starter users + 3 service-account users, each in their org's group with role inheritance and per-user `glcdi_*` attributes set · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
 
-> **Note (post-Phase-1.5):** assignments target the org-level Keycloak group (`caney-fork-team`, `point-blue-team`, `white-buffalo-team`) created in § 1.5.6. The bash examples below show the user-level Admin-API endpoint for completeness; the group-level equivalent is `/admin/realms/$REALM/groups/$GROUP_ID/role-mappings/realm` and `/admin/realms/$REALM/groups/$GROUP_ID` (PUT for attributes). Adding a new operator to the org becomes "create user, add to group" with no additional role-assignment step.
+> **Note (post-Phase-1.5):** group membership gives realm roles via inheritance (free); user attributes (`glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`) are set on each user record directly because stock Keycloak's `oidc-usermodel-attribute-mapper` reads user attributes only. Adding a new operator: create user → add to org's group → copy the attributes from an existing user in that org. The bash examples below show the user-level Admin-API endpoint for one-off post-import edits; the realm JSON in-repo is the source of truth.
 
 The proposed assignment *pattern*, by participant type (specific participant identities are TBD and to be confirmed at onboarding):
 
