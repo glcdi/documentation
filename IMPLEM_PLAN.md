@@ -261,9 +261,9 @@ configuration while keeping the data model clean.
 | Item | Detail |
 |------|--------|
 | **Task** | Add realm roles to the `glcdi` realm in Authority Keycloak |
-| **Roles to create** | `glcdi_member` (active membership), `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
+| **Roles to create** | `glcdi_member` (active membership), `glcdi_regenerative_producer`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
 | **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` — in the `roles.realm[]` array |
-| **Status** | [ ] Not started |
+| **Status** | [x] Declared in realm JSON (13 roles total: 2 inherited + 11 GLCDI) · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
 
 **Realm JSON snippet to add:**
 
@@ -295,9 +295,9 @@ configuration while keeping the data model clean.
 | **Task** | Define `glcdi_certification_status` and `glcdi_contribution_status` as custom user attributes |
 | **Certification values** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Contribution values** | `contributing` (has published data), `observer` (onboarded but no data published yet), `pending` (awaiting verification) |
-| **Where** | Set per-user in Keycloak admin console or via Admin API. Not part of the realm export by default — attributes are per-user, not schema-level. |
+| **Where** | Set per-user in the realm JSON (`users[].attributes`). The starter users (`caney-fork`, `point-blue`, `white-buffalo`) plus the three connector service-account users carry the relevant attribute values declaratively. Adding a fourth operator later = `users[].attributes` entry copied from the org's existing user record. |
 | **Proposed owner for contribution status** | For the prototype (small participant set): it is proposed that the Dataspace Authority sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service could query each participant's catalog and update the attribute. |
-| **Status** | [ ] Not started |
+| **Status** | [x] Declared on the 6 prototype users in the realm JSON · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
 
 ### 2.3 Create protocol mappers for token serialisation
 
