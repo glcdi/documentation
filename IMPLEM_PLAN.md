@@ -260,7 +260,7 @@ configuration while keeping the data model clean.
 
 | Item | Detail |
 |------|--------|
-| **Task** | Add realm roles to the `glcdi` realm in governance Keycloak |
+| **Task** | Add realm roles to the `glcdi` realm in Authority Keycloak |
 | **Roles to create** | `glcdi_member` (active membership), `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
 | **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` — in the `roles.realm[]` array |
 | **Status** | [ ] Not started |
@@ -485,7 +485,7 @@ curl -s -X PUT -H "Authorization: Bearer $TOKEN" \
 
 | Item | Detail |
 |------|--------|
-| **Task** | Confirm that tokens issued by governance Keycloak contain the expected GLCDI claims |
+| **Task** | Confirm that tokens issued by Authority Keycloak contain the expected GLCDI claims |
 | **Status** | [ ] Not started |
 
 **Manual verification:**
@@ -882,7 +882,7 @@ Items from `./policies/` that are relevant for later phases but not required for
 |------|--------|
 | **Task** | Replace Keycloak-based claims with W3C Verifiable Credentials for participant attributes |
 | **Why** | VCs are the long-term standard for decentralised identity in dataspaces (aligned with Gaia-X, DSBA). Keycloak claims are a pragmatic prototype shortcut. |
-| **Requires** | EDC Identity Hub configuration, VC issuance by the governance authority, updated policy functions to resolve from VCs instead of OIDC tokens |
+| **Requires** | EDC Identity Hub configuration, VC issuance by the Dataspace Authority, updated policy functions to resolve from VCs instead of OIDC tokens |
 | **When** | Phase following prototype, aligned with broader GLCDI scaling |
 | **Status** | [ ] Not started |
 

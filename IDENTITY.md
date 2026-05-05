@@ -6,39 +6,44 @@ For the overall governance model and policy design this feeds into, see [`README
 
 ## Architecture
 
-GLCDI uses a **federated identity model** with Keycloak as the identity provider at two levels:
+GLCDI uses a **single-tier OIDC model** with the **Authority Keycloak** as the only identity provider. Participant organisations are modelled as Keycloak **groups** in the `glcdi` realm; users join their organisation's group and inherit the GLCDI claims via group-attribute mappers. Each connector authenticates as itself via a per-org service-account client (`client_credentials`) so DSP-level traffic carries the same claim shape as operator UI traffic.
 
 ```
-                        ┌─────────────────────────────┐
-                        │   Governance Keycloak        │
-                        │   (glcdi realm)              │
-                        │                              │
-                        │   Source of truth for:        │
-                        │   - GLCDI membership          │
-                        │   - Participant roles          │
-                        │   - Certification status       │
-                        │                              │
-                        │   Identity Providers:          │
-                        │   ├── participant-a (OIDC)    │
-                        │   ├── participant-b (OIDC)    │
-                        │   └── …                        │
-                        └──────────┬───────────────────┘
-                                   │ OIDC broker
+                        ┌──────────────────────────────────┐
+                        │   Authority Keycloak              │
+                        │   (glcdi realm)                   │
+                        │                                   │
+                        │   Source of truth for:             │
+                        │   - GLCDI membership                │
+                        │   - Participant roles               │
+                        │   - Certification status            │
+                        │                                   │
+                        │   Groups (per-organisation):       │
+                        │   ├── caney-fork-team              │
+                        │   ├── point-blue-team               │
+                        │   └── white-buffalo-team            │
+                        │                                   │
+                        │   Clients:                         │
+                        │   ├── glcdi-ui (operators / UI)    │
+                        │   └── glcdi-connector-<org>        │
+                        │       (per-org connector SAs)      │
+                        └──────────┬───────────────────────┘
+                                   │ OIDC (single tier)
                     ┌──────────────┼──────────────┐
                     │              │              │
           ┌─────────▼──┐  ┌───────▼────┐  ┌─────▼────────┐
           │ Participant │  │ Participant│  │ Participant  │
-          │ A Keycloak  │  │ B Keycloak │  │ C Keycloak   │
-          │ (edc realm) │  │ (edc realm)│  │ (edc realm)  │
+          │ A Connector │  │ B Connector│  │ C Connector  │
+          │  + UI       │  │  + UI      │  │  + UI        │
           │             │  │            │  │              │
-          │ Local auth  │  │ Local auth │  │ Local auth   │
+          │ X-Api-Key   │  │ X-Api-Key  │  │ X-Api-Key    │
+          │ + Bearer    │  │ + Bearer   │  │ + Bearer     │
           └─────────────┘  └────────────┘  └──────────────┘
 ```
 
-**Flow:** A user authenticates at their participant's local Keycloak, which brokers to the
-governance Keycloak via OIDC. The governance Keycloak adds GLCDI-specific claims (roles,
-membership, certification) to the token. The token is then used by the EDC connector to
-evaluate policies.
+**Flow:** Operators log in via the `glcdi-ui` client and receive a JWT carrying the org's claims (sourced from group membership). The JWT plus `X-Api-Key` is presented to the participant's EDC management API; `iam-oauth2` validates the JWT against the Authority KC's JWKS and extracts the claims into EDC's `ClaimToken` for policy evaluation. Each connector additionally holds its own service-account JWT (via `client_credentials` against `glcdi-connector-<org>`) which it presents on outbound DSP requests; the remote connector validates and extracts claims the same way.
+
+> **Historical note.** Earlier prototype iterations used a two-tier OIDC flow (Authority Keycloak federating to a per-participant Keycloak in each compose stack). [`IMPLEM_PLAN.md` § 1.5](IMPLEM_PLAN.md) collapses that to the single tier shown above. The two-tier design is still referenced in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) as the source state for operator-side migration.
 
 ## Participant Identity Claims
 
@@ -55,7 +60,8 @@ Each participant's identity token carries three GLCDI-specific claims:
 | Role | Assigned to | What it unlocks |
 |------|------------|-----------------|
 | `glcdi_member` | All onboarded participants | Access to `members-only` offers |
-| `glcdi_producer` | Ranches, farming organisations | Access to `regenerative-producers` offers (with certification), benchmarking |
+| `glcdi_regenerative_producer` | Ranches / farming organisations with regenerative certification | Access to `regenerative-producers-only` offers, peer-to-peer benchmarking. Combined with `glcdi_certification_status = regenerative-verified` for full record. |
+| `glcdi_producer` | Ranches / farming organisations not (yet) regenerative-certified | Generic producer access (broader than `regenerative-producers-only`); used when a policy admits all producers regardless of certification |
 | `glcdi_researcher` | Universities, research NGOs | Access to `researchers-only` offers (e.g., raw SOC data for model training) |
 | `glcdi_data_steward` | Monitoring alliances | Access to `researchers-only` offers, data stewardship role |
 | `glcdi_conservation_org` | Conservation organisations | General membership access |
@@ -71,7 +77,8 @@ Specific participant-to-role assignments are left to onboarding time and are pro
 
 | Participant type | Proposed roles | Proposed certification |
 |------------------|---------------|-----------------------|
-| Regenerative producer | `glcdi_member` + `glcdi_producer` | `regenerative-verified` (or equivalent) |
+| Regenerative producer | `glcdi_member` + `glcdi_regenerative_producer` | `regenerative-verified` |
+| Non-regenerative producer | `glcdi_member` + `glcdi_producer` | `organic-certified`, `transitioning-organic`, `conventional`, or `not-applicable` |
 | Research institution | `glcdi_member` + `glcdi_researcher` | `not-applicable` |
 | Data steward / monitoring alliance | `glcdi_member` + `glcdi_data_steward` | `not-applicable` |
 
@@ -79,16 +86,16 @@ Additional participant types (`conservation_org`, `technology_provider`, `corpor
 
 ## Onboarding Flow (Proposed)
 
-This is the proposed onboarding flow, to be validated with the governance body before implementation:
+This is the proposed onboarding flow, to be validated with the Dataspace Authority before implementation:
 
 ```
-1. Participant submits application  ──→  Onboarding app (governance-services)
-2. Governance body reviews          ──→  Approval UI (proposed)
+1. Participant submits application  ──→  Onboarding app (authority-services)
+2. Dataspace Authority reviews     ──→  Approval UI (proposed)
 3. On approval (proposed actions):
-   a. Keycloak user created/updated
-   b. glcdi_member role assigned
-   c. Participant type role assigned (e.g., glcdi_producer)
-   d. Certification status attribute set
+   a. Keycloak user created/updated; user joined to org's group (e.g., caney-fork-team)
+   b. Group already carries glcdi_member + participant-type role (e.g., glcdi_regenerative_producer)
+   c. Group's certification status attribute set
+   d. Per-org connector service-account client (`glcdi-connector-<org>`) is created if first user
 4. Participant receives credentials  ──→  Can authenticate and access catalog
 ```
 
@@ -100,7 +107,7 @@ Each identity / authentication mechanism in GLCDI is backed by one or more open 
 
 | Mechanism | What it does in GLCDI | Specification | How it's used |
 |-----------|----------------------|---------------|---------------|
-| **Federated authentication** | Participants authenticate at their local IdP, brokered to central governance | [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) | Keycloak-to-Keycloak identity brokering. Governance Keycloak is an OIDC Relying Party for each participant's Keycloak (OIDC Provider). |
+| **Federated authentication** (post-Phase-1.5) | Participants authenticate directly at the Authority Keycloak; one Keycloak per dataspace, organisations modelled as groups | [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) | Single-tier OIDC. Authority Keycloak is the only OIDC Provider; each participant connector is an OIDC Relying Party for it (via the `glcdi-ui` client for operators and per-org `glcdi-connector-<org>` clients for connector-to-connector traffic). |
 | **Token-based authorisation** | Identity claims carried in signed tokens, evaluated by provider's connector | [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) + [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | Access tokens contain `glcdi_roles`, `glcdi_membership`, `glcdi_certification_status` claims. EDC policy functions extract and evaluate them. |
 | **Role-based access control** | Participant type (producer, researcher, corporate) determines catalog visibility | [OIDC Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims) via Keycloak realm roles | `members-only.json`, `researchers-only.json`, `regenerative-producers.json`. Roles serialised as OIDC claims in JWT. |
 | **Decentralised identity** (future) | Participants identified by DIDs, claims carried in Verifiable Credentials | [W3C DID Core 1.0](https://www.w3.org/TR/did-core/) + [W3C VC Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) | Post-prototype. Currently `did:web:<participant>.glcdi.startinblox.com` is configured in EDC but VCs are not yet issued. |
@@ -123,10 +130,8 @@ information in an interoperable way. It is the most widely deployed federated id
 standard on the web.
 
 In GLCDI, OIDC is used at two levels:
-1. **Participant-to-governance federation** — each participant's Keycloak authenticates
-   users locally and brokers to the governance Keycloak via OIDC
-2. **Connector-to-connector authorisation** — EDC connectors present OIDC tokens during
-   DSP interactions; the provider's connector extracts claims to evaluate policies
+1. **Operator authentication** — each participant's operators authenticate against the Authority Keycloak (`glcdi-ui` client) and receive a JWT carrying their org's claims via group membership (post-Phase-1.5 single-tier; the previous prototype used a two-tier flow with a per-participant Keycloak — see [`IMPLEM_PLAN.md` § 1.5](IMPLEM_PLAN.md))
+2. **Connector-to-connector authorisation** — each connector authenticates as itself via `client_credentials` against `glcdi-connector-<org>` and presents the resulting JWT on outbound DSP requests; the provider's connector validates the JWT against the Authority KC's JWKS and extracts claims to evaluate policies
 
 ### What is OID4VC?
 
@@ -187,7 +192,7 @@ that would issue a "regenerative-verified producer" credential that other partic
 trust. GLCDI would have to build this from scratch — which is a governance problem, not a
 technology problem.
 
-With OIDC + Keycloak, the proposal is that the **governance Keycloak serves as the trust anchor**. Under this proposal the Dataspace Authority would approve participants and the governance admin would assign roles — simple, auditable, and sufficient for a small participant set.
+With OIDC + Keycloak, the proposal is that the **Authority Keycloak serves as the trust anchor**. Under this proposal the Dataspace Authority would approve participants and the realm admin would assign group memberships and roles — simple, auditable, and sufficient for a small participant set.
 
 **5. OIDC gives us everything we need now**
 
@@ -207,9 +212,9 @@ incremental migration:
 ```
 Prototype (2026)                    Post-Prototype (2027+)
 ────────────────                    ──────────────────────
-Keycloak realm roles          →     VCs issued by governance authority
+Keycloak realm roles          →     VCs issued by Dataspace Authority
 OIDC claims in JWT            →     VP tokens (OID4VP)
-Governance Keycloak as        →     DID-based trust anchors +
+Authority Keycloak as         →     DID-based trust anchors +
   trust anchor                        Gaia-X Compliance Service
 EDC IdentityService reads     →     EDC Identity Hub resolves
   OIDC tokens                         VCs from participant wallets
@@ -249,7 +254,7 @@ from the simplest (what GLCDI uses now) to the most decentralised (future target
 |---|---|---|---|
 | **Identity provider** | Keycloak (centralised) | Keycloak issues VCs via OID4VCI | Participant's own DID + wallet |
 | **Credential format** | JWT access token with custom claims | JWT-VC or SD-JWT-VC | VC (format varies by ecosystem) |
-| **Trust anchor** | Governance Keycloak (proposed: Dataspace Authority would assign roles) | Governance authority issues VCs (Keycloak acts as issuer) | Gaia-X Compliance Service or Trust List |
+| **Trust anchor** | Authority Keycloak (proposed: Dataspace Authority assigns group memberships and roles) | Dataspace Authority issues VCs (Keycloak acts as issuer) | Gaia-X Compliance Service or Trust List |
 | **How provider verifies consumer** | Extract claims from OIDC token | Verify VC signature + extract claims | Resolve DID → verify VP → extract claims |
 | **Participant requirement** | Keycloak account | Keycloak account + VC in wallet | DID + wallet + VCs from trusted issuer |
 | **Onboarding complexity** | Low: create user, assign roles | Medium: create user, issue VC, participant stores in wallet | High: participant creates DID, requests VCs, configures wallet |
