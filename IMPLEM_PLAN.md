@@ -572,7 +572,7 @@ console operations as the dataspace grows beyond the initial small participant s
 | **Why a separate repo (not `edc-connector/extensions/`)** | Keeps GLCDI-owned Java code separate from the EDC fork (which tracks upstream). Independent versioning + git history. Mirrors `ds4go/edc-dsif-extension/` next to `ds4go/edc-connector/`. |
 | **Layout (proposed)** | `edc-glcdi-extension/extensions/glcdi-policy-functions/` (the membership / participantType / certificationStatus functions of §§ 3.2–3.4) — first occupant. Future siblings (e.g. `payment-status-extension/` from [`PAYMENT_GATING.md`](PAYMENT_GATING.md), if Phase 7.1 lands) live under the same `extensions/` folder. |
 | **Wire-up** | `edc-connector/runtimes/controlplane/build.gradle.kts` references the extension via relative path or via a CI symlink step that puts the extension into `edc-connector/extensions/`. Match whichever pattern this team's CI uses for DS4GO. |
-| **Status** | [x] Repo created (empty) · [ ] First extension scaffolded (§ 3.1) · [ ] Wired into the controlplane runtime (§ 3.6) |
+| **Status** | [x] Repo created · [x] First extension scaffolded (§ 3.1) — `glcdi-policy-functions/` with build files + SPI entry + package skeleton + the three constraint-function classes + `GlcdiClaims` constants + `GlcdiPolicyFunctionsExtension` registration class + a starter unit-test class · [ ] Wired into the controlplane runtime (§ 3.6) |
 
 
 
@@ -584,10 +584,11 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 
 | Item | Detail |
 |------|--------|
-| **Task** | Create a new EDC extension in `edc-connector/extensions/glcdi-policy-functions/` |
+| **Task** | Create a new EDC extension in `edc-glcdi-extension/extensions/glcdi-policy-functions/` (sibling repo, mirrors DS4GO's `edc-dsif-extension/` pattern — not inside the `edc-connector/` fork) |
 | **Language** | Java 17 |
-| **Build** | Add to `settings.gradle.kts`, create `build.gradle.kts` with EDC policy SPI dependencies |
-| **Status** | [ ] Not started |
+| **Build** | `settings.gradle.kts` includes the module; `extensions/glcdi-policy-functions/build.gradle.kts` depends on `edc.spi.core`, `edc.spi.policy`, `edc.spi.policy-engine`, `edc.runtime.metamodel`. Tests use JUnit 5 + AssertJ + Mockito |
+| **Layout** | `src/main/java/com/startinblox/glcdi/edc/extension/policy/` (package); `src/main/resources/META-INF/services/org.eclipse.edc.spi.system.ServiceExtension` lists `GlcdiPolicyFunctionsExtension` |
+| **Status** | [x] Repo scaffolded (`edc-glcdi-extension/` root build, settings, gradle.properties, libs.versions.toml, .gitignore, README) · [x] Module scaffolded (`extensions/glcdi-policy-functions/`: build.gradle.kts, README, META-INF SPI entry, package directories) · [ ] Gradle wrapper bootstrapped (`gradle wrapper` once Gradle is installed locally) · [ ] First successful `./gradlew build` |
 
 ### 3.2 Implement membership policy function
 
@@ -597,27 +598,27 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Behaviour** | Extract the `glcdi_membership` claim from the participant's identity (via `ParticipantAgent`), compare it to the constraint's `rightOperand` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/membership"` |
 | **Used by** | `access/members-only.json`, `access/regenerative-producers.json`, `access/researchers-only.json`, and all combined policies |
-| **Status** | [ ] Not started |
+| **Status** | [x] `MembershipConstraintFunction.java` drafted (EQ + NEQ; logs and returns `false` when ParticipantAgent is missing or the claim is absent) · [x] Starter unit-test class `MembershipConstraintFunctionTest.java` covers match / mismatch / no-agent / claim-missing / unsupported-operator paths · [ ] Compiled against pinned EDC SPI (verifies API: `org.eclipse.edc.spi.iam.ParticipantAgent`, `AtomicConstraintRuleFunction`, `PolicyContext.getContextData(...)`) |
 
 ### 3.3 Implement participant type policy function
 
 | Item | Detail |
 |------|--------|
 | **Task** | Implement an `AtomicConstraintFunction` that evaluates `glcdi:participantType` |
-| **Behaviour** | Extract `glcdi_participant_type` claim, support `eq` and `isAnyOf` operators |
+| **Behaviour** | Reads the `glcdi_roles` claim (list); maps the kebab-case `participantType` value to the snake-case role name (`glcdi_<type>`) and tests membership in the participant's role set. Supports `eq`, `neq`, `isAnyOf`/`in`, `isNoneOf` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/participantType"` |
 | **Used by** | `access/regenerative-producers.json`, `access/researchers-only.json`, `combined/corporate-supply-chain.json` |
-| **Status** | [ ] Not started |
+| **Status** | [x] `ParticipantTypeConstraintFunction.java` drafted with `toRoleName(...)` kebab→snake helper; supports EQ / NEQ / IN / IS_ANY_OF / IS_NONE_OF · [x] Resilient parsing for claims arriving as a `Collection` or comma-separated `String` · [ ] Unit tests (deferred per § 5.1) · [ ] Compiled against pinned EDC SPI |
 
 ### 3.4 Implement certification status policy function
 
 | Item | Detail |
 |------|--------|
 | **Task** | Implement an `AtomicConstraintFunction` that evaluates `glcdi:certificationStatus` |
-| **Behaviour** | Extract `glcdi_certification_status` claim, support `eq` and `isAnyOf` operators |
+| **Behaviour** | Extract `glcdi_certification_status` claim (string, lowercase / kebab-case per § 1.5.6); compare to the constraint's `rightOperand`. Supports `eq`, `neq`, `isAnyOf`/`in`, `isNoneOf` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/certificationStatus"` |
 | **Used by** | `access/regenerative-producers.json` |
-| **Status** | [ ] Not started |
+| **Status** | [x] `CertificationStatusConstraintFunction.java` drafted; supports EQ / NEQ / IN / IS_ANY_OF / IS_NONE_OF · [ ] Unit tests (deferred per § 5.1) · [ ] Compiled against pinned EDC SPI |
 
 ### 3.5 Replace `iam-mock` with `iam-oauth2` and configure claim extraction
 
@@ -656,9 +657,10 @@ edc.iam.token.scope=openid profile glcdi_claims
 
 | Item | Detail |
 |------|--------|
-| **Task** | Add `glcdi-policy-functions` as a dependency in `runtimes/controlplane/build.gradle.kts` |
-| **Deliverable** | Rebuilt connector image with the policy functions available |
-| **Status** | [ ] Not started |
+| **Task** | Wire `glcdi-policy-functions` (sourced from the `edc-glcdi-extension/` sibling repo) into `edc-connector/`'s build, so every connector image rebuild includes the GLCDI custom extensions automatically — mirrors DS4GO's `edc-dsif-extension` → `edc-connector/extensions/` cp-step pattern |
+| **Deliverable** | Rebuilt connector image (published to `registry.startinblox.com/applications/glcdi/edc-connector/controlplane`) carries the GLCDI extensions in its shadowJar; participants pulling the image at `docker compose up -d` time get them automatically |
+| **Pattern** | At CI time (or via local helper script): clone `edc-glcdi-extension`, copy its `extensions/<name>/` directories into `edc-connector/extensions/`, run the standard Gradle build. The copies are not tracked in `edc-connector` git (added to `.gitignore` as `extensions/glcdi-*`) so the fork stays clean of GLCDI-specific code that lives upstream. |
+| **Status** | [x] `edc-connector/gradle/libs.versions.toml`: added `edc-spi-policy-engine` + `edc-runtime-metamodel` aliases (both required by the extension build) · [x] `edc-connector/settings.gradle.kts`: added `include(":extensions:glcdi-policy-functions")` · [x] `edc-connector/runtimes/controlplane/build.gradle.kts`: added `runtimeOnly(project(":extensions:glcdi-policy-functions"))` · [x] `edc-connector/.gitignore`: ignores `extensions/glcdi-*` (synced from sibling repo, not tracked) · [x] `edc-connector/.gitlab-ci.yml`: `before_script` clones `edc-glcdi-extension` (auth via `CI_JOB_TOKEN`, branch override via `EDC_GLCDI_EXTENSION_BRANCH`) and copies its extensions into `./extensions/` ahead of every Gradle/Kaniko step · [x] `edc-connector/scripts/sync-glcdi-extensions.sh`: local-dev helper (looks for `../edc-glcdi-extension/` by default; override with `EDC_GLCDI_EXTENSION_DIR`) · [ ] First successful CI build with the extension in place · [ ] Job-token permission granted on `edc-glcdi-extension` repo (Settings → CI/CD → Job token permissions → allow `edc-connector`) |
 
 ---
 
