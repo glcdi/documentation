@@ -24,7 +24,7 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 10. **Phase 7.1 — Payment-required workflow.** v0/v1/v2 substages per [`PAYMENT_GATING.md`](PAYMENT_GATING.md). **Starts after M1 is signed off** — not before.
 11. **Phase 7.2–7.4 — Other future enhancements.** VC integration, Federated Catalogue policy metadata, participant-facing policy UI.
 
-**Status:** Phases 1, 1.5, 2–5, 4.5, M1 are "not started" as of the current cohort. Phase 7 starts post-M1.
+**Status (in-repo):** Phase 1 (vocabulary), Phase 1.5 (auth simplification + rename), Phase 2 (Keycloak claims), and Phase 4.5 (Bruno + UI tracks) have substantive in-repo work in their working trees, blocked only on the staging cutover (Path-A re-import per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)). Phase 3 (EDC policy extension), Phase 4 (seeding scripts), Phase 5 (integration testing), and Milestone M1 are still to start. Phase 6 (governance / Trust Framework) runs in parallel and is owned outside this repo. Phase 7 (post-M1).
 
 **Parallelisation:** up to **3 concurrent agents** at peak — main implementation track (1.5 → 2 → 3 → 4 → 5 → M1 → 7.1), Bruno track (4.5 E), Participant-UI track (4.5 F). Phase 6 also runs in parallel with the technical phases.
 
@@ -57,7 +57,7 @@ defined and resolvable.
 | **Proposed participant types** | `producer`, `researcher`, `data-steward`, `conservation-org`, `technology-provider`, `corporate`, `certification-body`, `supply-chain-partner`, `funder` |
 | **Proposed certification statuses** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Deliverable** | Enumeration documented in the vocabulary context and in the Trust Framework (v0) |
-| **Status** | [ ] Not started |
+| **Status** | [x] Documented as proposal (this section) · [x] Encoded in [`context.jsonld`](context.jsonld) value aliases · [x] Realm roles + group/user attributes for the M1 subset (`producer`, `researcher`, `data-steward`, `regenerative-verified`, `not-applicable`) declared in `governance-services/resources/keycloak/realms/glcdi-realm.json` · [ ] Ratified by the Dataspace Authority |
 
 ### 1.3 Define ODRL purpose taxonomy
 
@@ -66,7 +66,7 @@ defined and resolvable.
 | **Task** | Formalise the set of purpose values that consumers can declare in contract offers |
 | **Proposed values** | `InternalAnalysis`, `ScientificResearch`, `AgronomicModelTraining`, `EcosystemModelCalibration`, `RegionalBenchmarking`, `EducationalUse`, `ConservationPlanning`, `Scope3Reporting`, `ESGCompliance`, `CertificationVerification`, `ModelOutput` |
 | **Why** | Purpose constraints in policies (e.g., `purpose-model-training.json`) rely on consumers declaring a purpose from this controlled vocabulary. Without agreement on the terms, policies cannot be consistently evaluated. |
-| **Status** | [ ] Not started |
+| **Status** | [x] Documented as proposal (this section) · [x] Encoded in [`context.jsonld`](context.jsonld) value aliases (PascalCase per JSON-LD value-class convention) · [ ] Ratified by the Dataspace Authority |
 
 ---
 
@@ -89,13 +89,13 @@ Removing the per-participant Keycloak is a clean cut, not a fork.
 
 Per [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md): finish the in-repo renames across `edc-connector/`, `governance-services/` (→ `authority-services/`), `participant-agent-services/`, `participant-ui/`, and the `management/` docs themselves. Operator checklist (DNS, TLS, live Keycloak path A vs. B, CI/CD variables, VM layout, cutover, post-cutover verification) is in that document.
 
-**Status:** [ ] Not started
+**Status:** [x] In-repo edits across the 4 sibling repos done (edc-connector clean; participant-ui, participant-agent-services, governance-services swept); top-level `governance-services/` → `authority-services/` directory rename is a separate workspace-level `mv` · [x] `management/` doc-level sweep done (IDENTITY.md, IMPLEM_PLAN.md, README.md, AUTHORITY.md, etc.) · [ ] Operator-side cutover in staging (per [`DEPLOYMENT.md` § 2](DEPLOYMENT.md))
 
 ### 1.5.2 Remove per-participant Keycloak from the participant compose stack
 
 In `participant-agent-services/docker-compose.yml`: delete the `keycloak` and `postgres-kc` services and the `keycloak-pg-data` volume. Remove `participant/keycloak/realms/edc-realm.json` and the related secrets templates (`participant/keycloak/.env.template`, etc.). Adjust the `nginx` service and any `depends_on` edges that pointed at `keycloak`.
 
-**Status:** [ ] Not started
+**Status:** [x] Compose updated (services + volume removed; no `depends_on: keycloak` edges remaining) · [x] `participant/keycloak/realms/edc-realm.json` deleted (and now-empty parent directory) · [ ] Live volume `<stack>_keycloak-pg-data` removed on each VM (per [`DEPLOYMENT.md` § 2.3](DEPLOYMENT.md))
 
 ### 1.5.3 Repoint oauth2-proxy at the Authority Keycloak
 
@@ -107,7 +107,7 @@ In `participant-agent-services/docker-compose.yml`, oauth2-proxy environment blo
 - `OAUTH2_PROXY_CLIENT_SECRET` → Authority's `glcdi-ui` secret (rotated; see [`AUTHORITY_MIGRATION.md` § 4](AUTHORITY_MIGRATION.md))
 - Drop `depends_on: keycloak`
 
-**Status:** [ ] Not started
+**Status:** [x] Compose oauth2-proxy block repointed at Authority KC; `OAUTH2_PROXY_CLIENT_ID=${OIDC_CLIENT_ID:-glcdi-ui}` · [ ] `GLCDI_UI_CLIENT_SECRET` populated in each participant VM's `.env` from out-of-band
 
 ### 1.5.4 Rename UI client to `glcdi-ui` and repoint the UI flow at the Authority Keycloak
 
@@ -128,7 +128,7 @@ The current `catalog-ui-governance` client is misnamed for the simplified topolo
 
 The silent-iframe flow continues to work; the iframe now targets the Authority KC directly under the renamed client.
 
-**Status:** [ ] Not started
+**Status:** [x] Realm JSON: client renamed to `glcdi-ui`, redirect URIs cover the three participant origins + their `silent-callback.html` paths · [x] `participant-agent-services/docker-compose.yml` catalogue-ui block repointed (`LINKED_PROVIDER_AUTHORITY`, `LINKED_PROVIDER_CLIENT_ID`, `OIDC_CLIENT_ID` all → `glcdi-ui`) · [x] `participant-ui/docker-entrypoint.sh` defaults updated; README rewritten · [ ] Authority KC live realm carries the renamed client (after Path-A re-import per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md))
 
 ### 1.5.5 Confirm `X-Api-Key`-only management-API auth
 
@@ -136,7 +136,7 @@ Verify and document that programmatic clients (Bruno collection from § 4.5.E, s
 
 oauth2-proxy stays in front of the catalogue-UI path as defence-in-depth; programmatic clients hit the management API directly with `X-Api-Key`.
 
-**Status:** [ ] Not started
+**Status:** [x] Documented in [`DEPLOYMENT.md` § 1, § 2.5, § 3.7](DEPLOYMENT.md); Bruno's `99-negative-auth/*.bru` covers the negative cases · [ ] Operator rotates `web.http.management.auth.key` / `edc.api.auth.key` / `edc.api.control.auth.apikey.value` from `123456` defaults on each VM · [ ] Live verification: Bruno green run against staging
 
 ### 1.5.6 Model participant organisations as Keycloak groups, with a starter user per group
 
@@ -166,13 +166,13 @@ In the Authority KC's `glcdi` realm:
 
 **Service accounts for Bruno / programmatic clients (§ 4.5.E):** can reuse the per-org connector service accounts to mint tokens for identity-driven scenario steps, or have their own (`glcdi-test-<org>`) if you want test traffic distinguishable in audit logs.
 
-**Status:** [ ] Not started
+**Status:** [x] Realm JSON declares 3 groups + 3 starter users + 3 connector service-account clients + 3 service-account users with role inheritance and per-user `glcdi_*` attributes — see [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md) for the breakdown · [ ] Imported into live Authority KC (Path A re-import) · [ ] Per-org connector secrets rotated and propagated to each participant VM's `.env`
 
 ### 1.5.7 Sanity-check DSP-level identity is still working
 
 After the cuts above, run a smoke-test contract negotiation between two participant connectors. Expected: each connector's STS endpoint mints DSP tokens signed by its own DID/keypair, the remote connector validates the signature, negotiation reaches `FINALIZED`. This is a verification step, not a change — the spike showed Keycloak removal does not touch the DSP-signing path.
 
-**Status:** [ ] Not started
+**Status:** [ ] Verification step — runs after staging cutover. Tracked in [`DEPLOYMENT.md` § 2.5](DEPLOYMENT.md)
 
 ### 1.5.8 Auth flow & credentials reference (post-Phase-1.5)
 
@@ -225,7 +225,7 @@ EDC policy engine on Connector B evaluates access policy against those claims
 
 The previous DCP/IATP-shaped config (`edc.iam.issuer.id=did:web:...`, `edc.iam.sts.oauth.token.url=http://identity-hub:7084/sts/token`) is for a future direction — the prototype takes the simpler OAuth2 path. The Identity Hub stays in the compose for STS / VC features that remain on the post-prototype roadmap, but is not on the M1 critical path.
 
-**Status:** [ ] Not started — captures the design; no implementation work in this sub-section
+**Status:** [x] Design captured (this sub-section is documentation; no implementation work)
 
 ### Dependencies & risks
 
@@ -729,7 +729,7 @@ Bruno runs against either a single participant's connector locally, or against t
 
 **Owner:** parallel agent. Can begin drafting once §§ 1.5.5–1.5.6 fix the API-key contract and the per-org client_credentials shape; doesn't strictly need Phases 2–4 to run, only to be runnable.
 
-**Status:** [ ] Not started
+**Status:** [x] Skeleton drafted in [`bruno/`](bruno/) — 17 files: collection metadata, 2 environments (local + staging), 6 folders (auth setup, provider seeding, catalog discovery, negotiation, transfer, negative-auth) covering the M1 scenario · [x] Role-corrected per the M1 resolution (white-buffalo positive, point-blue filtered) · [ ] Polling files for state-machine assertions (FINALIZED / TERMINATED / STARTED) — TODO inside the relevant `.bru` files · [ ] Pre-request script that fetches the offer from the catalog response and uses it verbatim in the negotiation body — TODO · [ ] Green run against staging (gated on Phase 1.5 cutover + Phases 2–4)
 
 ### 4.5.F Participant-UI configuration (Track F — parallel agent)
 
@@ -742,7 +742,7 @@ Audit and adapt `participant-ui/` for the simplified topology:
 
 **Owner:** parallel agent. **Read-only investigation first** ("survey the participant-ui config surface and report which components are gated by which env / config keys; flag what breaks when participant-Keycloak goes away"), then implementation.
 
-**Status:** [ ] Not started
+**Status:** [x] Read-only audit complete (Track F findings: 4 components configured, env vars + linked-provider mapped, silent-callback path served by Hubl/nginx, transfer-process component absent) · [x] Env-var defaults updated in `participant-ui/docker-entrypoint.sh` (`OIDC_CLIENT_ID=glcdi-ui`, `LINKED_PROVIDER_AUTHORITY` derives from Authority KC, `LINKED_PROVIDER_CLIENT_ID=glcdi-ui`, `LOCAL_KEYCLOAK_*` removed) · [x] README rewritten with single-tier architecture + "PROTOTYPE: API-key-only login" subsection · [x] Post-rename re-validation pass: env-var coherence + stale-reference grep + token-substitution sanity all clean · [ ] Add `tems-transfer-processes-management` (or equivalent) component to `config.json.template` — needs verification of upstream `@startinblox/solid-tems-ui` package contents · [ ] Local API-key-login UX: confirm with the upstream Hubl components team that the `localStorage.glcdi_operator_api_key` reader is supported, or add a tiny wrapper
 
 ### Dependencies
 
