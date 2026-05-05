@@ -47,38 +47,126 @@ Before any destructive change:
 
 ### 2.2 Authority Keycloak — refresh the realm
 
-The in-repo `authority-services/resources/keycloak/realms/glcdi-realm.json` already has the post-Phase-1.5 state (the `glcdi-ui` client with silent-callback redirect URIs, the four per-org `glcdi-connector-<org>` clients, no IdP federation entries, the three `<org>-team` groups). The job is to get this content into the live Authority KC.
+The in-repo `authority-services/resources/keycloak/realms/glcdi-realm.json` already has the full post-Phase-1.5 state:
 
-Two paths, pick one (per [`AUTHORITY_MIGRATION.md` § 3](AUTHORITY_MIGRATION.md)):
+- 13 realm roles (`user`, `admin`, plus `glcdi_member`, `glcdi_regenerative_producer`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, and 6 future participant types).
+- 1 client scope `glcdi-claims` carrying the 5 protocol mappers (realm-roles → `glcdi_roles`; user-attribute → `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`).
+- 8 clients: existing `governance`, `onboarding`, `glcdi-ui`, `edc-api-client`, `participant-broker` (last two flagged as legacy in their `description`), plus 3 new `glcdi-connector-<org>` service-account clients.
+- Empty `identityProviders` (federation removed).
+- 3 groups (`caney-fork-team`, `white-buffalo-team`, `point-blue-team`) with their realm-role + organisation-attribute assignments.
+- 7 users: `admin` plus 3 starter operators (`caney-fork`, `point-blue`, `white-buffalo`) with their per-user attributes set, plus 3 service-account users (one per connector client) — also in their org's group with the same attributes.
 
-#### Path A — Wipe Postgres, re-import from in-repo JSON (simpler when there are no console-side edits to preserve)
+Three options to get this content into the live Authority KC, in order of recommendation:
 
-1. `docker compose -f authority-services/docker-compose.yml down` on the Authority VM.
-2. `docker volume rm authority-services_authority-pg-data` (or whichever volume holds Authority Postgres). Snapshot is already in § 2.1.
-3. `docker compose -f authority-services/docker-compose.yml up -d`.
-4. Verify import: `curl -fsSL https://authority.glcdi.startinblox.com/auth/realms/glcdi/.well-known/openid-configuration | jq .issuer` — must return the `glcdi` realm issuer.
-5. Admin console smoke check: clients list contains `glcdi-ui` + four `glcdi-connector-<org>` entries; groups list contains three `<org>-team` groups; identity-providers list is empty.
+#### Option 1 — Full re-import (destructive, simplest for the cutover)
 
-#### Path B — Live admin-console edits (non-destructive, when there are console-side edits worth preserving)
+Wipe the Authority KC's Postgres volume and let KC re-import the realm JSON on first boot. Recommended for the Phase 1.5 cutover when there are no console-side edits to preserve.
 
-For each item in the post-1.5 realm state, apply via admin console. The detailed checklist is in [`AUTHORITY_MIGRATION.md` § 3 Path B](AUTHORITY_MIGRATION.md). Phase 1.5 specifically adds:
+```bash
+# On the Authority VM, with snapshot already taken in § 2.1
+cd /glcdi/authority-services
+docker compose down
 
-- Rename or replace the UI client → `glcdi-ui`, with silent-callback redirect URIs for every participant origin.
-- Remove obsolete per-participant IdP federation entries (the per-participant KCs are gone after § 2.3).
-- Create `glcdi-connector-<org>` clients (one per participant, `client_credentials` only, service account on).
-- Create `<org>-team` groups with realm roles + attributes per [`IMPLEM_PLAN.md` § 1.5.6](IMPLEM_PLAN.md):
+# Identify the Postgres volume (name typically `authority-services_authority-pg-data`
+# but verify with `docker volume ls`)
+docker volume ls | grep -i authority
+docker volume rm authority-services_authority-pg-data
 
-  | Group | Realm roles | `glcdi_organisation` | `glcdi_certification_status` | `glcdi_contribution_status` |
-  |-------|-------------|----------------------|------------------------------|-----------------------------|
-  | `caney-fork-team` | `glcdi_member`, `glcdi_regenerative_producer` | `caney-fork` | `regenerative-verified` | `contributing` |
-  | `white-buffalo-team` | `glcdi_member`, `glcdi_regenerative_producer` | `white-buffalo` | `regenerative-verified` | `contributing` |
-  | `point-blue-team` | `glcdi_member`, `glcdi_researcher` | `point-blue` | `not-applicable` | `observer` |
+# Bring the stack back up — KC re-imports glcdi-realm.json on first boot
+docker compose up -d
 
-- Create starter users (`caney-fork`, `point-blue`, `white-buffalo`); add each to its team group.
-- Add each `glcdi-connector-<org>` service account into its org's group.
-- Confirm protocol mappers on `glcdi-ui` and the four `glcdi-connector-<org>` clients serialise `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` (and `glcdi_organisation`, `glcdi_contribution_status` if policies use them) into the JWT.
+# Wait ~30s for the import to complete, then verify
+sleep 30
+curl -fsSL https://authority.glcdi.startinblox.com/auth/realms/glcdi/.well-known/openid-configuration \
+  | jq -r .issuer
+# Expected: https://authority.glcdi.startinblox.com/auth/realms/glcdi
+```
 
-Path A is the recommendation for a clean Phase 1.5 cutover unless someone has spent significant time editing the admin console post-import.
+Smoke check via admin console (`https://authority.glcdi.startinblox.com/auth/admin`, log in as `admin/admin`, change the password):
+- **Clients** list contains `glcdi-ui` + the three `glcdi-connector-<org>` entries.
+- **Client Scopes** list contains `glcdi-claims` with 5 protocol mappers.
+- **Groups** list contains `caney-fork-team`, `point-blue-team`, `white-buffalo-team`.
+- **Users** list contains `caney-fork`, `point-blue`, `white-buffalo` plus the three `service-account-glcdi-connector-<org>` entries (auto-created from the realm JSON).
+- **Identity Providers** list is empty.
+
+Any subsequent admin-console edits made before the next re-import will live only in Postgres — keep the in-repo JSON in sync (or re-export with `kc.sh export ...` periodically).
+
+#### Option 2 — Partial import via Admin REST API (non-destructive, scriptable, recommended for incremental updates)
+
+Use this when the live KC has manual admin-console state to preserve, or when applying incremental changes (e.g. adding a fourth participant later) without a full restart. Not ideal for the Phase 1.5 cutover itself because client-scope and protocol-mapper handling in `partialImport` varies by KC version.
+
+```bash
+# 1. Get an admin token
+KC_BASE=https://authority.glcdi.startinblox.com/auth
+TOKEN=$(curl -fsSL -X POST "$KC_BASE/realms/master/protocol/openid-connect/token" \
+  -d "client_id=admin-cli" \
+  -d "username=admin" \
+  -d "password=$KEYCLOAK_ADMIN_PASSWORD" \
+  -d "grant_type=password" \
+  | jq -r .access_token)
+
+# 2. Build a partial-import payload (jq is in the host distrobox or distrobox `dev`)
+jq '{
+  ifResourceExists: "OVERWRITE",
+  realm: .realm,
+  roles: .roles,
+  clients: .clients,
+  groups: .groups,
+  users: .users,
+  identityProviders: .identityProviders
+}' /glcdi/authority-services/resources/keycloak/realms/glcdi-realm.json \
+  > /tmp/partial-import.json
+
+# 3. Push it
+curl -fsSL -X POST "$KC_BASE/admin/realms/glcdi/partialImport" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @/tmp/partial-import.json
+```
+
+The response lists how many of each resource type were `ADDED`, `OVERWRITTEN`, or `SKIPPED`.
+
+**Caveats with `partialImport`:**
+
+- Client scopes (the `glcdi-claims` scope) are **not** covered by the partial-import endpoint in older KC versions. If Option 2 is used and `glcdi-claims` is missing, create it through Option 3 (admin console) before running Option 2.
+- Protocol mappers nested inside a client are imported when the client itself is `OVERWRITTEN`, but mappers added at realm-level (in the client scope) need a separate `POST /admin/realms/glcdi/client-scopes/{id}/protocol-mappers/models` for each mapper.
+- Service-account users (`service-account-glcdi-connector-<org>`) are auto-created when their client has `serviceAccountsEnabled=true`, but the per-user attributes + group membership in the realm JSON only land if the user records are imported via partialImport's `users` field.
+
+#### Option 3 — Admin Console manual edits (last resort, when partial-import support is patchy)
+
+Walk the admin console step by step. Useful when KC version doesn't support partialImport for some resource type, or for one-off fixes. The detailed checklist is in [`AUTHORITY_MIGRATION.md` § 3 Path B](AUTHORITY_MIGRATION.md). Phase 1.5 specifically adds:
+
+- Confirm or create the `glcdi-claims` client scope with the 5 protocol mappers.
+- Confirm `glcdi-ui` has the silent-callback redirect URIs and `glcdi-claims` in its default scopes.
+- Create the 3 `glcdi-connector-<org>` clients (`client_credentials` only; `glcdi-claims` in default scopes).
+- Create the 13 realm roles (or at least the GLCDI ones not already present).
+- Create the 3 `<org>-team` groups with realm-role assignments.
+- Create the 3 starter users; set their per-user attributes (`glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`); add them to their team group.
+- For each connector client's auto-created service-account user: add to the org's team group; set the same per-user attributes.
+- Mint and rotate client secrets out-of-band.
+
+Path A in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (wipe + re-import) is the clean way to apply all of the above in one shot. Option 3 is for surgical fixes.
+
+#### About the per-user attributes
+
+The realm JSON sets `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status` on each **user** directly (not on the group). Reason: stock Keycloak's `oidc-usermodel-attribute-mapper` reads user attributes only — there's no built-in mapper for group attributes. Realm roles inherit from the group; user attributes are explicitly set per user. When adding a fourth user to an existing team, copy the team's attribute values to the new user record (small handoff cost, manageable for a prototype).
+
+#### Rotating client secrets after import
+
+The realm JSON ships placeholder secrets (`changeme-glcdi-connector-caney-fork-secret`, etc.). After import, rotate via admin console (Clients → `<client>` → Credentials → Regenerate secret) or via Admin API:
+
+```bash
+NEW_SECRET=$(openssl rand -hex 32)
+CLIENT_INTERNAL_ID=$(curl -fsSL "$KC_BASE/admin/realms/glcdi/clients?clientId=glcdi-connector-caney-fork" \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+curl -fsSL -X PUT "$KC_BASE/admin/realms/glcdi/clients/$CLIENT_INTERNAL_ID" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"secret\": \"$NEW_SECRET\"}"
+echo "New secret: $NEW_SECRET — store in $GLCDI_UI_CLIENT_SECRET / GLCDI_CONNECTOR_CANEY_FORK_SECRET on the participant VM"
+```
+
+Repeat for each connector client. Same procedure for `glcdi-ui` if the public-client form is replaced with a confidential client (currently `glcdi-ui` is `publicClient: true`, so it has no secret — operator can flip to confidential post-import if oauth2-proxy needs it for client_credentials).
 
 ### 2.3 Participant stacks — restart against the post-1.5 images
 
