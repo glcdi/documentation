@@ -1,0 +1,49 @@
+meta {
+  name: Fetch token as point-blue
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{authority_host}}/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: glcdi-connector-point-blue
+  client_secret: {{point_blue_client_secret}}
+}
+
+# point-blue is the researcher in the M1 fixture (carries `glcdi_researcher`).
+# Captures the token to env var `point_blue_token`.
+script:post-response {
+  const token = res.getBody()?.access_token;
+  if (token) {
+    bru.setEnvVar("point_blue_token", token);
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response carries access_token", function() {
+    expect(res.getBody()).to.have.property("access_token");
+  });
+
+  test("token carries glcdi_researcher role", function() {
+    const token = res.getBody().access_token;
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString("utf-8")
+    );
+    expect(payload).to.have.property("glcdi_membership", "active");
+    expect(payload.glcdi_roles).to.include("glcdi_researcher");
+  });
+}

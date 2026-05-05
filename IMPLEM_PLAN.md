@@ -41,11 +41,13 @@ defined and resolvable.
 
 | Item | Detail |
 |------|--------|
-| **Task** | Define the JSON-LD context file for `https://w3id.org/glcdi/v0.1.0/ns/` |
-| **Deliverable** | `glcdi-context.jsonld` hosted at the namespace URI (or bundled into the connector) |
-| **Content** | Map all custom terms: `membership`, `participantType`, `certificationStatus`, `InternalAnalysis`, `ScientificResearch`, `AgronomicModelTraining`, `EcosystemModelCalibration`, `ModelOutput`, `RegionalBenchmarking`, `EducationalUse`, `ConservationPlanning`, `Scope3Reporting`, `ESGCompliance`, `CertificationVerification`, `RawData`, `OriginalProvider` |
-| **Where** | Could live in `tems-vocabulary-registry` alongside TEMS vocabularies, or in a new `glcdi-vocabulary` repo. For the prototype, bundling in the connector classpath is simplest. |
-| **Status** | [ ] Not started |
+| **Task** | Define the JSON-LD context file mapping the `glcdi:` prefix to its namespace URI and aliasing the GLCDI properties / value terms used by the policies and the EDC IAM layer |
+| **Namespace URI (term identifier base)** | `https://w3id.org/glcdi/v0.1.0/ns/` (kept stable so existing inline policy `@context` blocks continue to resolve to the same term URIs) |
+| **Hosted context document** | `https://cdn.startinblox.com/owl/glcdi/context.jsonld` — the canonical JSON-LD context that policies reference via `"@context": "https://cdn.startinblox.com/owl/glcdi/context.jsonld"` |
+| **Source file** | [`./context.jsonld`](context.jsonld) — checked into this repo; deployed to the CDN URL above |
+| **Content (matches `./context.jsonld`)** | Namespace prefixes (`glcdi`, `edc`, `odrl`, `dcat`, `dct`/`dcterms`, `foaf`, `xsd`, `skos`); GLCDI properties (`participantType`, `certificationStatus`, `contributionStatus`, `membership`, `organisation`, `roles`, `accessOutcome`, `shareBack`); ODRL property aliases with type coercion (`purpose`, `elapsedTime`, `payAmount`, `paymentStatus`, `dateTime`); GLCDI value terms (participant types, certification statuses, contribution statuses, purpose taxonomy, access outcomes — see § 1.2 and § 1.3 for the canonical lists) |
+| **w3id.org redirect (deferred)** | Registering the `https://w3id.org/glcdi/v0.1.0/ns/` redirect via the [w3id PR process](https://github.com/perma-id/w3id.org) makes the term URIs themselves dereferenceable. Not required for EDC to function — EDC uses the URIs as identifiers, not for HTTP fetch — but a good post-prototype step for namespace stewardship. The hosted context at `cdn.startinblox.com` is sufficient for the prototype. |
+| **Status** | [x] Source file generated · [ ] Deployed to CDN · [ ] Existing policies migrated to reference the hosted URL |
 
 ### 1.2 Document participant types and certification statuses
 
@@ -552,6 +554,18 @@ console operations as the dataspace grows beyond the initial small participant s
 
 ## Phase 3: EDC Policy Extension Development
 
+### 3.0 `edc-glcdi-extension` repository scaffolding
+
+| Item | Detail |
+|------|--------|
+| **Task** | Set up the GLCDI-owned extension repository as a sibling of `edc-connector/`, following the DS4GO pattern (separate repo, build-time symlinked or path-referenced from the connector's controlplane build). |
+| **Why a separate repo (not `edc-connector/extensions/`)** | Keeps GLCDI-owned Java code separate from the EDC fork (which tracks upstream). Independent versioning + git history. Mirrors `ds4go/edc-dsif-extension/` next to `ds4go/edc-connector/`. |
+| **Layout (proposed)** | `edc-glcdi-extension/extensions/glcdi-policy-functions/` (the membership / participantType / certificationStatus functions of §§ 3.2–3.4) — first occupant. Future siblings (e.g. `payment-status-extension/` from [`PAYMENT_GATING.md`](PAYMENT_GATING.md), if Phase 7.1 lands) live under the same `extensions/` folder. |
+| **Wire-up** | `edc-connector/runtimes/controlplane/build.gradle.kts` references the extension via relative path or via a CI symlink step that puts the extension into `edc-connector/extensions/`. Match whichever pattern this team's CI uses for DS4GO. |
+| **Status** | [x] Repo created (empty) · [ ] First extension scaffolded (§ 3.1) · [ ] Wired into the controlplane runtime (§ 3.6) |
+
+
+
 The EDC connector needs custom policy functions to evaluate GLCDI-specific constraints.
 Without these, constraints referencing `glcdi:membership` or `glcdi:participantType` will be
 silently ignored (default: permit) or fail closed, depending on EDC configuration.
@@ -683,6 +697,8 @@ with the richer policies from `./policies/`.
 Two independent tracks that can run in parallel with each other and with Phases 3–4. Both feed into the Phase 5 integration tests and the M1 milestone gate.
 
 ### 4.5.E Bruno test suite (Track E — parallel agent)
+
+**Location:** [`./bruno/`](bruno/) (i.e. `management/bruno/` in this repo). Single collection; environment variables for staging vs. local; one folder per scenario step or per logical group (auth setup, catalog queries, negotiations, transfers).
 
 A Bruno collection (or equivalent HTTP test harness) executing the M1 scenario end-to-end against the management API:
 

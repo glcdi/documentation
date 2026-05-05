@@ -1,0 +1,47 @@
+vars {
+  // -- Connector hosts (staging) ----------------------------------------------
+  // Per glcdi/CLAUDE.md — staging URLs.
+  caney_fork_host: https://caney-fork.glcdi.startinblox.com
+  point_blue_host: https://point-blue.glcdi.startinblox.com
+  white_buffalo_host: https://white-buffalo.glcdi.startinblox.com
+
+  // -- DSP endpoints ----------------------------------------------------------
+  // The /protocol path is the externally reachable DSP endpoint
+  // (edc.dsp.callback.address). Mismatches here cause silent negotiation hangs
+  // (CLAUDE.md "Inter-service networking").
+  caney_fork_dsp: https://caney-fork.glcdi.startinblox.com/protocol
+  point_blue_dsp: https://point-blue.glcdi.startinblox.com/protocol
+  white_buffalo_dsp: https://white-buffalo.glcdi.startinblox.com/protocol
+
+  // -- Authority Keycloak -----------------------------------------------------
+  // Post Phase-1.5 the host is `authority.glcdi.startinblox.com` (the
+  // governance→authority rename from AUTHORITY_MIGRATION.md). Until that lands,
+  // it is reachable as `governance.glcdi.startinblox.com`. Adjust here when
+  // cutover happens.
+  authority_host: https://authority.glcdi.startinblox.com/auth/realms/glcdi
+
+  // -- Participant URNs (per PAYMENT_GATING.md § 3.7) -------------------------
+  caney_fork_participant_id: urn:glcdi:participant:caney-fork
+  point_blue_participant_id: urn:glcdi:participant:point-blue
+  white_buffalo_participant_id: urn:glcdi:participant:white-buffalo
+
+  // -- M1 fixture asset -------------------------------------------------------
+  m1_asset_id: urn:glcdi:asset:caney-fork:grazing-soc-2024
+  m1_access_policy_id: glcdi:access:regenerative-producers
+  m1_contract_policy_id: glcdi:contract:internal-use-only
+  m1_contract_definition_id: glcdi:contractdef:caney-fork:grazing-soc-2024
+}
+vars:secret [
+  caney_fork_api_key,
+  point_blue_api_key,
+  white_buffalo_api_key,
+  caney_fork_client_secret,
+  point_blue_client_secret,
+  white_buffalo_client_secret,
+  caney_fork_token,
+  point_blue_token,
+  white_buffalo_token,
+  m1_negotiation_id,
+  m1_contract_agreement_id,
+  m1_transfer_process_id
+]

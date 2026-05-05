@@ -1,0 +1,56 @@
+vars {
+  // -- Connector hosts --------------------------------------------------------
+  // Two participant connectors running on the same machine, different ports.
+  // Per glcdi/CLAUDE.md, inter-container traffic uses host.docker.internal in dev.
+  caney_fork_host: http://host.docker.internal:8080
+  point_blue_host: http://host.docker.internal:8081
+  white_buffalo_host: http://host.docker.internal:8082
+
+  // -- DSP endpoints (counterParty addresses) ---------------------------------
+  // What other connectors hit when they query us. In dev, same hostnames as the
+  // management hosts above with the /protocol path.
+  caney_fork_dsp: http://host.docker.internal:8080/protocol
+  point_blue_dsp: http://host.docker.internal:8081/protocol
+  white_buffalo_dsp: http://host.docker.internal:8082/protocol
+
+  // -- Authority Keycloak -----------------------------------------------------
+  // Single-tier OIDC against the Authority KC (post-Phase-1.5 — see
+  // IMPLEM_PLAN.md § 1.5.4). The realm is `glcdi`.
+  authority_host: http://localhost:8090/auth/realms/glcdi
+
+  // -- Participant URNs (per PAYMENT_GATING.md § 3.7) -------------------------
+  caney_fork_participant_id: urn:glcdi:participant:caney-fork
+  point_blue_participant_id: urn:glcdi:participant:point-blue
+  white_buffalo_participant_id: urn:glcdi:participant:white-buffalo
+
+  // -- M1 fixture asset -------------------------------------------------------
+  m1_asset_id: urn:glcdi:asset:caney-fork:grazing-soc-2024
+  m1_access_policy_id: glcdi:access:regenerative-producers
+  m1_contract_policy_id: glcdi:contract:internal-use-only
+  m1_contract_definition_id: glcdi:contractdef:caney-fork:grazing-soc-2024
+}
+vars:secret [
+  // X-Api-Key per connector — the floor on every management-API call
+  // (IMPLEM_PLAN.md § 1.5.5). Rotated per CLAUDE.md "Things that will bite you".
+  caney_fork_api_key,
+  point_blue_api_key,
+  white_buffalo_api_key,
+
+  // client_credentials secrets for the per-org Authority-KC clients
+  // glcdi-connector-<org> (IMPLEM_PLAN.md § 1.5.6).
+  caney_fork_client_secret,
+  point_blue_client_secret,
+  white_buffalo_client_secret,
+
+  // Bearer tokens — populated by 00-auth/0[1-3]-fetch-token-*.bru via
+  // post-response scripts. Empty until the auth folder runs.
+  caney_fork_token,
+  point_blue_token,
+  white_buffalo_token,
+
+  // Captured during the scenario — populated by post-response scripts in
+  // 30-negotiation/ and 40-transfer/.
+  m1_negotiation_id,
+  m1_contract_agreement_id,
+  m1_transfer_process_id
+]

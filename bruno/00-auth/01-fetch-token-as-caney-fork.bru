@@ -1,0 +1,63 @@
+meta {
+  name: Fetch token as caney-fork
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{authority_host}}/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: glcdi-connector-caney-fork
+  client_secret: {{caney_fork_client_secret}}
+}
+
+# Captures the access_token into the env var `caney_fork_token` so subsequent
+# requests can use {{caney_fork_token}}. Decodes the JWT payload and asserts
+# the GLCDI claim shape from IMPLEM_PLAN.md § 1.5.8 / § 2.7.
+#
+# DESIGN NOTE: Claim names below match § 2.7 of IMPLEM_PLAN.md
+# (`glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`). If the
+# Phase 2 mappers settle on different names, update both this file and the
+# §2.7 mapping table together — they are coupled.
+script:post-response {
+  const token = res.getBody()?.access_token;
+  if (token) {
+    bru.setEnvVar("caney_fork_token", token);
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response carries access_token", function() {
+    expect(res.getBody()).to.have.property("access_token");
+    expect(res.getBody().access_token).to.be.a("string");
+  });
+
+  test("token carries GLCDI claims", function() {
+    const token = res.getBody().access_token;
+    // Decode JWT middle segment (no signature verification — Bruno is just
+    // checking the shape; the connector's iam-oauth2 verifies the signature
+    // against the Authority KC JWKS at policy-evaluation time).
+    const payload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString("utf-8")
+    );
+    expect(payload).to.have.property("glcdi_membership", "active");
+    expect(payload).to.have.property("glcdi_roles");
+    expect(payload.glcdi_roles).to.be.an("array");
+    // caney-fork is the regenerative producer in the M1 fixture.
+    expect(payload.glcdi_roles).to.include("glcdi_producer");
+    expect(payload).to.have.property("glcdi_certification_status");
+  });
+}

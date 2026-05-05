@@ -1,0 +1,95 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/",
+    "edc": "https://w3id.org/edc/v0.0.1/ns/",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dct": "http://purl.org/dc/terms/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "participantType": {
+      "@id": "glcdi:participantType",
+      "@type": "@id"
+    },
+    "certificationStatus": {
+      "@id": "glcdi:certificationStatus",
+      "@type": "@id"
+    },
+    "contributionStatus": {
+      "@id": "glcdi:contributionStatus",
+      "@type": "@id"
+    },
+    "membership": {
+      "@id": "glcdi:membership",
+      "@type": "xsd:string"
+    },
+    "organisation": {
+      "@id": "glcdi:organisation",
+      "@type": "xsd:string"
+    },
+    "roles": {
+      "@id": "glcdi:roles",
+      "@container": "@set"
+    },
+    "accessOutcome": {
+      "@id": "glcdi:accessOutcome",
+      "@type": "@id"
+    },
+    "shareBack": {
+      "@id": "glcdi:shareBack",
+      "@type": "@id"
+    },
+    "Producer": "glcdi:Producer",
+    "Researcher": "glcdi:Researcher",
+    "DataSteward": "glcdi:DataSteward",
+    "ConservationOrg": "glcdi:ConservationOrg",
+    "TechnologyProvider": "glcdi:TechnologyProvider",
+    "Corporate": "glcdi:Corporate",
+    "CertificationBody": "glcdi:CertificationBody",
+    "SupplyChainPartner": "glcdi:SupplyChainPartner",
+    "Funder": "glcdi:Funder",
+    "OrganicCertified": "glcdi:OrganicCertified",
+    "RegenerativeVerified": "glcdi:RegenerativeVerified",
+    "TransitioningOrganic": "glcdi:TransitioningOrganic",
+    "Conventional": "glcdi:Conventional",
+    "NotApplicable": "glcdi:NotApplicable",
+    "Contributing": "glcdi:Contributing",
+    "Observer": "glcdi:Observer",
+    "InternalAnalysis": "glcdi:InternalAnalysis",
+    "ScientificResearch": "glcdi:ScientificResearch",
+    "AgronomicModelTraining": "glcdi:AgronomicModelTraining",
+    "EcosystemModelCalibration": "glcdi:EcosystemModelCalibration",
+    "RegionalBenchmarking": "glcdi:RegionalBenchmarking",
+    "EducationalUse": "glcdi:EducationalUse",
+    "ConservationPlanning": "glcdi:ConservationPlanning",
+    "Scope3Reporting": "glcdi:Scope3Reporting",
+    "ESGCompliance": "glcdi:ESGCompliance",
+    "CertificationVerification": "glcdi:CertificationVerification",
+    "ModelOutput": "glcdi:ModelOutput",
+    "Granted": "glcdi:Granted",
+    "Denied": "glcdi:Denied",
+    "purpose": {
+      "@id": "odrl:purpose",
+      "@type": "@vocab"
+    },
+    "elapsedTime": {
+      "@id": "odrl:elapsedTime",
+      "@type": "xsd:duration"
+    },
+    "payAmount": {
+      "@id": "odrl:payAmount",
+      "@type": "xsd:decimal"
+    },
+    "paymentStatus": {
+      "@id": "odrl:paymentStatus",
+      "@type": "@id"
+    },
+    "dateTime": {
+      "@id": "odrl:dateTime",
+      "@type": "xsd:dateTime"
+    }
+  }
+}
