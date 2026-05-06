@@ -1,4 +1,12 @@
 vars {
+  // -- Tier selector ----------------------------------------------------------
+  // Switches the auth model the collection assumes:
+  //   tier1 — X-Api-Key only on /management calls (M1 default — IMPLEM_PLAN § 1.5).
+  //   tier2 — X-Api-Key + Authorization: Bearer (post-M1 user OIDC — § 7.2).
+  // The collection-level pre-request script in `collection.bru` injects the
+  // Bearer header only when this is set to `tier2`. Default is tier1.
+  tier: tier1
+
   // -- Connector hosts --------------------------------------------------------
   // Two participant connectors running on the same machine, different ports.
   // Per glcdi/CLAUDE.md, inter-container traffic uses host.docker.internal in dev.
@@ -14,8 +22,9 @@ vars {
   white_buffalo_dsp: http://host.docker.internal:8082/protocol
 
   // -- Authority Keycloak -----------------------------------------------------
-  // Single-tier OIDC against the Authority KC (post-Phase-1.5 — see
-  // IMPLEM_PLAN.md § 1.5.4). The realm is `glcdi`.
+  // The realm is `glcdi`. At Tier 1 the only KC traffic is the diagnostic
+  // client_credentials mints in 00-auth/ (verifying claim shape). At Tier 2
+  // the same tokens are also injected as Bearer on /management calls.
   authority_host: http://localhost:8090/auth/realms/glcdi
 
   // -- Participant URNs (per PAYMENT_GATING.md § 3.7) -------------------------

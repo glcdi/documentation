@@ -1,0 +1,76 @@
+docs {
+  Collection-level pre-request script that handles the Tier 1 vs Tier 2 auth
+  difference centrally, so individual `.bru` files don't need to know about it.
+
+  - **Tier 1 (default)** — every /management call carries `X-Api-Key` only.
+    No Bearer token; oauth2-proxy is removed from the participant compose
+    (IMPLEM_PLAN § 1.5.2). The 00-auth/ folder still mints client_credentials
+    tokens against the Authority KC for diagnostic claim-shape checks, but
+    those tokens are not attached to /management traffic at this tier.
+
+  - **Tier 2** — flip env var `tier` to `tier2`. Adds
+    `Authorization: Bearer <token>` to every /management call, on top of the
+    `X-Api-Key` floor (IMPLEM_PLAN § 7.2). The token used is the connector
+    SA token already minted by 00-auth/ — Bruno acts as automated test
+    traffic, so it uses SA tokens rather than the per-user OIDC flow that
+    real human operators use through the catalogue UI. oauth2-proxy still
+    accepts these (it validates "any token signed by Authority KC", not
+    per-user identity).
+
+  The org-to-token routing matches the URL host: a /management call against
+  `{{caney_fork_host}}` carries `caney_fork_token`, and so on. Auth requests
+  in 00-auth/ themselves go to the Authority KC and are skipped.
+
+  See ./README.md for the full tier model.
+}
+
+script:pre-request {
+  const tier = bru.getEnvVar("tier") || "tier1";
+
+  // Tier 1 short-circuits: X-Api-Key alone is the contract; nothing else to do.
+  if (tier !== "tier2") {
+    return;
+  }
+
+  // Tier 2 — inject Bearer for /management calls.
+  // The 00-auth/ requests target the Authority KC; they must NOT receive a
+  // Bearer (they're requesting one). Filter by URL path.
+  let url;
+  try {
+    url = req.getUrl();
+  } catch (e) {
+    return;
+  }
+
+  if (typeof url !== "string" || !url.includes("/management/")) {
+    // 00-auth/, 99-negative-auth/01 (intentionally no auth) — leave alone.
+    return;
+  }
+
+  // Pick the right token by host match.
+  const orgs = ["caney_fork", "point_blue", "white_buffalo"];
+  let tokenName = null;
+  for (const org of orgs) {
+    const host = bru.getEnvVar(`${org}_host`);
+    if (host && url.startsWith(host)) {
+      tokenName = `${org}_token`;
+      break;
+    }
+  }
+
+  if (!tokenName) return;
+
+  const token = bru.getEnvVar(tokenName);
+  if (!token) {
+    // Token unset — surface a helpful diagnostic rather than silently sending
+    // a bare X-Api-Key request that the test will then misdiagnose as a
+    // policy / API-key failure.
+    console.warn(
+      `[tier2] ${tokenName} is empty — run 00-auth/ first, or check that ` +
+      `${tokenName.replace("_token", "_client_secret")} is populated in the env.`
+    );
+    return;
+  }
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+}

@@ -20,14 +20,20 @@ body:form-urlencoded {
   client_secret: {{caney_fork_client_secret}}
 }
 
-# Captures the access_token into the env var `caney_fork_token` so subsequent
-# requests can use {{caney_fork_token}}. Decodes the JWT payload and asserts
-# the GLCDI claim shape from IMPLEM_PLAN.md § 1.5.8 / § 2.7.
+# Mints a connector-SA token via Authority KC's client_credentials flow,
+# decodes the JWT payload, and asserts the GLCDI claim shape from
+# IMPLEM_PLAN § 1.5.4 / § 2.6.
 #
-# DESIGN NOTE: Claim names below match § 2.7 of IMPLEM_PLAN.md
-# (`glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`). If the
-# Phase 2 mappers settle on different names, update both this file and the
-# §2.7 mapping table together — they are coupled.
+# Role of this folder by tier:
+# - Tier 1 (default): diagnostic only. The token is used to verify the
+#   Authority KC has the right client + claim mappers; the captured
+#   {{caney_fork_token}} env var is NOT used by /management calls
+#   (those carry X-Api-Key only at this tier).
+# - Tier 2 (`tier=tier2`): the captured token is auto-injected as
+#   `Authorization: Bearer` on /management calls by the collection-level
+#   pre-request script in `../collection.bru`.
+#
+# DESIGN NOTE: claim names below match IMPLEM_PLAN § 2.6.
 script:post-response {
   const token = res.getBody()?.access_token;
   if (token) {

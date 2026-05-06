@@ -25,6 +25,8 @@ body:form-urlencoded {
 # confirm the access policy admits matching identities, and in
 # 30-negotiation/* + 40-transfer/01 as the consumer that completes the
 # happy-path flow.
+# Tier 1: diagnostic only. Tier 2: auto-injected as Bearer on /management
+# calls by ../collection.bru.
 script:post-response {
   const token = res.getBody()?.access_token;
   if (token) {

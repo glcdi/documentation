@@ -10,14 +10,19 @@ get {
   auth: none
 }
 
-# Deliberately omits X-Api-Key and Authorization. The X-Api-Key floor
-# (IMPLEM_PLAN.md § 1.5.8) means the connector should refuse with 401.
+# Deliberately omits X-Api-Key. The X-Api-Key floor (IMPLEM_PLAN § 1.5.3) is
+# enforced at both Tier 1 and Tier 2 — the connector should refuse with 401
+# either way. At Tier 2 the missing Bearer would also fail oauth2-proxy, but
+# the API-key check fires regardless.
 headers {
   Accept: application/json
 }
 
+# At Tier 2 the collection-level pre-request would inject a Bearer; this
+# test wants to assert the X-Api-Key floor specifically, so we don't care
+# whether Bearer is present.
 tests {
-  test("status is 401", function() {
+  test("status is 401 (X-Api-Key floor)", function() {
     expect(res.getStatus()).to.equal(401);
   });
 }

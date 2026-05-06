@@ -10,13 +10,12 @@ post {
   auth: none
 }
 
-# Pure CRUD seeding step: X-Api-Key only is sufficient (IMPLEM_PLAN.md § 1.5.8).
-# The Bearer token is included as defence-in-depth and so this folder still
-# exercises the dual-credential path that identity-driven scenarios require.
+# Pure CRUD seeding step. At Tier 1 (default), `X-Api-Key` is the only auth
+# (IMPLEM_PLAN § 1.5.3). At Tier 2 (`tier=tier2`), the collection-level
+# pre-request script in `../collection.bru` adds `Authorization: Bearer`.
 headers {
   Content-Type: application/json
   X-Api-Key: {{caney_fork_api_key}}
-  Authorization: Bearer {{caney_fork_token}}
 }
 
 # Minimal asset descriptor with the M1 fixture URN. The data-address shape

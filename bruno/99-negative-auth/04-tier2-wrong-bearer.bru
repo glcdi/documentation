@@ -1,0 +1,42 @@
+meta {
+  name: Management call with malformed Bearer (Tier 2 only) — expect 401 at Tier 2, 200 at Tier 1
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{caney_fork_host}}/management/v3/assets
+  body: none
+  auth: none
+}
+
+# At Tier 2, oauth2-proxy validates the JWT signature against the Authority
+# KC JWKS — a malformed / wrong-issuer Bearer should be rejected with 401
+# before reaching the connector.
+# At Tier 1, there is no oauth2-proxy and the connector ignores
+# Authorization (X-Api-Key alone is the contract), so the call succeeds.
+headers {
+  Accept: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+  Authorization: Bearer not.a.valid.jwt
+}
+
+script:pre-request {
+  // Override anything the collection-level script may have injected for
+  // /management URLs at Tier 2. We want the malformed token below to be
+  // what the server sees.
+  req.setHeader("Authorization", "Bearer not.a.valid.jwt");
+}
+
+tests {
+  test("response status reflects tier", function() {
+    const tier = bru.getEnvVar("tier") || "tier1";
+    if (tier === "tier1") {
+      // Tier 1 ignores Authorization entirely.
+      expect(res.getStatus()).to.be.oneOf([200, 204]);
+    } else {
+      // oauth2-proxy rejects on signature/issuer mismatch.
+      expect(res.getStatus()).to.equal(401);
+    }
+  });
+}

@@ -22,6 +22,8 @@ body:form-urlencoded {
 
 # point-blue is the researcher in the M1 fixture (carries `glcdi_researcher`).
 # Captures the token to env var `point_blue_token`.
+# Tier 1: diagnostic only. Tier 2: auto-injected as Bearer on /management
+# calls by ../collection.bru.
 script:post-response {
   const token = res.getBody()?.access_token;
   if (token) {

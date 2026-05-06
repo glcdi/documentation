@@ -1,4 +1,12 @@
 vars {
+  // -- Tier selector ----------------------------------------------------------
+  // Switches the auth model the collection assumes:
+  //   tier1 — X-Api-Key only on /management calls (M1 default — IMPLEM_PLAN § 1.5).
+  //   tier2 — X-Api-Key + Authorization: Bearer (post-M1 user OIDC — § 7.2).
+  // The collection-level pre-request script in `collection.bru` injects the
+  // Bearer header only when this is set to `tier2`. Default is tier1.
+  tier: tier1
+
   // -- Connector hosts (staging) ----------------------------------------------
   // Per glcdi/CLAUDE.md — staging URLs.
   caney_fork_host: https://caney-fork.glcdi.startinblox.com
@@ -15,9 +23,7 @@ vars {
 
   // -- Authority Keycloak -----------------------------------------------------
   // Post Phase-1.5 the host is `authority.glcdi.startinblox.com` (the
-  // governance→authority rename from AUTHORITY_MIGRATION.md). Until that lands,
-  // it is reachable as `governance.glcdi.startinblox.com`. Adjust here when
-  // cutover happens.
+  // governance→authority rename from AUTHORITY_MIGRATION.md).
   authority_host: https://authority.glcdi.startinblox.com/auth/realms/glcdi
 
   // -- Participant URNs (per PAYMENT_GATING.md § 3.7) -------------------------
