@@ -10,20 +10,23 @@ post {
   auth: none
 }
 
-# Identity-driven positive case. white-buffalo's connector carries
-# `glcdi_member` + `glcdi_regenerative_producer` realm roles and
-# `glcdi_certification_status = regenerative-verified` (on its
-# service-account user in Authority KC, per IMPLEM_PLAN § 1.5.4).
-# The provider's `regenerative-producers-only` access policy admits
-# this consumer, so the M1 fixture asset MUST appear in the catalog.
-#
-# At Tier 1 (this collection's default), the management call only carries
-# `X-Api-Key`. The identity claims that drive the policy decision flow over
-# the DSP layer between the two connectors — white-buffalo's connector mints
-# its own `client_credentials` token at startup and presents it to caney-fork
-# via DSP; caney-fork's `iam-oauth2` (post-§ 3.5) extracts the `glcdi_*`
-# claims into ClaimToken for policy evaluation. Bruno doesn't drive that
-# token mint — the connector does it itself.
+docs {
+  Identity-driven positive case. white-buffalo's connector carries
+  `glcdi_member` + `glcdi_regenerative_producer` realm roles and
+  `glcdi_certification_status = regenerative-verified` (on its
+  service-account user in Authority KC, per IMPLEM_PLAN § 1.5.4).
+  The provider's `regenerative-producers-only` access policy admits
+  this consumer, so the M1 fixture asset MUST appear in the catalog.
+
+  At Tier 1 (this collection's default), the management call only carries
+  `X-Api-Key`. The identity claims that drive the policy decision flow over
+  the DSP layer between the two connectors — white-buffalo's connector mints
+  its own `client_credentials` token at startup and presents it to caney-fork
+  via DSP; caney-fork's `iam-oauth2` (post-§ 3.5) extracts the `glcdi_*`
+  claims into ClaimToken for policy evaluation. Bruno doesn't drive that
+  token mint — the connector does it itself.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{white_buffalo_api_key}}

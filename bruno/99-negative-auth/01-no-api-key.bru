@@ -4,23 +4,35 @@ meta {
   seq: 1
 }
 
-get {
-  url: {{caney_fork_host}}/management/v3/assets
-  body: none
+post {
+  url: {{caney_fork_host}}/management/v3/assets/request
+  body: json
   auth: none
 }
 
-# Deliberately omits X-Api-Key. The X-Api-Key floor (IMPLEM_PLAN § 1.5.3) is
-# enforced at both Tier 1 and Tier 2 — the connector should refuse with 401
-# either way. At Tier 2 the missing Bearer would also fail oauth2-proxy, but
-# the API-key check fires regardless.
-headers {
-  Accept: application/json
+docs {
+  Deliberately omits X-Api-Key. The X-Api-Key floor (IMPLEM_PLAN § 1.5.3) is
+  enforced at both Tier 1 and Tier 2 — the connector should refuse with 401
+  either way. At Tier 2 the missing Bearer would also fail oauth2-proxy, but
+  the API-key check fires regardless.
+
+  Uses POST /assets/request (the canonical EDC list endpoint) instead of
+  GET /assets (which doesn't exist — would 405 before the auth filter
+  even runs).
 }
 
-# At Tier 2 the collection-level pre-request would inject a Bearer; this
-# test wants to assert the X-Api-Key floor specifically, so we don't care
-# whether Bearer is present.
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
+    "@type": "QuerySpec"
+  }
+}
+
 tests {
   test("status is 401 (X-Api-Key floor)", function() {
     expect(res.getStatus()).to.equal(401);

@@ -10,20 +10,23 @@ post {
   auth: none
 }
 
-# Identity-driven negative case. point-blue's connector carries `glcdi_member`
-# + `glcdi_researcher` but no `glcdi_regenerative_producer` role. The
-# provider's `regenerative-producers-only` access policy explicitly requires
-# `glcdi_regenerative_producer`, so this consumer must NOT see the M1
-# fixture asset in the returned catalog.
-#
-# Expected behaviour: HTTP 200 (catalog query itself succeeds), but the
-# returned dataset list does NOT include the M1 fixture asset — proof that
-# the access policy is filtering correctly. This is the M1 acceptance
-# criterion in IMPLEM_PLAN § Milestone M1.
-#
-# Auth shape is identical to the positive case (§ 01). The connector's own
-# DSP-level token (minted at startup) carries point-blue's claims; this
-# request just kicks off the catalog query at point-blue's connector.
+docs {
+  Identity-driven negative case. point-blue's connector carries `glcdi_member`
+  + `glcdi_researcher` but no `glcdi_regenerative_producer` role. The
+  provider's `regenerative-producers-only` access policy explicitly requires
+  `glcdi_regenerative_producer`, so this consumer must NOT see the M1
+  fixture asset in the returned catalog.
+
+  Expected behaviour: HTTP 200 (catalog query itself succeeds), but the
+  returned dataset list does NOT include the M1 fixture asset — proof that
+  the access policy is filtering correctly. This is the M1 acceptance
+  criterion in IMPLEM_PLAN § Milestone M1.
+
+  Auth shape is identical to the positive case (§ 01). The connector's own
+  DSP-level token (minted at startup) carries point-blue's claims; this
+  request just kicks off the catalog query at point-blue's connector.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{point_blue_api_key}}

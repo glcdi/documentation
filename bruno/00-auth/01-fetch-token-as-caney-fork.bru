@@ -10,6 +10,18 @@ post {
   auth: none
 }
 
+docs {
+  Mints a connector-SA token via Authority KC's `client_credentials` flow,
+  decodes the JWT payload, and asserts the GLCDI claim shape from
+  IMPLEM_PLAN § 1.5.4 / § 2.6.
+
+  Role of this folder by tier:
+  - Tier 1 (default): diagnostic only. The captured `caney_fork_token` env
+    var is NOT used by /management calls (those carry X-Api-Key only).
+  - Tier 2 (`tier=tier2`): the captured token is auto-injected as
+    `Authorization: Bearer` on /management calls by `../collection.bru`.
+}
+
 headers {
   Content-Type: application/x-www-form-urlencoded
 }
@@ -20,21 +32,8 @@ body:form-urlencoded {
   client_secret: {{caney_fork_client_secret}}
 }
 
-# Mints a connector-SA token via Authority KC's client_credentials flow,
-# decodes the JWT payload, and asserts the GLCDI claim shape from
-# IMPLEM_PLAN § 1.5.4 / § 2.6.
-#
-# Role of this folder by tier:
-# - Tier 1 (default): diagnostic only. The token is used to verify the
-#   Authority KC has the right client + claim mappers; the captured
-#   {{caney_fork_token}} env var is NOT used by /management calls
-#   (those carry X-Api-Key only at this tier).
-# - Tier 2 (`tier=tier2`): the captured token is auto-injected as
-#   `Authorization: Bearer` on /management calls by the collection-level
-#   pre-request script in `../collection.bru`.
-#
-# DESIGN NOTE: claim names below match IMPLEM_PLAN § 2.6.
 script:post-response {
+  // Capture access_token into env var so subsequent requests can use it.
   const token = res.getBody()?.access_token;
   if (token) {
     bru.setEnvVar("caney_fork_token", token);

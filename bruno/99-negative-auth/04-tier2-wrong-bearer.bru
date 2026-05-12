@@ -4,21 +4,35 @@ meta {
   seq: 4
 }
 
-get {
-  url: {{caney_fork_host}}/management/v3/assets
-  body: none
+post {
+  url: {{caney_fork_host}}/management/v3/assets/request
+  body: json
   auth: none
 }
 
-# At Tier 2, oauth2-proxy validates the JWT signature against the Authority
-# KC JWKS — a malformed / wrong-issuer Bearer should be rejected with 401
-# before reaching the connector.
-# At Tier 1, there is no oauth2-proxy and the connector ignores
-# Authorization (X-Api-Key alone is the contract), so the call succeeds.
+docs {
+  At Tier 2, oauth2-proxy validates the JWT signature against the Authority
+  KC JWKS — a malformed / wrong-issuer Bearer should be rejected with 401
+  before reaching the connector.
+  At Tier 1, there is no oauth2-proxy and the connector ignores
+  Authorization (X-Api-Key alone is the contract), so the call succeeds.
+
+  Uses POST /assets/request — the canonical EDC list endpoint. GET /assets
+  doesn't exist and would 405 before the auth filter runs.
+}
+
 headers {
   Accept: application/json
+  Content-Type: application/json
   X-Api-Key: {{caney_fork_api_key}}
   Authorization: Bearer not.a.valid.jwt
+}
+
+body:json {
+  {
+    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
+    "@type": "QuerySpec"
+  }
 }
 
 script:pre-request {

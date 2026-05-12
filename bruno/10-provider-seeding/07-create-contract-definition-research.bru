@@ -1,7 +1,7 @@
 meta {
-  name: Create contract definition (binds asset to access + contract policies)
+  name: Create contract definition (research-accessible asset)
   type: http
-  seq: 4
+  seq: 7
 }
 
 post {
@@ -11,11 +11,12 @@ post {
 }
 
 docs {
-  Wires the asset created in step 01 to the access policy from step 02 and the
-  contract policy from step 03. The `assetsSelector` filters by the asset's
-  `@id`; in production this would typically filter by an asset class property
-  instead (e.g. `glcdi:assetClass = soc-measurements`) so a single contract
-  definition covers many assets.
+  Wires the research-accessible asset (06-create-asset-research-summary)
+  to the research-accessible access policy (05-create-access-policy-...)
+  and the existing contract policy (`internal-use-only`).
+
+  `assetsSelector` filters by the asset's `@id` — same shape as
+  `04-create-contract-definition.bru` for the strict asset.
 }
 
 headers {
@@ -28,16 +29,16 @@ body:json {
     "@context": {
       "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
     },
-    "@id": "{{m1_contract_definition_id}}",
+    "@id": "{{m1_research_contract_definition_id}}",
     "@type": "ContractDefinition",
-    "accessPolicyId": "{{m1_access_policy_id}}",
+    "accessPolicyId": "{{m1_research_access_policy_id}}",
     "contractPolicyId": "{{m1_contract_policy_id}}",
     "assetsSelector": [
       {
         "@type": "Criterion",
         "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
         "operator": "=",
-        "operandRight": "{{m1_asset_id}}"
+        "operandRight": "{{m1_research_asset_id}}"
       }
     ]
   }
@@ -45,7 +46,6 @@ body:json {
 
 tests {
   test("contract-definition created or already exists", function() {
-    // 409 = idempotent re-seed (contract-def already created in a prior run).
     expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
   });
 }

@@ -10,20 +10,23 @@ post {
   auth: none
 }
 
+docs {
+  Initiates a data-plane transfer against the contract agreement that
+  resulted from 30-negotiation/01 (purpose=InternalAnalysis path). Requires
+  `m1_contract_agreement_id` to be populated — this happens after the
+  negotiation reaches FINALIZED and the agreement id is captured by the
+  (future) 30-negotiation/01b polling file.
+
+  The `transferType` value is the EDC 0.15.x form. Older connectors used a
+  separate `dataDestination.type` only; if the fork pins an older version,
+  simplify accordingly.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{white_buffalo_api_key}}
 }
 
-# Initiates a data-plane transfer against the contract agreement that
-# resulted from 30-negotiation/01 (purpose=InternalAnalysis path). Requires
-# `m1_contract_agreement_id` to be populated — this happens after the
-# negotiation reaches FINALIZED and the agreement id is captured by the
-# (future) 30-negotiation/01b polling file.
-#
-# DESIGN NOTE: the `transferType` value is the EDC 0.15.x form. Older
-# connectors used a separate `dataDestination.type` only; if the fork pins
-# an older version, simplify accordingly.
 body:json {
   {
     "@context": {

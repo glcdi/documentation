@@ -10,18 +10,22 @@ post {
   auth: none
 }
 
-# Pure CRUD seeding step. At Tier 1 (default), `X-Api-Key` is the only auth
-# (IMPLEM_PLAN § 1.5.3). At Tier 2 (`tier=tier2`), the collection-level
-# pre-request script in `../collection.bru` adds `Authorization: Bearer`.
+docs {
+  Pure CRUD seeding step. At Tier 1 (default), `X-Api-Key` is the only auth
+  (IMPLEM_PLAN § 1.5.3). At Tier 2 (`tier=tier2`), the collection-level
+  pre-request script in `../collection.bru` adds `Authorization: Bearer`.
+
+  Minimal asset descriptor with the M1 fixture URN. The data-address shape
+  below uses HttpData as a representative sink — adjust to match Phase 4's
+  seeding scripts when they land. The `@id` follows the URN convention from
+  PAYMENT_GATING.md § 3.7.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{caney_fork_api_key}}
 }
 
-# Minimal asset descriptor with the M1 fixture URN. The data-address shape
-# below uses HttpData as a representative sink — adjust to match Phase 4's
-# seeding scripts when they land. The `@id` follows the URN convention from
-# PAYMENT_GATING.md § 3.7.
 body:json {
   {
     "@context": {
@@ -31,8 +35,8 @@ body:json {
     "@id": "{{m1_asset_id}}",
     "@type": "Asset",
     "properties": {
-      "name": "Caney Fork grazing SOC 2024",
-      "description": "Soil organic carbon measurements, Caney Fork ranch, 2024 season — M1 fixture asset.",
+      "name": "{{org_display_name}} grazing SOC 2024 (regen producers)",
+      "description": "Soil organic carbon measurements, {{org_display_name}} ranch, 2024 season — restricted to regen-verified producers (M1 fixture).",
       "contenttype": "application/json",
       "glcdi:assetClass": "soc-measurements"
     },
@@ -46,8 +50,9 @@ body:json {
 }
 
 tests {
-  test("status is 200 or 201", function() {
-    expect(res.getStatus()).to.be.oneOf([200, 201]);
+  test("asset created or already exists", function() {
+    // 409 = idempotent re-seed (asset already created in a prior run).
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
   });
 
   test("response echoes the asset id", function() {

@@ -10,6 +10,12 @@ post {
   auth: none
 }
 
+docs {
+  point-blue is the researcher in the M1 fixture (carries `glcdi_researcher`).
+  Captures the token to env var `point_blue_token`. Tier 1: diagnostic only.
+  Tier 2: auto-injected as Bearer on /management calls by `../collection.bru`.
+}
+
 headers {
   Content-Type: application/x-www-form-urlencoded
 }
@@ -20,10 +26,6 @@ body:form-urlencoded {
   client_secret: {{point_blue_client_secret}}
 }
 
-# point-blue is the researcher in the M1 fixture (carries `glcdi_researcher`).
-# Captures the token to env var `point_blue_token`.
-# Tier 1: diagnostic only. Tier 2: auto-injected as Bearer on /management
-# calls by ../collection.bru.
 script:post-response {
   const token = res.getBody()?.access_token;
   if (token) {

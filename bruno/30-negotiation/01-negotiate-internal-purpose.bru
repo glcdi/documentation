@@ -10,24 +10,27 @@ post {
   auth: none
 }
 
+docs {
+  white-buffalo (regenerative producer — the M1 positive consumer)
+  negotiates for the M1 fixture asset, declaring `purpose = InternalAnalysis`.
+  The contract policy (internal-use-only) accepts this purpose, so the
+  negotiation should reach FINALIZED. point-blue cannot negotiate this asset
+  because it is filtered out at the access-policy layer (see
+  20-catalog-discovery/02).
+
+  The offer policy here must structurally match the offer the provider would
+  emit (same access/contract policy IDs and constraints) — in practice the
+  consumer first does a catalog query (20-catalog-discovery/01) and reuses
+  the policy block from the catalog response. For the skeleton we inline a
+  representative shape; Phase 4.5.E should refactor this to a pre-request
+  script that fetches the offer from the catalog and uses it verbatim.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{white_buffalo_api_key}}
 }
 
-# white-buffalo (regenerative producer — the M1 positive consumer)
-# negotiates for the M1 fixture asset, declaring `purpose = InternalAnalysis`.
-# The contract policy (internal-use-only) accepts this purpose, so the
-# negotiation should reach FINALIZED. point-blue cannot negotiate this asset
-# because it is filtered out at the access-policy layer (see § 20-catalog-discovery/02).
-#
-# DESIGN NOTE: the offer policy here must structurally match the offer the
-# provider would emit (same access/contract policy IDs and constraints) —
-# in practice the consumer first does a catalog query (20-catalog-discovery/01)
-# and reuses the policy block from the catalog response. For the skeleton we
-# inline a representative shape; Phase 4.5.E should refactor this to a
-# pre-request script that fetches the offer from the catalog and uses it
-# verbatim.
 body:json {
   {
     "@context": {
@@ -39,19 +42,18 @@ body:json {
     "counterPartyAddress": "{{caney_fork_dsp}}",
     "protocol": "dataspace-protocol-http",
     "policy": {
-      "@context": "https://cdn.startinblox.com/owl/glcdi/context.jsonld",
       "@type": "odrl:Offer",
       "@id": "{{m1_contract_policy_id}}:offer",
-      "assigner": "{{caney_fork_participant_id}}",
-      "target": "{{m1_asset_id}}",
-      "permission": [
+      "odrl:assigner": { "@id": "{{caney_fork_participant_id}}" },
+      "odrl:target": { "@id": "{{m1_asset_id}}" },
+      "odrl:permission": [
         {
-          "action": "use",
-          "constraint": [
+          "odrl:action": { "@id": "odrl:use" },
+          "odrl:constraint": [
             {
-              "leftOperand": "odrl:purpose",
-              "operator": "eq",
-              "rightOperand": "glcdi:InternalAnalysis"
+              "odrl:leftOperand": { "@id": "odrl:purpose" },
+              "odrl:operator": { "@id": "odrl:eq" },
+              "odrl:rightOperand": "glcdi:InternalAnalysis"
             }
           ]
         }
@@ -60,9 +62,9 @@ body:json {
   }
 }
 
-# Captures the negotiation id so the follow-up state polling and the
-# transfer step in 40-transfer/ can reference it.
 script:post-response {
+  // Captures the negotiation id so the follow-up state polling and the
+  // transfer step in 40-transfer/ can reference it.
   const id = res.getBody()?.["@id"] ?? res.getBody()?.id;
   if (id) {
     bru.setEnvVar("m1_negotiation_id", id);

@@ -999,6 +999,30 @@ Long-term migration replacing the Authority Keycloak as the *issuer* of connecto
 | **Requires** | `participant-ui` development |
 | **Status** | [ ] Not started |
 
+### 7.6 Decouple participant-ui from `@startinblox/solid-tems`
+
+| Item | Detail |
+|------|--------|
+| **Task** | Fork or duplicate the foundational catalogue / asset / policy / contract / negotiation components currently sourced from `@startinblox/solid-tems` (and `solid-tems-ui`) into a GLCDI-owned bundle (`solid-glcdi`). |
+| **Why** | Two pressing reasons surfaced during M1: (1) the dsp-catalog **asset detail modal** (`tems-modal`) only renders rich content for `RDFTYPE_OBJECT` / `RDFTYPE_SERVICE` — for plain `Asset` types (what we seed), only the description shows, no title, no data-address info, no "Negotiate" CTA. The negotiate flow is gated on an RDF type GLCDI assets don't carry. (2) Every other behaviour quirk (catalog card `[object Object]` provider badge from rendering `_provider` directly, the "0 datasets" miscount, the sib-auth gating leaks) traces to a solid-tems internal that we can't reach without owning the source. |
+| **Approach** | Either (a) **light fork** — copy the half-dozen components GLCDI actually uses (`solid-dsp-catalog`, `tems-modal`, `tems-catalog-data-holder`, `tems-*-management`) into `solid-glcdi`, drop solid-tems from the npm[] list, iterate freely; or (b) **fork solid-tems-v2 as a GLCDI fork**, contribute back upstream changes that are dataspace-generic, keep GLCDI-specific styling locally. Decision is "duplicate foundational code is acceptable" per the user — bias to (a) for clean ownership. |
+| **Wins this unlocks** | Asset modal showing full props (name, @id, data-address, providers, access policy summary) + "Negotiate" button that builds the contract-request body in the right JSON-LD shape; consistent GLCDI branding (no more theme-token tug-of-war against TEMS' blue defaults); ability to write Cypress tests against components GLCDI owns. |
+| **Status** | [ ] Not started |
+
+#### 7.6.1 Asset detail modal — completion checklist
+
+Specific gaps the fork has to close (use as acceptance criteria):
+
+- [ ] Modal title = asset `properties.name`
+- [ ] Modal subtitle = `@id` (clickable copy-to-clipboard)
+- [ ] Properties section — render `properties.*` excluding internal keys
+- [ ] Data address section — `type` + `baseUrl` + `proxyPath` if HttpData
+- [ ] Provider badge with `_provider.name` (not `[object Object]`)
+- [ ] Access policy summary — fetch the contract-def by id, render constraints in human-readable form (e.g. "Requires: producer + regen-verified")
+- [ ] "Negotiate contract" CTA — builds the ContractRequest body in the JSON-LD shape EDC 0.15.x accepts (`odrl:permission` + `{"@id":"..."}` for action/operator/leftOperand, see `management/bruno/30-negotiation/01-negotiate-internal-purpose.bru`), POSTs to `/management/v3/contractnegotiations` with the operator's X-Api-Key
+- [ ] Negotiation status drawer — polls `/management/v3/contractnegotiations/{id}` and surfaces state transitions until FINALIZED / TERMINATED
+- [ ] "Initiate transfer" CTA once an agreement exists
+
 ---
 
 ## Dependency Graph

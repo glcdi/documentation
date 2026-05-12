@@ -10,19 +10,22 @@ post {
   auth: none
 }
 
+docs {
+  Mirrors management/policies/contract/internal-use-only.json — the contract
+  policy enforced at negotiation time.
+
+  The `purpose` term comes from the GLCDI context (alias for `odrl:purpose`,
+  coerced to `@vocab` so values resolve under the glcdi: namespace). The
+  allowed value `glcdi:InternalAnalysis` matches the value 30-negotiation/01
+  declares. A negotiation declaring any other purpose value (e.g.
+  `glcdi:ResearchAnalysis` in 30-negotiation/02) should be TERMINATED.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{caney_fork_api_key}}
 }
 
-# Mirrors management/policies/contract/internal-use-only.json — the contract
-# policy enforced at negotiation time.
-#
-# The `purpose` term comes from the GLCDI context (alias for `odrl:purpose`,
-# coerced to `@vocab` so values resolve under the glcdi: namespace). The
-# allowed value `glcdi:InternalAnalysis` matches the value 30-negotiation/01
-# declares. A negotiation declaring any other purpose value (e.g.
-# `glcdi:ResearchAnalysis` in 30-negotiation/02) should be TERMINATED.
 body:json {
   {
     "@context": {
@@ -33,23 +36,17 @@ body:json {
     "@id": "{{m1_contract_policy_id}}",
     "@type": "PolicyDefinition",
     "policy": {
-      "@context": "https://cdn.startinblox.com/owl/glcdi/context.jsonld",
-      "@type": "Set",
-      "permission": [
+      "@type": "odrl:Set",
+      "odrl:permission": [
         {
-          "action": "use",
-          "constraint": [
+          "odrl:action": { "@id": "odrl:use" },
+          "odrl:constraint": [
             {
-              "leftOperand": "odrl:purpose",
-              "operator": "eq",
-              "rightOperand": "glcdi:InternalAnalysis"
+              "odrl:leftOperand": { "@id": "odrl:purpose" },
+              "odrl:operator": { "@id": "odrl:eq" },
+              "odrl:rightOperand": "glcdi:InternalAnalysis"
             }
           ]
-        }
-      ],
-      "prohibition": [
-        {
-          "action": "distribute"
         }
       ]
     }
@@ -57,7 +54,8 @@ body:json {
 }
 
 tests {
-  test("status is 200 or 201", function() {
-    expect(res.getStatus()).to.be.oneOf([200, 201]);
+  test("contract policy created or already exists", function() {
+    // 409 = idempotent re-seed (policy already created in a prior run).
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
   });
 }

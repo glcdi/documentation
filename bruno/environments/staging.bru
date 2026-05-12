@@ -1,37 +1,15 @@
 vars {
-  // -- Tier selector ----------------------------------------------------------
-  // Switches the auth model the collection assumes:
-  //   tier1 — X-Api-Key only on /management calls (M1 default — IMPLEM_PLAN § 1.5).
-  //   tier2 — X-Api-Key + Authorization: Bearer (post-M1 user OIDC — § 7.2).
-  // The collection-level pre-request script in `collection.bru` injects the
-  // Bearer header only when this is set to `tier2`. Default is tier1.
   tier: tier1
-
-  // -- Connector hosts (staging) ----------------------------------------------
-  // Per glcdi/CLAUDE.md — staging URLs.
   caney_fork_host: https://caney-fork.glcdi.startinblox.com
   point_blue_host: https://point-blue.glcdi.startinblox.com
   white_buffalo_host: https://white-buffalo.glcdi.startinblox.com
-
-  // -- DSP endpoints ----------------------------------------------------------
-  // The /protocol path is the externally reachable DSP endpoint
-  // (edc.dsp.callback.address). Mismatches here cause silent negotiation hangs
-  // (CLAUDE.md "Inter-service networking").
   caney_fork_dsp: https://caney-fork.glcdi.startinblox.com/protocol
   point_blue_dsp: https://point-blue.glcdi.startinblox.com/protocol
   white_buffalo_dsp: https://white-buffalo.glcdi.startinblox.com/protocol
-
-  // -- Authority Keycloak -----------------------------------------------------
-  // Post Phase-1.5 the host is `authority.glcdi.startinblox.com` (the
-  // governance→authority rename from AUTHORITY_MIGRATION.md).
   authority_host: https://authority.glcdi.startinblox.com/auth/realms/glcdi
-
-  // -- Participant URNs (per PAYMENT_GATING.md § 3.7) -------------------------
   caney_fork_participant_id: urn:glcdi:participant:caney-fork
   point_blue_participant_id: urn:glcdi:participant:point-blue
   white_buffalo_participant_id: urn:glcdi:participant:white-buffalo
-
-  // -- M1 fixture asset -------------------------------------------------------
   m1_asset_id: urn:glcdi:asset:caney-fork:grazing-soc-2024
   m1_access_policy_id: glcdi:access:regenerative-producers
   m1_contract_policy_id: glcdi:contract:internal-use-only

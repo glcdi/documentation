@@ -10,6 +10,15 @@ post {
   auth: none
 }
 
+docs {
+  white-buffalo is the M1 positive-case consumer: a regenerative producer
+  (same role profile as caney-fork). Used in 20-catalog-discovery/01 to
+  confirm the access policy admits matching identities, and in
+  30-negotiation/* + 40-transfer/01 as the consumer that completes the
+  happy-path flow. Tier 1: diagnostic only. Tier 2: auto-injected as Bearer
+  on /management calls by `../collection.bru`.
+}
+
 headers {
   Content-Type: application/x-www-form-urlencoded
 }
@@ -20,13 +29,6 @@ body:form-urlencoded {
   client_secret: {{white_buffalo_client_secret}}
 }
 
-# white-buffalo is the M1 positive-case consumer: a regenerative producer
-# (same role profile as caney-fork). Used in 20-catalog-discovery/01 to
-# confirm the access policy admits matching identities, and in
-# 30-negotiation/* + 40-transfer/01 as the consumer that completes the
-# happy-path flow.
-# Tier 1: diagnostic only. Tier 2: auto-injected as Bearer on /management
-# calls by ../collection.bru.
 script:post-response {
   const token = res.getBody()?.access_token;
   if (token) {

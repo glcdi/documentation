@@ -47,7 +47,92 @@ GLCDI's identity model is **tiered**: the M1 prototype ships on Tier 1 (the smal
           └─────────────┘  └────────────┘  └──────────────┘
 ```
 
-**At Tier 1 the management-API edge has only `X-Api-Key`.** No oauth2-proxy, no Bearer token, no end-user OIDC anywhere. The catalogue UI is a per-org tool — operators paste an API key on first load. Trust boundary is the per-participant network. Connector ↔ connector trust runs over `iam-oauth2` against the Authority KC: each connector mints its own JWT at startup via `client_credentials` against its `glcdi-connector-<org>` client, the JWT carries the org's `glcdi_*` claims, the receiving connector validates against Authority KC's JWKS and extracts claims into `ClaimToken` for policy evaluation. § 3.5 of the implementation plan is the swap from `iam-mock` to `iam-oauth2` — the load-bearing gate to "real auth" between connectors.
+**At Tier 1 the management-API edge has only `X-Api-Key`.** No oauth2-proxy, no Bearer token, no end-user OIDC anywhere. The catalogue UI is a per-org tool — operators paste an API key on first load. Trust boundary is the per-participant network. Connector ↔ connector trust runs over the custom `glcdi-iam-keycloak` extension against the Authority KC: each connector requests a JWT via `client_credentials` against its `glcdi-connector-<org>` client, the JWT carries the org's `glcdi_*` claims, the receiving connector validates against Authority KC's JWKS and extracts claims into `ClaimToken` for policy evaluation. § 3.5 of the implementation plan is the swap from `iam-mock` to `glcdi-iam-keycloak` — the load-bearing gate to "real auth" between connectors. (EDC 0.15.x retired the standalone `iam-oauth2` extension; the `controlplane-dcp-bom` it replaced it with assumes Verifiable Presentations, so we hand-rolled a small OAuth2 IdentityService implementation — see `edc-glcdi-extension/extensions/glcdi-iam-keycloak/`.)
+
+#### Tier-1 architecture (Mermaid)
+
+```mermaid
+flowchart LR
+    subgraph Authority["Authority Keycloak<br/>(realm: glcdi)"]
+        KC_TOKEN["/token<br/>(client_credentials)"]
+        KC_JWKS["/certs<br/>(JWKS)"]
+        KC_USERS[("service-account users<br/>glcdi_membership / glcdi_roles /<br/>glcdi_certification_status")]
+    end
+
+    subgraph CF["Participant A — caney-fork"]
+        CF_UI[UI<br/>X-Api-Key]
+        CF_NGINX[nginx]
+        CF_CON[EDC connector<br/>+ glcdi-iam-keycloak<br/>+ glcdi-policy-functions]
+        CF_DB[(Postgres)]
+        CF_UI --> CF_NGINX --> CF_CON --> CF_DB
+    end
+
+    subgraph PB["Participant B — point-blue"]
+        PB_UI[UI<br/>X-Api-Key]
+        PB_CON[EDC connector<br/>+ glcdi-iam-keycloak<br/>+ glcdi-policy-functions]
+        PB_UI --> PB_CON
+    end
+
+    subgraph WB["Participant C — white-buffalo"]
+        WB_UI[UI<br/>X-Api-Key]
+        WB_CON[EDC connector<br/>+ glcdi-iam-keycloak<br/>+ glcdi-policy-functions]
+        WB_UI --> WB_CON
+    end
+
+    CF_CON -- "client_credentials<br/>scope=glcdi-claims" --> KC_TOKEN
+    PB_CON -- "client_credentials" --> KC_TOKEN
+    WB_CON -- "client_credentials" --> KC_TOKEN
+
+    CF_CON -- "verify JWT<br/>signature" --> KC_JWKS
+    PB_CON -- "verify JWT" --> KC_JWKS
+    WB_CON -- "verify JWT" --> KC_JWKS
+
+    CF_CON <-- "DSP /protocol<br/>Bearer JWT" --> PB_CON
+    CF_CON <-- "DSP /protocol<br/>Bearer JWT" --> WB_CON
+    PB_CON <-- "DSP /protocol<br/>Bearer JWT" --> WB_CON
+```
+
+#### Tier-1 catalog-query sequence (Mermaid)
+
+End-to-end flow for an operator at caney-fork browsing the dataspace catalog of a peer (e.g. point-blue). The same path drives contract negotiation and transfer once the catalog returns a dataset.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Op as Operator (caney-fork)
+    participant UI as caney-fork UI<br/>(catalogue-ui)
+    participant CF as caney-fork connector<br/>(EDC + glcdi-iam-keycloak)
+    participant KC as Authority KC<br/>(realm: glcdi)
+    participant PB as point-blue connector<br/>(EDC + glcdi-iam-keycloak<br/>+ glcdi-policy-functions)
+
+    Op->>UI: open /ui/, paste X-Api-Key
+    UI->>CF: POST /management/v3/catalog/request<br/>X-Api-Key + counterPartyAddress=PB
+    activate CF
+    CF->>KC: POST /token<br/>grant=client_credentials<br/>client_id=glcdi-connector-caney-fork<br/>scope=glcdi-claims
+    KC-->>CF: JWT(glcdi_membership, glcdi_roles,<br/>glcdi_certification_status, ...)
+    CF->>PB: DSP CatalogRequestMessage<br/>Authorization: Bearer JWT
+    deactivate CF
+
+    activate PB
+    PB->>KC: GET /certs (JWKS)
+    KC-->>PB: JWK set
+    PB->>PB: verify JWT signature<br/>(glcdi-iam-keycloak)
+    PB->>PB: build ParticipantAgent<br/>(claims = JWT claims,<br/>id = azp)
+
+    Note over PB: For each contract-definition:<br/>fetch its access policy<br/>and evaluate via PolicyEngine
+    PB->>PB: PolicyEngine.evaluate(<br/>policy, CatalogPolicyContext(agent))
+    PB->>PB: ScopeFilter keeps rules whose<br/>action + leftOperands are bound<br/>to "catalog" scope
+    PB->>PB: glcdi-policy-functions:<br/>membership EQ active → true<br/>participantType EQ producer → true<br/>certificationStatus EQ regen-verified → true
+    PB->>PB: query AssetIndex for<br/>assets matching the contract-def's<br/>assetsSelector
+
+    PB-->>CF: dcat:Catalog (datasets that<br/>passed the gate)
+    deactivate PB
+
+    CF-->>UI: dcat:Catalog
+    UI-->>Op: render cards
+```
+
+The receiver-side gate sits at steps 9–13: claims have to flow through `glcdi-iam-keycloak` into `ParticipantAgent`, the `ScopeFilter` has to keep the rule (binding action + left-operands to `catalog` scope), and each `glcdi-policy-functions` constraint has to return `true`. Any link in that chain failing silently empties the catalog — which is exactly the diagnostic flow `IMPLEM_PLAN.md § 3.6` walks through.
 
 ### Tier 2 — Add user OIDC at the UI (post-M1, optional)
 

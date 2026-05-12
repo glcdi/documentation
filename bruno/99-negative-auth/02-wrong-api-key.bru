@@ -4,17 +4,30 @@ meta {
   seq: 2
 }
 
-get {
-  url: {{caney_fork_host}}/management/v3/assets
-  body: none
+post {
+  url: {{caney_fork_host}}/management/v3/assets/request
+  body: json
   auth: none
 }
 
-# Wrong key — should be rejected by the connector's tokenbased auth
-# (web.http.management.auth.type=tokenbased) before any handler runs.
+docs {
+  Wrong key — should be rejected by the connector's tokenbased auth
+  (`web.http.management.auth.type=tokenbased`) before any handler runs.
+  Uses POST /assets/request to exercise an actual handler so the auth
+  filter has a chance to fire (GET /assets 405s first).
+}
+
 headers {
   Accept: application/json
+  Content-Type: application/json
   X-Api-Key: deadbeef
+}
+
+body:json {
+  {
+    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
+    "@type": "QuerySpec"
+  }
 }
 
 tests {

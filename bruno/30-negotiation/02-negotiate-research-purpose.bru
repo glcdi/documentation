@@ -10,22 +10,25 @@ post {
   auth: none
 }
 
+docs {
+  Same consumer (white-buffalo) and same asset, but the consumer declares
+  `purpose = ResearchAnalysis`. The contract policy only admits
+  `glcdi:InternalAnalysis`, so the provider should reject and the
+  negotiation should reach TERMINATED.
+
+  `ResearchAnalysis` is intentionally NOT in the GLCDI purpose taxonomy
+  from IMPLEM_PLAN § 1.3 (the closest valid value would be
+  `ScientificResearch`). Using a non-taxonomy value here doubles as a
+  negative-vocabulary check: if the connector's policy engine accepts an
+  unknown purpose, that's a bug to flag. If § 1.3 picks a different
+  negative-control value, swap the rightOperand below.
+}
+
 headers {
   Content-Type: application/json
   X-Api-Key: {{white_buffalo_api_key}}
 }
 
-# Same consumer (white-buffalo) and same asset, but the consumer declares
-# `purpose = ResearchAnalysis`. The contract policy only admits
-# `glcdi:InternalAnalysis`, so the provider should reject and the
-# negotiation should reach TERMINATED.
-#
-# DESIGN NOTE: `ResearchAnalysis` is intentionally NOT in the GLCDI purpose
-# taxonomy from IMPLEM_PLAN.md § 1.3 (the closest valid value would be
-# `ScientificResearch`). Using a non-taxonomy value here doubles as a
-# negative-vocabulary check: if the connector's policy engine accepts an
-# unknown purpose, that's a bug to flag. If Phase 1.3 picks a different
-# negative-control value, swap the rightOperand below.
 body:json {
   {
     "@context": {
@@ -37,19 +40,18 @@ body:json {
     "counterPartyAddress": "{{caney_fork_dsp}}",
     "protocol": "dataspace-protocol-http",
     "policy": {
-      "@context": "https://cdn.startinblox.com/owl/glcdi/context.jsonld",
       "@type": "odrl:Offer",
       "@id": "{{m1_contract_policy_id}}:offer-research",
-      "assigner": "{{caney_fork_participant_id}}",
-      "target": "{{m1_asset_id}}",
-      "permission": [
+      "odrl:assigner": { "@id": "{{caney_fork_participant_id}}" },
+      "odrl:target": { "@id": "{{m1_asset_id}}" },
+      "odrl:permission": [
         {
-          "action": "use",
-          "constraint": [
+          "odrl:action": { "@id": "odrl:use" },
+          "odrl:constraint": [
             {
-              "leftOperand": "odrl:purpose",
-              "operator": "eq",
-              "rightOperand": "glcdi:ResearchAnalysis"
+              "odrl:leftOperand": { "@id": "odrl:purpose" },
+              "odrl:operator": { "@id": "odrl:eq" },
+              "odrl:rightOperand": "glcdi:ResearchAnalysis"
             }
           ]
         }

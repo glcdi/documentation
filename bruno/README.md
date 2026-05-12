@@ -110,17 +110,40 @@ exercise the oauth2-proxy validation path, not to fake user identities.
 
 ```sh
 npm install -g @usebruno/cli
-cd glcdi/management/bruno/
-
-# Tier 1 (default at M1):
-bru run --env staging
-
-# Tier 2 (post-§ 7.2 cutover):
-bru run --env staging --env-var tier=tier2
-
-# Or scope to a folder:
-bru run 20-catalog-discovery --env staging
 ```
+
+**Recommended invocation: drive Bruno through the orchestrator** —
+`./management/scripts/glcdi.sh test` injects the rotated secrets via
+`--env-var` flags so the secret-marked vars actually have values:
+
+```sh
+./management/scripts/glcdi.sh test           # tier1 default
+./management/scripts/glcdi.sh test tier2     # tier2 mode
+```
+
+Need to run a specific folder or file by hand? Use `bruno-cmd` to print the
+exact `bru run` invocation with the rotated secrets baked in, then append
+the folder/file you want:
+
+```sh
+./management/scripts/glcdi.sh bruno-cmd
+# pastes:
+#   cd /…/management/bruno
+#   bru run --env local --env-var tier=tier1 --env-var caney_fork_api_key=… [folder|file]
+
+# Then, e.g.:
+cd management/bruno
+bru run --env local --env-var tier=tier1 --env-var caney_fork_api_key=… 20-catalog-discovery
+```
+
+Running `bru run --env local` on its own (no `--env-var` flags) leaves the
+secret-marked vars empty — Authority KC will return 401 on the auth
+requests, the management API will 401 on the seeding requests. Always
+either route through `glcdi.sh test` or copy the `bruno-cmd` output.
+
+**Staging:** swap `local` → `staging`. Secrets in staging come from the
+deploy operator's vault, not from `glcdi.sh secrets` — use Bruno's UI or
+your own `--env-var` flags.
 
 ## Environment variables
 
@@ -128,8 +151,12 @@ Two environments are defined under `environments/`:
 
 | File | Purpose |
 |------|---------|
-| `environments/local.bru` | Two participant connectors on `host.docker.internal:8080/8081/8082`, Authority KC at `localhost:8090`. |
+| `environments/local.bru` | Bruno hits `localhost:8080/8081/8082` (host-side ports for the 3 participants) and `localhost:8090` (Authority KC). The `*_dsp` vars use `host.docker.internal` because they're sent to a connector as `counterPartyAddress` and resolved *inside* its container — different URL role, different name. |
 | `environments/staging.bru` | `caney-fork.glcdi.startinblox.com`, `point-blue.glcdi.startinblox.com`, etc., per `../../CLAUDE.md`. |
+
+> **Two distinct URL roles in `local.bru`** — they look similar but mean different things:
+> - **`*_host`** (e.g. `caney_fork_host`) — the URL Bruno's CLI hits directly. Must be `localhost`-resolvable from your shell.
+> - **`*_dsp`** (e.g. `caney_fork_dsp`) — the `counterPartyAddress` in catalog/negotiation/transfer request bodies. The receiving connector reads this and dials the *other* connector from inside its Docker container, so the name has to resolve in the Docker network — `host.docker.internal:<port>/protocol`.
 
 Public vars (hosts, URNs, fixture IDs, the `tier` selector) are checked
 into the env files. Secret vars (API keys, client secrets, captured tokens

@@ -1,0 +1,63 @@
+meta {
+  name: Create asset (research summary)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+docs {
+  Second M1 fixture asset, intended as a "research-accessible" view of the
+  provider's data — typically an aggregated / anonymised summary, suitable
+  for any dataspace member (producer or researcher).
+
+  Lives alongside the strict regenerative-only `grazing-soc-2024` asset
+  (01-create-asset.bru). They share the contract policy
+  (`internal-use-only`) but have different access policies so the catalog
+  filters them by viewer.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "{{m1_research_asset_id}}",
+    "@type": "Asset",
+    "properties": {
+      "name": "{{org_display_name}} grazing summary 2024 (all members)",
+      "description": "Aggregated soil organic carbon summary from {{org_display_name}}, 2024 season — open to any active dataspace member (M1 fixture).",
+      "contenttype": "application/json",
+      "glcdi:assetClass": "soc-summary"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "grazing-summary-2024",
+      "baseUrl": "http://provider-data-source/grazing-summary-2024.json",
+      "proxyPath": "true"
+    }
+  }
+}
+
+tests {
+  test("asset created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+
+  test("response echoes the asset id", function() {
+    const body = res.getBody();
+    if (body && body["@id"]) {
+      expect(body["@id"]).to.equal(bru.getEnvVar("m1_research_asset_id"));
+    }
+  });
+}

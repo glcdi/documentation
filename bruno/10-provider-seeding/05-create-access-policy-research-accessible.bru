@@ -1,7 +1,7 @@
 meta {
-  name: Create access policy (regenerative-only)
+  name: Create access policy (research-accessible)
   type: http
-  seq: 2
+  seq: 5
 }
 
 post {
@@ -11,11 +11,19 @@ post {
 }
 
 docs {
-  Mirrors management/policies/access/regenerative-producers.json — the access
-  policy that gates catalog visibility for the M1 fixture asset.
+  Second access policy for the M1 fixtures — looser than
+  `regenerative-producers` (02-create-access-policy-...). Allows any active
+  dataspace member whose participant-type is `producer` OR `researcher` to
+  see the linked asset in the catalog.
 
-  Certification-status values use the kebab-case values from IMPLEM_PLAN § 2.4
-  (`regenerative-verified` etc.) — see also context.jsonld value aliases.
+  Purpose: lets researcher participants (e.g. point-blue, glcdi_researcher
+  realm role) discover and contract for aggregated / non-sensitive
+  research-accessible datasets, while the strict regenerative-only policy
+  continues to gate the raw producer datasets.
+
+  Pairs with `06-create-asset-research-summary.bru` via
+  `07-create-contract-definition-research.bru`. Same contract policy
+  (`internal-use-only`) applies at negotiation time.
 }
 
 headers {
@@ -30,7 +38,7 @@ body:json {
       "odrl": "http://www.w3.org/ns/odrl/2/",
       "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
     },
-    "@id": "{{m1_access_policy_id}}",
+    "@id": "{{m1_research_access_policy_id}}",
     "@type": "PolicyDefinition",
     "policy": {
       "@type": "odrl:Set",
@@ -42,16 +50,6 @@ body:json {
               "odrl:leftOperand": { "@id": "glcdi:membership" },
               "odrl:operator": { "@id": "odrl:eq" },
               "odrl:rightOperand": "active"
-            },
-            {
-              "odrl:leftOperand": { "@id": "glcdi:participantType" },
-              "odrl:operator": { "@id": "odrl:eq" },
-              "odrl:rightOperand": "producer"
-            },
-            {
-              "odrl:leftOperand": { "@id": "glcdi:certificationStatus" },
-              "odrl:operator": { "@id": "odrl:eq" },
-              "odrl:rightOperand": "regenerative-verified"
             }
           ]
         }
