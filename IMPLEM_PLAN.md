@@ -277,7 +277,7 @@ policy functions only see claim *names*, not the issuer.
 | **Task** | Add realm roles to the `glcdi` realm in Authority Keycloak |
 | **Roles to create** | `glcdi_member` (active membership), `glcdi_regenerative_producer`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
 | **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` — in the `roles.realm[]` array |
-| **Status** | [x] Declared in realm JSON (13 roles total: 2 inherited + 11 GLCDI) · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
+| **Status** | [x] Declared in realm JSON (13 roles total: 2 inherited + 11 GLCDI) · [x] Imported into live Authority KC (verified after each `glcdi.sh reset && up`) |
 
 **Realm JSON snippet to add:**
 
@@ -311,7 +311,7 @@ policy functions only see claim *names*, not the issuer.
 | **Contribution values** | `contributing` (has published data), `observer` (onboarded but no data published yet), `pending` (awaiting verification) |
 | **Where** | Set on each `service-account-glcdi-connector-<org>` user in the realm JSON (`users[].attributes`). Adding a fourth participant = new connector client + SA user with the same attribute shape. |
 | **Proposed owner for contribution status** | For the prototype (small participant set): it is proposed that the Dataspace Authority sets this manually after verifying that a participant's connector has published assets. For scaling: a periodic automated service could query each participant's catalog and update the attribute. |
-| **Status** | [x] Declared on the 3 connector SA users in the realm JSON · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
+| **Status** | [x] Declared on the 3 connector SA users in the realm JSON · [x] Imported into live Authority KC (verified by decoding a live JWT — § 2.5) |
 
 ### 2.3 Create protocol mappers for token serialisation
 
@@ -323,7 +323,7 @@ explicit mappers to surface claims in the format the EDC policy functions expect
 | **Task** | Add protocol mappers to relevant Keycloak clients so that GLCDI claims appear as top-level claims in access tokens |
 | **Approach** | Realm-level **client scope** `glcdi-claims` carries all five mappers (one for `glcdi_roles` from realm roles; four `oidc-usermodel-attribute-mapper` entries for `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`). The scope is added to `defaultClientScopes` on each `glcdi-connector-<org>` client at Tier 1 (and on the future `glcdi-ui` client at Tier 2 — see § 7.2). No per-client mapper duplication. |
 | **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` — `clientScopes[]` array (the `glcdi-claims` scope) plus `defaultClientScopes` on each consuming client. |
-| **Status** | [x] `glcdi-claims` client scope declared (5 mappers) · [x] Wired into `defaultClientScopes` on the 3 connector clients · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
+| **Status** | [x] `glcdi-claims` client scope declared (5 mappers) · [x] Wired into `defaultClientScopes` on the 3 connector clients · [x] Imported into live Authority KC (decoded JWT shows `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` populated) |
 
 **Five mappers in the `glcdi-claims` client scope (declarative, in the realm JSON):**
 
@@ -436,7 +436,7 @@ hardcoded claim mapper on the client scope that applies to all authenticated use
 | Item | Detail |
 |------|--------|
 | **Task** | Each `service-account-glcdi-connector-<org>` user in the realm JSON carries that org's realm roles directly and the `glcdi_membership` / `glcdi_organisation` / `glcdi_certification_status` / `glcdi_contribution_status` attributes. The realm JSON is the source of truth; live edits go through the admin console. |
-| **Status** | [x] Declared in realm JSON: 3 connector clients + 3 SA users with role + attribute assignments · [ ] Imported into live Authority KC (per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)) |
+| **Status** | [x] Declared in realm JSON: 3 connector clients + 3 SA users with role + attribute assignments · [x] Imported into live Authority KC (caney-fork → `glcdi_producer` + `glcdi_regenerative_producer`; point-blue → `glcdi_researcher`; white-buffalo same as caney-fork) |
 
 The Tier-1 assignment for the M1 prototype cluster (already encoded in `governance-services/resources/keycloak/realms/glcdi-realm.json`):
 
@@ -486,7 +486,7 @@ curl -s -X PUT -H "Authorization: Bearer $TOKEN" \
 | Item | Detail |
 |------|--------|
 | **Task** | Confirm that tokens issued by Authority Keycloak contain the expected GLCDI claims |
-| **Status** | [ ] Not started |
+| **Status** | [x] Done — for white-buffalo's SA token the decoded JWT showed `glcdi_membership=active`, `glcdi_roles=[glcdi_regenerative_producer, glcdi_member, glcdi_producer]`, `glcdi_certification_status=regenerative-verified`, `glcdi_organisation=white-buffalo`, `glcdi_contribution_status=contributing` |
 
 **Manual verification** (mint a token for a connector SA via `client_credentials` and decode):
 
@@ -572,7 +572,7 @@ read from the token:
 | **Why a separate repo (not `edc-connector/extensions/`)** | Keeps GLCDI-owned Java code separate from the EDC fork (which tracks upstream). Independent versioning + git history. Mirrors `ds4go/edc-dsif-extension/` next to `ds4go/edc-connector/`. |
 | **Layout (proposed)** | `edc-glcdi-extension/extensions/glcdi-policy-functions/` (the membership / participantType / certificationStatus functions of §§ 3.2–3.4) — first occupant. Future siblings (e.g. `payment-status-extension/` from [`PAYMENT_GATING.md`](PAYMENT_GATING.md), if Phase 7.1 lands) live under the same `extensions/` folder. |
 | **Wire-up** | `edc-connector/runtimes/controlplane/build.gradle.kts` references the extension via relative path or via a CI symlink step that puts the extension into `edc-connector/extensions/`. Match whichever pattern this team's CI uses for DS4GO. |
-| **Status** | [x] Repo created · [x] First extension scaffolded (§ 3.1) — `glcdi-policy-functions/` with build files + SPI entry + package skeleton + the three constraint-function classes + `GlcdiClaims` constants + `GlcdiPolicyFunctionsExtension` registration class + a starter unit-test class · [ ] Wired into the controlplane runtime (§ 3.6) |
+| **Status** | [x] Repo created · [x] First extension scaffolded (§ 3.1) — `glcdi-policy-functions/` with build files + SPI entry + package skeleton + the three constraint-function classes + `GlcdiClaims` constants + `GlcdiPolicyFunctionsExtension` registration class + a starter unit-test class · [x] Wired into the controlplane runtime (§ 3.6) · [x] Second extension scaffolded: `glcdi-iam-keycloak/` (custom OAuth2 IdentityService against Authority KC, replaces `iam-mock`) |
 
 
 
@@ -588,7 +588,7 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Language** | Java 17 |
 | **Build** | `settings.gradle.kts` includes the module; `extensions/glcdi-policy-functions/build.gradle.kts` depends on `edc.spi.core`, `edc.spi.policy`, `edc.spi.policy-engine`, `edc.runtime.metamodel`. Tests use JUnit 5 + AssertJ + Mockito |
 | **Layout** | `src/main/java/com/startinblox/glcdi/edc/extension/policy/` (package); `src/main/resources/META-INF/services/org.eclipse.edc.spi.system.ServiceExtension` lists `GlcdiPolicyFunctionsExtension` |
-| **Status** | [x] Repo scaffolded (`edc-glcdi-extension/` root build, settings, gradle.properties, libs.versions.toml, .gitignore, README) · [x] Module scaffolded (`extensions/glcdi-policy-functions/`: build.gradle.kts, README, META-INF SPI entry, package directories) · [ ] Gradle wrapper bootstrapped (`gradle wrapper` once Gradle is installed locally) · [ ] First successful `./gradlew build` |
+| **Status** | [x] Repo scaffolded (`edc-glcdi-extension/` root build, settings, gradle.properties, libs.versions.toml, .gitignore, README) · [x] Module scaffolded (`extensions/glcdi-policy-functions/`: build.gradle.kts, README, META-INF SPI entry, package directories) · [x] Gradle wrapper bootstrapped (used by `glcdi.sh build`) · [x] First successful `./gradlew build` (runs as part of `glcdi.sh build`; controlplane image rebuilt + booted cleanly) |
 
 ### 3.2 Implement membership policy function
 
@@ -598,7 +598,7 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Behaviour** | Extract the `glcdi_membership` claim from the participant's identity (via `ParticipantAgent`), compare it to the constraint's `rightOperand` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/membership"` |
 | **Used by** | `access/members-only.json`, `access/regenerative-producers.json`, `access/researchers-only.json`, and all combined policies |
-| **Status** | [x] `MembershipConstraintFunction.java` drafted (EQ + NEQ; logs and returns `false` when ParticipantAgent is missing or the claim is absent) · [x] Starter unit-test class `MembershipConstraintFunctionTest.java` covers match / mismatch / no-agent / claim-missing / unsupported-operator paths · [ ] Compiled against pinned EDC SPI (verifies API: `org.eclipse.edc.spi.iam.ParticipantAgent`, `AtomicConstraintRuleFunction`, `PolicyContext.getContextData(...)`) |
+| **Status** | [x] `MembershipConstraintFunction.java` drafted (EQ + NEQ; logs and returns `false` when ParticipantAgent is missing or the claim is absent) · [x] Starter unit-test class `MembershipConstraintFunctionTest.java` covers match / mismatch / no-agent / claim-missing / unsupported-operator paths · [x] Compiled against pinned EDC SPI (EDC 0.15.x: `ParticipantAgentPolicyContext.participantAgent()`, typed `Class<C>` registration). Function is invoked on every catalog request — verified by logging output showing `[glcdi:membership] active EQ active → true`. |
 
 ### 3.3 Implement participant type policy function
 
@@ -608,7 +608,7 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Behaviour** | Reads the `glcdi_roles` claim (list); maps the kebab-case `participantType` value to the snake-case role name (`glcdi_<type>`) and tests membership in the participant's role set. Supports `eq`, `neq`, `isAnyOf`/`in`, `isNoneOf` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/participantType"` |
 | **Used by** | `access/regenerative-producers.json`, `access/researchers-only.json`, `combined/corporate-supply-chain.json` |
-| **Status** | [x] `ParticipantTypeConstraintFunction.java` drafted with `toRoleName(...)` kebab→snake helper; supports EQ / NEQ / IN / IS_ANY_OF / IS_NONE_OF · [x] Resilient parsing for claims arriving as a `Collection` or comma-separated `String` · [ ] Unit tests (deferred per § 5.1) · [ ] Compiled against pinned EDC SPI |
+| **Status** | [x] `ParticipantTypeConstraintFunction.java` drafted with `toRoleName(...)` kebab→snake helper; supports EQ / NEQ / IN / IS_ANY_OF / IS_NONE_OF · [x] Resilient parsing for claims arriving as a `Collection` or comma-separated `String` · [ ] Unit tests (deferred per § 5.1) · [x] Compiled against pinned EDC SPI; verified by the access matrix in Bruno's `20-catalog-discovery` (regen-producers see regen-only assets, researcher gets filtered out) |
 
 ### 3.4 Implement certification status policy function
 
@@ -618,15 +618,15 @@ silently ignored (default: permit) or fail closed, depending on EDC configuratio
 | **Behaviour** | Extract `glcdi_certification_status` claim (string, lowercase / kebab-case per § 1.5.4); compare to the constraint's `rightOperand`. Supports `eq`, `neq`, `isAnyOf`/`in`, `isNoneOf` |
 | **Registers for** | `leftOperand = "https://w3id.org/glcdi/v0.1.0/ns/certificationStatus"` |
 | **Used by** | `access/regenerative-producers.json` |
-| **Status** | [x] `CertificationStatusConstraintFunction.java` drafted; supports EQ / NEQ / IN / IS_ANY_OF / IS_NONE_OF · [ ] Unit tests (deferred per § 5.1) · [ ] Compiled against pinned EDC SPI |
+| **Status** | [x] `CertificationStatusConstraintFunction.java` drafted; supports EQ / NEQ / IN / IS_ANY_OF / IS_NONE_OF · [ ] Unit tests (deferred per § 5.1) · [x] Compiled against pinned EDC SPI |
 
-### 3.5 Replace `iam-mock` with `iam-oauth2` and configure claim extraction
+### 3.5 Replace `iam-mock` with a real OAuth2 IdentityService and configure claim extraction
 
 | Item | Detail |
 |------|--------|
-| **Task** | Swap the dev-only `iam-mock` IdentityService (currently wired in `edc-connector/runtimes/controlplane/build.gradle.kts` as `libs.edc.iam.mock`) for `iam-oauth2`, configured against the Authority Keycloak. Configure the claim extractor so `glcdi_*` claims land in EDC's `ClaimToken` for the policy engine to read. |
-| **Why a swap, not custom code** | `iam-mock` accepts any token and returns fixed claims — fine for development, useless for policy evaluation. `iam-oauth2` is stock EDC; the work is configuration + claim mapping, not a new Java extension. |
-| **Status** | [ ] Not started |
+| **Task** | Swap the dev-only `iam-mock` IdentityService (was wired in `edc-connector/runtimes/controlplane/build.gradle.kts` as `libs.edc.iam.mock`) for a real OAuth2 IdentityService against the Authority Keycloak. Configure the claim extractor so `glcdi_*` claims land in EDC's `ClaimToken` for the policy engine to read. |
+| **Outcome (different from original plan)** | Stock `iam-oauth2` was retired in EDC 0.15.x — the replacement (`controlplane-dcp-bom`) assumes Verifiable Presentations via a DCP-compliant STS, which Keycloak doesn't speak. Implemented as a **custom EDC extension** `edc-glcdi-extension/extensions/glcdi-iam-keycloak/` (~250 LOC Java) that: (i) performs `client_credentials` against KC's `/token`; (ii) validates incoming peer JWTs against KC's JWKS via `nimbus-jose-jwt`; (iii) copies every JWT claim into the `ClaimToken`; (iv) provides a `DefaultParticipantIdExtractionFunction` reading `client_id` then `azp`. |
+| **Status** | [x] Custom `glcdi-iam-keycloak` extension built + wired into the controlplane runtime (replaces `iam-mock`). Verified end-to-end: white-buffalo's outgoing token is minted via KC, caney-fork's connector verifies it, `glcdi_*` claims land in `ParticipantAgent`, and the `glcdi-policy-functions` constraints evaluate against them (logs show `[glcdi:membership] active EQ active → true`). |
 
 **Build change** (`edc-connector/runtimes/controlplane/build.gradle.kts`):
 
@@ -660,7 +660,7 @@ edc.iam.token.scope=openid profile glcdi_claims
 | **Task** | Wire `glcdi-policy-functions` (sourced from the `edc-glcdi-extension/` sibling repo) into `edc-connector/`'s build, so every connector image rebuild includes the GLCDI custom extensions automatically — mirrors DS4GO's `edc-dsif-extension` → `edc-connector/extensions/` cp-step pattern |
 | **Deliverable** | Rebuilt connector image (published to `registry.startinblox.com/applications/glcdi/edc-connector/controlplane`) carries the GLCDI extensions in its shadowJar; participants pulling the image at `docker compose up -d` time get them automatically |
 | **Pattern** | At CI time (or via local helper script): clone `edc-glcdi-extension`, copy its `extensions/<name>/` directories into `edc-connector/extensions/`, run the standard Gradle build. The copies are not tracked in `edc-connector` git (added to `.gitignore` as `extensions/glcdi-*`) so the fork stays clean of GLCDI-specific code that lives upstream. |
-| **Status** | [x] `edc-connector/gradle/libs.versions.toml`: added `edc-spi-policy-engine` + `edc-runtime-metamodel` aliases (both required by the extension build) · [x] `edc-connector/settings.gradle.kts`: added `include(":extensions:glcdi-policy-functions")` · [x] `edc-connector/runtimes/controlplane/build.gradle.kts`: added `runtimeOnly(project(":extensions:glcdi-policy-functions"))` · [x] `edc-connector/.gitignore`: ignores `extensions/glcdi-*` (synced from sibling repo, not tracked) · [x] `edc-connector/.gitlab-ci.yml`: `before_script` clones `edc-glcdi-extension` (auth via `CI_JOB_TOKEN`, branch override via `EDC_GLCDI_EXTENSION_BRANCH`) and copies its extensions into `./extensions/` ahead of every Gradle/Kaniko step · [x] `edc-connector/scripts/sync-glcdi-extensions.sh`: local-dev helper (looks for `../edc-glcdi-extension/` by default; override with `EDC_GLCDI_EXTENSION_DIR`) · [ ] First successful CI build with the extension in place · [ ] Job-token permission granted on `edc-glcdi-extension` repo (Settings → CI/CD → Job token permissions → allow `edc-connector`) |
+| **Status** | [x] `edc-connector/gradle/libs.versions.toml`: added `edc-spi-policy-engine` + `edc-runtime-metamodel` aliases (both required by the extension build) · [x] `edc-connector/settings.gradle.kts`: added `include(":extensions:glcdi-policy-functions")` + `include(":extensions:glcdi-iam-keycloak")` · [x] `edc-connector/runtimes/controlplane/build.gradle.kts`: `runtimeOnly(project(":extensions:glcdi-policy-functions"))` + `runtimeOnly(project(":extensions:glcdi-iam-keycloak"))` · [x] `edc-connector/.gitignore`: ignores `extensions/glcdi-*` (synced from sibling repo, not tracked) · [x] `edc-connector/.gitlab-ci.yml`: `before_script` clones `edc-glcdi-extension` (auth via `CI_JOB_TOKEN`, branch override via `EDC_GLCDI_EXTENSION_BRANCH`) and copies its extensions into `./extensions/` ahead of every Gradle/Kaniko step · [x] `edc-connector/scripts/sync-glcdi-extensions.sh`: local-dev helper (looks for `../edc-glcdi-extension/` by default; override with `EDC_GLCDI_EXTENSION_DIR`); now syncs both `glcdi-policy-functions` + `glcdi-iam-keycloak` · [x] First successful local build with the extensions in place (controlplane image rebuilt + 33/35 Bruno tests passing) · [ ] First successful **CI** build (local-only verification so far) · [ ] Job-token permission granted on `edc-glcdi-extension` repo (Settings → CI/CD → Job token permissions → allow `edc-connector`) |
 
 ---
 
@@ -679,7 +679,7 @@ with the richer policies from `./policies/`.
 | **Grazing rotation** | Access: `members-only` / Contract: `non-commercial` + `attribution` (for benchmarking use case) |
 | **Paddock boundaries** | Access: `members-only` / Contract: `internal-use-only` + `time-limited` (sensitive spatial data) |
 | **NDVI time series** | Access: `members-only` / Contract: `attribution` (lower sensitivity, broader sharing) |
-| **Status** | [ ] Not started |
+| **Status** | [x] M1 fixture subset implemented via Bruno (`management/bruno/10-provider-seeding/`): 3 assets per producer org (`grazing-soc-2024` regen-producers-only, `grazing-summary-2024` all-members, `grazing-raw-observations-2024` researchers-only). All 3 access tiers exercised in the test suite. · [ ] Full asset-class taxonomy from this table (paddock boundaries, NDVI, etc.) — out of M1 scope, expand when real producer data lands |
 
 ### 4.2 Update research-participant seeding scripts
 
@@ -692,7 +692,7 @@ with the richer policies from `./policies/`.
 | **Biodiversity surveys** | Access: `members-only` / Contract: `attribution` + `non-commercial` |
 | **Weather station data** | Access: `members-only` / Contract: `attribution` (low sensitivity) |
 | **Carbon credit reports** | Access: `members-only` / Contract: `internal-use-only` + `anonymisation` (commercially sensitive) |
-| **Status** | [ ] Not started |
+| **Status** | [x] M1 fixture subset implemented via Bruno — point-blue (the M1 researcher participant) seeds the same 3-asset shape as producers, with the `researchers-only` and `all-members` tiers serving the negative-test cases for the policy matrix. · [ ] Full research-asset-class taxonomy from this table — post-M1 when real research data lands |
 
 ### 4.3 Create seeding helper for policy registration
 
@@ -700,7 +700,7 @@ with the richer policies from `./policies/`.
 |------|--------|
 | **Task** | Add a section to seeding scripts that registers all needed policy definitions before creating contract definitions, reading from the JSON files in `management/policies/` |
 | **Approach** | Loop over the required policy JSON files and POST them to `/management/v3/policydefinitions`. Then create contract definitions that reference the registered policy IDs. |
-| **Status** | [ ] Not started |
+| **Status** | [x] Implemented as the Bruno `10-provider-seeding/` collection — `glcdi.sh seed` loops over all 3 orgs and runs all 10 requests (assets + 3 policies + 3 contract-defs) per org. Idempotent (re-running accepts 409 conflicts). Re-seed integrated into `glcdi.sh all`. |
 
 ---
 
@@ -732,7 +732,7 @@ Bruno runs against either a single participant's connector locally, or against t
 
 **Owner:** parallel agent. Can begin drafting once §§ 1.5.3–1.5.4 fix the API-key contract and the per-org client_credentials shape; doesn't strictly need Phases 2–4 to run, only to be runnable green.
 
-**Status:** [x] Tiered skeleton in [`bruno/`](bruno/) — 19 files: collection metadata, **collection-level pre-request script** (`collection.bru`) for Tier-2 Bearer injection, 2 environments (local + staging) with `tier` selector, 6 folders covering the M1 scenario plus 2 extra Tier-2-only negative-auth cases · [x] Role-corrected per the M1 resolution (white-buffalo positive, point-blue filtered) · [x] Tier-1 default (X-Api-Key only) and Tier-2 anticipated (Bearer auto-injected) — single source, switch via env var · [ ] Polling files for state-machine assertions (FINALIZED / TERMINATED / STARTED) — TODO inside the relevant `.bru` files · [ ] Pre-request script that fetches the offer from the catalog response and uses it verbatim in the negotiation body — TODO · [ ] Green run against staging at Tier 1 (gated on Phase 1.5 cutover + Phases 2–4) · [ ] Green run at Tier 2 (additionally gated on Phase 7.2)
+**Status:** [x] Tiered skeleton in [`bruno/`](bruno/) — 19 files: collection metadata, **collection-level pre-request script** (`collection.bru`) for Tier-2 Bearer injection, 2 environments (local + staging) with `tier` selector, 6 folders covering the M1 scenario plus 2 extra Tier-2-only negative-auth cases · [x] Role-corrected per the M1 resolution (white-buffalo positive, point-blue filtered) · [x] Tier-1 default (X-Api-Key only) and Tier-2 anticipated (Bearer auto-injected) — single source, switch via env var · [x] **Green run against local Tier 1 stack: 33/35 tests passing** — catalog discovery (positive + negative), negotiation accepted (both purposes), all 4 negative-auth scenarios, full seeding (10 requests × 3 orgs). Remaining 2/35 are the contract-agreement polling + transfer init (need § 4.5.E's polling files below). · [ ] Polling files for state-machine assertions (FINALIZED / TERMINATED / STARTED) — TODO inside the relevant `.bru` files · [ ] Pre-request script that fetches the offer from the catalog response and uses it verbatim in the negotiation body — TODO · [ ] Green run against **staging** at Tier 1 (local-only verified so far) · [ ] Green run at Tier 2 (additionally gated on Phase 7.2)
 
 ### 4.5.F Participant-UI configuration (Track F — parallel agent)
 
@@ -748,13 +748,52 @@ Adapt `participant-ui/` for the **Tier 1** topology — API-key login only, no O
 
 **Owner:** parallel agent. **Read-only audit first** (already complete — see status), then strip-down implementation.
 
-**Status:** [x] Read-only audit complete (Track F findings: 4 components configured, env vars + linked-provider mapped, silent-callback path served by Hubl/nginx, transfer-process component absent) · [ ] Strip OIDC envvars from `docker-entrypoint.sh` and `config.json.template` (Tier-1 cut) · [ ] Drop `sib-auth-linked-provider` widget + `silent-callback.html` from served paths · [ ] API-key-only login implemented — operator pastes the value at first load; UI stores it (`localStorage.glcdi_operator_api_key`) and attaches it as `X-Api-Key` on every management-API call · [ ] Add `tems-transfer-processes-management` (or equivalent) component to `config.json.template` · [x] README rewritten with single-tier architecture + "PROTOTYPE: API-key-only login" subsection (will need a follow-up update after the strip-down lands)
+**Status:** [x] Read-only audit complete (Track F findings: 4 components configured, env vars + linked-provider mapped, silent-callback path served by Hubl/nginx, transfer-process component absent) · [x] Strip OIDC envvars from `docker-entrypoint.sh` and `config.json.template` (Tier-1 cut: KEYCLOAK_URL, OIDC_CLIENT_ID, KC_IDP_HINT, LINKED_PROVIDER_* all removed) · [x] Drop `sib-auth-linked-provider` widget + `silent-callback.html` from served paths (autoLogin partial in `orbit/` now routes through `<sib-auth-apikey>`) · [x] API-key-only login implemented — `solid-glcdi/src/components/sib-auth-apikey.ts` (paste-form modal) + `sib-auth-provider-apikey.ts` (input + reveal + retrieval mailto). Storage at `localStorage.glcdi_operator_api_key.<participant-id>` (JSON-wrapped). On activation, propagates the key to every `[participant-api-key]` element so the upstream tems-*-management components actually carry it. · [x] Custom `<glcdi-sidebar>` (replaces `<tems-sidebar-oidc>`) reading menu from `window.orbit.components`, theming via dedicated `--glcdi-*` tokens to avoid TEMS' design-token tug-of-war · [ ] Add `tems-transfer-processes-management` (or equivalent) component to `config.json.template` · [x] README rewritten with single-tier architecture + "PROTOTYPE: API-key-only login" subsection (will need a follow-up update after the strip-down lands)
 
 ### Dependencies
 
 - Both tracks **depend on § 1.5** (Tier-1 identity simplification) being landed in at least one staging participant.
 - 4.5.E benefits from Phases 2–4 being further along (so the test-suite assertions match real seeded data) but can be drafted in parallel against expected behaviour.
 - 4.5.F's strip-down can begin **immediately**; field-tested once § 1.5 is in staging.
+
+---
+
+## Phase 4.6: Decouple participant-ui from `@startinblox/solid-tems`
+
+In-scope for M1. Promoted from the post-prototype backlog because the upstream `tems-modal` only renders rich content for `RDFTYPE_OBJECT` / `RDFTYPE_SERVICE` — for plain `Asset` types (what GLCDI seeds) it shows only the description, no title, no data-address, no Negotiate CTA. The same upstream ownership gap surfaced as the catalog-card `[object Object]` provider badge, the "0 datasets" miscount, and the auth-gating leak (background calls bypassing the paste form). All of them trace to internals we can't change without owning the code.
+
+| Item | Detail |
+|------|--------|
+| **Task** | Fork or duplicate the catalogue / asset / policy / contract / negotiation components currently sourced from `@startinblox/solid-tems` (+ `solid-tems-ui`) into the GLCDI-owned `solid-glcdi` bundle. |
+| **Approach** | Bias to (a) **light fork** — copy only the components GLCDI actually uses (`solid-dsp-catalog`, `tems-modal`, `tems-catalog-data-holder`, `tems-*-management`) into `solid-glcdi`, drop solid-tems from `npm[]`, iterate freely. Alternative (b) is a full fork of `solid-tems-v2` under a GLCDI repo with upstream contribs for dataspace-generic fixes. |
+| **Wins this unlocks** | Asset modal showing full props (name, `@id`, data-address, providers, access-policy summary) + a real "Negotiate" CTA that builds the ContractRequest body in the JSON-LD shape EDC 0.15.x accepts; consistent GLCDI branding (no more design-token tug-of-war vs. TEMS' defaults); Cypress test coverage on components GLCDI owns. |
+| **Why now (not post-M1)** | M1 explicitly demos catalog → modal → negotiate → transfer. The modal gap blocks the demo. Inheriting upstream bugs while we're stabilising the M1 fixtures consumes more triage time than owning the source would. |
+| **Status** | [ ] Not started |
+
+### 4.6.1 Asset detail modal — completion checklist
+
+Specific gaps the fork has to close (acceptance criteria for the modal's M1 cut):
+
+- [ ] Modal title = asset `properties.name`
+- [ ] Modal subtitle = `@id` (clickable copy-to-clipboard)
+- [ ] Properties section — render `properties.*` excluding internal keys
+- [ ] Data address section — `type` + `baseUrl` + `proxyPath` if HttpData
+- [ ] Provider badge with `_provider.name` (not `[object Object]`)
+- [ ] Access policy summary — fetch the contract-def by id, render constraints in human-readable form (e.g. "Requires: producer + regen-verified")
+- [ ] "Negotiate contract" CTA — builds the ContractRequest body in the JSON-LD shape EDC 0.15.x accepts (`odrl:permission` + `{"@id":"..."}` for action/operator/leftOperand, see `management/bruno/30-negotiation/01-negotiate-internal-purpose.bru`), POSTs to `/management/v3/contractnegotiations` with the operator's X-Api-Key
+- [ ] Negotiation status drawer — polls `/management/v3/contractnegotiations/{id}` and surfaces state transitions until FINALIZED / TERMINATED
+- [ ] "Initiate transfer" CTA once an agreement exists
+
+### 4.6.2 Other follow-ups to fold in during the fork
+
+- [ ] Auth gating — sib-auth-apikey now propagates the operator key to `[participant-api-key]` elements on activation. Once the components live in `solid-glcdi`, replace the attribute-pushing approach with reading the key directly from `sib-auth:activated` events (cleaner: no DOM walk).
+- [ ] Provider Statistics counter — use `_provider.participantId` for matching (today it tries `_provider === provider.name`, which is always false because `_provider` is an object).
+- [ ] Catalog list — distinct cards per provider rely on per-org asset `properties.name` (already fixed in seeding), but the rendering still leaks the raw `_provider` object as a tag. Drop that tag, or render `_provider.name` + provider color swatch.
+
+### Dependencies
+
+- Builds on § 4.5.F (Tier-1 UI strip-down), which lands the `sib-auth-apikey` + `glcdi-sidebar` baseline. Once those are in, the fork lives entirely inside `solid-glcdi/`.
+- Doesn't block § 4.5.E's Bruno green run — Bruno tests the connector layer, independent of the UI.
 
 ---
 
@@ -778,7 +817,7 @@ Adapt `participant-ui/` for the **Tier 1** topology — API-key login only, no O
 | **Test scenario 2** | A research participant queries a producer participant's catalog → sees all assets (both `members-only` and `researchers-only`) |
 | **Test scenario 3** | Unauthenticated or non-member query → sees nothing |
 | **Where** | Extend `test-dsp-catalog-query.sh` or create `test-policy-filtering.sh` |
-| **Status** | [ ] Not started |
+| **Status** | [x] Covered by Bruno `20-catalog-discovery/` (passing locally, 2/2 tests green): 01 = regen-producer querying caney-fork sees the M1 asset; 02 = researcher querying caney-fork is correctly filtered out by the regen-only access policy. Same access matrix verified manually for the all-members + researchers-only tiers. |
 
 ### 5.3 Integration test: contract negotiation with constraints
 
@@ -998,30 +1037,6 @@ Long-term migration replacing the Authority Keycloak as the *issuer* of connecto
 | **Why** | Currently policies are registered via API/scripts. A UI lowers the barrier for non-technical participants (ranchers). |
 | **Requires** | `participant-ui` development |
 | **Status** | [ ] Not started |
-
-### 7.6 Decouple participant-ui from `@startinblox/solid-tems`
-
-| Item | Detail |
-|------|--------|
-| **Task** | Fork or duplicate the foundational catalogue / asset / policy / contract / negotiation components currently sourced from `@startinblox/solid-tems` (and `solid-tems-ui`) into a GLCDI-owned bundle (`solid-glcdi`). |
-| **Why** | Two pressing reasons surfaced during M1: (1) the dsp-catalog **asset detail modal** (`tems-modal`) only renders rich content for `RDFTYPE_OBJECT` / `RDFTYPE_SERVICE` — for plain `Asset` types (what we seed), only the description shows, no title, no data-address info, no "Negotiate" CTA. The negotiate flow is gated on an RDF type GLCDI assets don't carry. (2) Every other behaviour quirk (catalog card `[object Object]` provider badge from rendering `_provider` directly, the "0 datasets" miscount, the sib-auth gating leaks) traces to a solid-tems internal that we can't reach without owning the source. |
-| **Approach** | Either (a) **light fork** — copy the half-dozen components GLCDI actually uses (`solid-dsp-catalog`, `tems-modal`, `tems-catalog-data-holder`, `tems-*-management`) into `solid-glcdi`, drop solid-tems from the npm[] list, iterate freely; or (b) **fork solid-tems-v2 as a GLCDI fork**, contribute back upstream changes that are dataspace-generic, keep GLCDI-specific styling locally. Decision is "duplicate foundational code is acceptable" per the user — bias to (a) for clean ownership. |
-| **Wins this unlocks** | Asset modal showing full props (name, @id, data-address, providers, access policy summary) + "Negotiate" button that builds the contract-request body in the right JSON-LD shape; consistent GLCDI branding (no more theme-token tug-of-war against TEMS' blue defaults); ability to write Cypress tests against components GLCDI owns. |
-| **Status** | [ ] Not started |
-
-#### 7.6.1 Asset detail modal — completion checklist
-
-Specific gaps the fork has to close (use as acceptance criteria):
-
-- [ ] Modal title = asset `properties.name`
-- [ ] Modal subtitle = `@id` (clickable copy-to-clipboard)
-- [ ] Properties section — render `properties.*` excluding internal keys
-- [ ] Data address section — `type` + `baseUrl` + `proxyPath` if HttpData
-- [ ] Provider badge with `_provider.name` (not `[object Object]`)
-- [ ] Access policy summary — fetch the contract-def by id, render constraints in human-readable form (e.g. "Requires: producer + regen-verified")
-- [ ] "Negotiate contract" CTA — builds the ContractRequest body in the JSON-LD shape EDC 0.15.x accepts (`odrl:permission` + `{"@id":"..."}` for action/operator/leftOperand, see `management/bruno/30-negotiation/01-negotiate-internal-purpose.bru`), POSTs to `/management/v3/contractnegotiations` with the operator's X-Api-Key
-- [ ] Negotiation status drawer — polls `/management/v3/contractnegotiations/{id}` and surfaces state transitions until FINALIZED / TERMINATED
-- [ ] "Initiate transfer" CTA once an agreement exists
 
 ---
 
