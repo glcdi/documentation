@@ -1,0 +1,62 @@
+meta {
+  name: List contract definitions (caney-fork)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/contractdefinitions/request
+  body: json
+  auth: none
+}
+
+docs {
+  Mirrors the first half of `glcdi.sh wipe`'s `wipe_one` loop for the
+  `contractdefinitions` resource: POSTs a minimal QuerySpec, then captures
+  every returned `@id` into the collection-scoped var `contract_definition_ids`
+  (JSON-stringified array) and pre-arms `contract_definition_next_id` with
+  the first one so `02-delete-contract-definitions.bru` can DELETE it.
+
+  Contract-definitions are listed first because assets and policies can't be
+  deleted while a CD still references them (deletion order is load-bearing —
+  see `glcdi.sh` `wipe_one`).
+
+  Re-run this request after each delete to refresh both vars; the delete
+  request also self-refreshes via its own post-response script so a
+  list → delete → delete → delete loop works without re-listing each time.
+
+  Switch the URL host to `{{point_blue_host}}` / `{{white_buffalo_host}}`
+  (and the X-Api-Key var accordingly) to wipe a different participant.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "QuerySpec"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const ids = Array.isArray(body) ? body.map(x => x["@id"]).filter(Boolean) : [];
+  bru.setVar("contract_definition_ids", JSON.stringify(ids));
+  bru.setVar("contract_definition_next_id", ids[0] || "");
+  console.log(`contract-definitions remaining: ${ids.length}`);
+}
+
+tests {
+  test("list succeeded", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response is an array", function() {
+    expect(res.getBody()).to.be.an("array");
+  });
+}

@@ -1,0 +1,60 @@
+meta {
+  name: Delete contract definition (one at a time)
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{caney_fork_host}}/management/v3/contractdefinitions/{{contract_definition_next_id}}
+  body: none
+  auth: none
+}
+
+docs {
+  Deletes the contract-definition currently at index 0 of the list captured
+  by `01-list-contract-definitions.bru` (var `contract_definition_ids`).
+
+  Bruno has no native fan-out over a JSON array, so each invocation deletes
+  exactly one item. The post-response script shifts the array, re-stores it,
+  and re-binds `contract_definition_next_id` to the new head — so re-running
+  this request walks through the list without needing to re-list every time.
+
+  Manual loop:
+    1. Run `01-list-contract-definitions.bru` once to populate the vars.
+    2. Re-run this request until the response log says `contract-definitions
+       remaining: 0` (or `contract_definition_next_id` is empty).
+    3. Re-run `01-` to confirm the list is empty before moving on to
+       policy-definitions (step 03).
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+script:pre-request {
+  const nextId = bru.getVar("contract_definition_next_id");
+  if (!nextId) {
+    console.warn("contract_definition_next_id is empty — run 01-list-contract-definitions first, or the list is already empty.");
+  }
+}
+
+script:post-response {
+  // Shift the head off the queue and re-arm `next_id` with the new head.
+  let ids = [];
+  try {
+    ids = JSON.parse(bru.getVar("contract_definition_ids") || "[]");
+  } catch (e) {
+    ids = [];
+  }
+  ids.shift();
+  bru.setVar("contract_definition_ids", JSON.stringify(ids));
+  bru.setVar("contract_definition_next_id", ids[0] || "");
+  console.log(`contract-definitions remaining: ${ids.length}`);
+}
+
+tests {
+  test("delete succeeded or target already gone", function() {
+    // 204 = deleted; 404 = already gone (re-run after empty list).
+    expect(res.getStatus()).to.be.oneOf([200, 204, 404]);
+  });
+}

@@ -12,19 +12,29 @@
 # edc-connector/, edc-glcdi-extension/, participant-ui/, management/).
 #
 # Subcommands:
-#   preflight   — verify required tools are installed
-#   secrets     — generate (once) and print local secrets
-#   build       — build edc-connector + participant-ui images
-#   up          — bring up authority + 3 participants
-#   seed        — seed M1 fixtures via Bruno
-#   test [tier] — run the Bruno collection (tier1 default; tier2 anticipated)
-#   status      — quick health check on every service
-#   logs <svc>  — tail logs for a service (svc = authority|caney-fork|point-blue|white-buffalo)
-#   down        — bring down stacks (preserves volumes)
-#   reset       — bring down + remove volumes + delete .glcdi.local/
-#   all         — preflight + build + up + seed + test (the happy path)
-#   bruno-cmd   — print the `bru run` command line (with secrets baked in)
-#   help        — show this list
+#   preflight                       — verify required tools are installed
+#   secrets                         — generate (once) and print local secrets
+#   build                           — build edc-connector + participant-ui images
+#   up                              — bring up authority + 3 participants
+#   seed [--target T]               — seed M1 fixtures via Bruno (default T=local)
+#   wipe [--target T] [--no-dry-run] — delete contract-defs + policies + assets
+#                                     (dry-run by default; --no-dry-run actually deletes)
+#   test [tier]                     — run the Bruno collection (tier1 default; tier2 anticipated)
+#   status                          — quick health check on every service
+#   logs <svc>                      — tail logs for a service (svc = authority|caney-fork|point-blue|white-buffalo)
+#   down                            — bring down stacks (preserves volumes)
+#   reset                           — bring down + remove volumes + delete .glcdi.local/
+#   all                             — preflight + build + up + seed + test (the happy path)
+#   bruno-cmd                       — print the `bru run` command line (with secrets baked in)
+#   help                            — show this list
+#
+# --target values: local | caney-fork | point-blue | white-buffalo | all-staging
+#   For staging targets, EDC_API_KEY is fetched at runtime via SSH against the
+#   participant VM. Defaults: root@<target>.glcdi.startinblox.com. Override
+#   per-target via env vars when needed:
+#     caney-fork    → SSH_USER_CANEY     / SSH_HOST_CANEY
+#     point-blue    → SSH_USER_POINTBLUE / SSH_HOST_POINTBLUE
+#     white-buffalo → SSH_USER_WB        / SSH_HOST_WB
 #
 # Config: GLCDI_TIER (default tier1) — switches Bruno test mode.
 # Working dir: ./.glcdi.local/ (gitignored) holds rotated secrets + per-org configs.
@@ -64,6 +74,11 @@ declare -A ORG_PORTS=(
   [caney-fork]=8080
   [point-blue]=8081
   [white-buffalo]=8082
+)
+declare -A ORG_COLORS=(
+  [caney-fork]="#2E7D32"
+  [point-blue]="#1565C0"
+  [white-buffalo]="#C0392B"
 )
 declare -A ORG_TYPES=(
   [caney-fork]=regenerative-producer
@@ -585,7 +600,8 @@ other_dsp_providers_json() {
     # glcdi-connector-<org> after the Tier-1 IAM swap). Without this, the
     # catalogue UI matches incoming dataset._provider.participantId
     # against the wrong value and counts 0 datasets per provider.
-    out+="{\"name\":\"$nice\",\"address\":\"http://host.docker.internal:${port}/protocol\",\"color\":\"#1565C0\",\"participantId\":\"glcdi-connector-${org}\"}"
+    local color="${ORG_COLORS[$org]:-#1565C0}"
+    out+="{\"name\":\"$nice\",\"address\":\"http://host.docker.internal:${port}/protocol\",\"color\":\"${color}\",\"participantId\":\"glcdi-connector-${org}\"}"
   done
   out+="]"
   printf '%s' "$out"
@@ -697,50 +713,164 @@ cmd_build() {
 }
 
 # -----------------------------------------------------------------------------
+# Target resolution (local + staging)
+# -----------------------------------------------------------------------------
+
+# SSH env var pairs per staging participant. Kept in one place so the error
+# message and the resolver can't drift.
+declare -A SSH_USER_VAR=(
+  [caney-fork]=SSH_USER_CANEY
+  [point-blue]=SSH_USER_POINTBLUE
+  [white-buffalo]=SSH_USER_WB
+)
+declare -A SSH_HOST_VAR=(
+  [caney-fork]=SSH_HOST_CANEY
+  [point-blue]=SSH_HOST_POINTBLUE
+  [white-buffalo]=SSH_HOST_WB
+)
+
+# Expand a --target value to one or more concrete targets. all-staging fans
+# out to the three named staging participants.
+expand_target() {
+  local target="$1"
+  case "$target" in
+    local|caney-fork|point-blue|white-buffalo) printf '%s\n' "$target" ;;
+    all-staging)
+      printf 'caney-fork\n'
+      printf 'point-blue\n'
+      printf 'white-buffalo\n'
+      ;;
+    *) die "Unknown --target: $target (expected local|caney-fork|point-blue|white-buffalo|all-staging)" ;;
+  esac
+}
+
+# Resolve a single target to its host URL. Echoes the host.
+target_host() {
+  local target="$1"
+  case "$target" in
+    local) die "target_host called with 'local' — caller should iterate ORGS" ;;
+    caney-fork|point-blue|white-buffalo)
+      printf 'https://%s.glcdi.startinblox.com' "$target"
+      ;;
+    *) die "target_host: unknown target $target" ;;
+  esac
+}
+
+# Bruno environment name for a target (local|staging).
+target_bruno_env() {
+  case "$1" in
+    local) printf 'local' ;;
+    caney-fork|point-blue|white-buffalo) printf 'staging' ;;
+    *) die "target_bruno_env: unknown target $1" ;;
+  esac
+}
+
+# Fetch the EDC_API_KEY for a staging target by SSH-ing to its VM.
+# Defaults to root@<target>.glcdi.startinblox.com; override via SSH_USER_* / SSH_HOST_* env vars.
+fetch_staging_api_key() {
+  local target="$1"
+  local user_var="${SSH_USER_VAR[$target]:-}"
+  local host_var="${SSH_HOST_VAR[$target]:-}"
+  if [[ -z "$user_var" || -z "$host_var" ]]; then
+    die "fetch_staging_api_key: no SSH var mapping for $target"
+  fi
+
+  local user="${!user_var:-root}"
+  local host="${!host_var:-${target}.glcdi.startinblox.com}"
+  local key
+  key=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "${user}@${host}" \
+          "grep '^EDC_API_KEY=' ~/participant-agent-services/.env | cut -d= -f2-" \
+        2>/dev/null) || die "SSH to ${user}@${host} failed for $target — check connectivity and ~/participant-agent-services/.env on the VM."
+  key="${key//$'\r'/}"
+  key="${key%$'\n'}"
+  if [[ -z "$key" ]]; then
+    die "Empty EDC_API_KEY fetched from ${user}@${host} for $target — does ~/participant-agent-services/.env exist on the VM?"
+  fi
+  printf '%s' "$key"
+}
+
+# -----------------------------------------------------------------------------
 # Seed M1 fixtures via Bruno
 # -----------------------------------------------------------------------------
 
+# Friendly display name for the asset titles (Title Case from kebab).
+org_display_name() {
+  echo "$1" | sed 's/-/ /g' \
+    | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))substr($i,2)}1'
+}
+
+# Run the bruno 10-provider-seeding folder against one org-host pair. The
+# bruno files use {{caney_fork_host}} / {{caney_fork_api_key}} placeholders
+# regardless of which org is being seeded — overrides rebind them per call.
+seed_one() {
+  local org="$1"
+  local host="$2"
+  local api_key="$3"
+  local bruno_env="$4"
+
+  local org_display
+  org_display=$(org_display_name "$org")
+
+  log "Seeding M1 fixtures on $org ($host) via Bruno [env=$bruno_env]"
+  # shellcheck disable=SC2046
+  ( cd "$BRUNO_DIR" && bru run 10-provider-seeding --env "$bruno_env" $(bruno_env_flags) \
+      --env-var "caney_fork_host=${host}" \
+      --env-var "caney_fork_api_key=${api_key}" \
+      --env-var "org_display_name=${org_display}" \
+      --env-var "m1_asset_id=urn:glcdi:asset:${org}:grazing-soc-2024" \
+      --env-var "m1_contract_definition_id=${org}-grazing-soc-2024-cd" \
+      --env-var "m1_research_asset_id=urn:glcdi:asset:${org}:grazing-summary-2024" \
+      --env-var "m1_research_contract_definition_id=${org}-grazing-summary-2024-cd" \
+      --env-var "m1_researcher_only_asset_id=urn:glcdi:asset:${org}:grazing-raw-observations-2024" \
+      --env-var "m1_researcher_only_contract_definition_id=${org}-grazing-raw-observations-2024-cd" \
+  ) || die "Bruno seeding folder failed for $org — see output above"
+}
+
 cmd_seed() {
-  cmd_secrets
+  local target="local"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --target) target="${2:-}"; shift 2 || die "--target requires a value" ;;
+      --target=*) target="${1#--target=}"; shift ;;
+      -h|--help)
+        cat <<'EOF'
+Usage: glcdi.sh seed [--target T]
+
+  --target T   One of: local (default) | caney-fork | point-blue | white-buffalo | all-staging
+               Staging defaults to root@<target>.glcdi.startinblox.com; override via SSH_USER_*/SSH_HOST_* env vars.
+EOF
+        return 0 ;;
+      *) die "seed: unknown argument: $1" ;;
+    esac
+  done
+
   if ! command -v bru >/dev/null 2>&1; then
-    warn "bru not installed — falling back to manual curl-based seeding"
-    seed_via_curl
-    return
+    die "bru (Bruno CLI) is not installed. Install with: npm install -g @usebruno/cli"
   fi
 
-  # Seed each org's connector with its own asset / policies / contract-def.
-  # The bruno collection is hard-coded to use `{{caney_fork_host}}` and
-  # `{{caney_fork_api_key}}` because that's how its files were authored,
-  # but bruno's `--env-var` flags happily override either of those names.
-  # We also rewrite `m1_asset_id` and `m1_contract_definition_id` to be
-  # org-specific so the dsp-catalog of any peer sees distinct datasets
-  # instead of three copies of the same URN colliding.
-  for org in "${ORGS[@]}"; do
-    local port="${ORG_PORTS[$org]}"
-    local org_upper
-    org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
-    local api_key_var="${org_upper}_API_KEY"
-    local api_key="${!api_key_var}"
+  if [[ "$target" == "local" ]]; then
+    cmd_secrets
+    for org in "${ORGS[@]}"; do
+      local port="${ORG_PORTS[$org]}"
+      local org_upper
+      org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
+      local api_key_var="${org_upper}_API_KEY"
+      seed_one "$org" "http://localhost:${port}" "${!api_key_var}" "local"
+    done
+    ok "M1 fixtures seeded on all local orgs (${ORGS[*]})"
+    return 0
+  fi
 
-    # Friendly display name for the asset titles (Title Case from kebab).
-    local org_display
-    org_display=$(echo "$org" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1))substr($i,2)}1')
-
-    log "Seeding M1 fixtures on $org (http://localhost:${port}) via Bruno"
-    # shellcheck disable=SC2046
-    ( cd "$BRUNO_DIR" && bru run 10-provider-seeding --env local $(bruno_env_flags) \
-        --env-var "caney_fork_host=http://localhost:${port}" \
-        --env-var "caney_fork_api_key=${api_key}" \
-        --env-var "org_display_name=${org_display}" \
-        --env-var "m1_asset_id=urn:glcdi:asset:${org}:grazing-soc-2024" \
-        --env-var "m1_contract_definition_id=${org}-grazing-soc-2024-cd" \
-        --env-var "m1_research_asset_id=urn:glcdi:asset:${org}:grazing-summary-2024" \
-        --env-var "m1_research_contract_definition_id=${org}-grazing-summary-2024-cd" \
-        --env-var "m1_researcher_only_asset_id=urn:glcdi:asset:${org}:grazing-raw-observations-2024" \
-        --env-var "m1_researcher_only_contract_definition_id=${org}-grazing-raw-observations-2024-cd" \
-    ) || die "Bruno seeding folder failed for $org — see output above"
+  local targets=()
+  mapfile -t targets < <(expand_target "$target")
+  for t in "${targets[@]}"; do
+    local host
+    host=$(target_host "$t")
+    local key
+    key=$(fetch_staging_api_key "$t")
+    seed_one "$t" "$host" "$key" "$(target_bruno_env "$t")"
   done
-  ok "M1 fixtures seeded on all orgs (${ORGS[*]})"
+  ok "M1 fixtures seeded on staging targets: ${targets[*]}"
 }
 
 # Build the --env-var flags `bru run` needs to populate secret env vars
@@ -750,20 +880,129 @@ cmd_seed() {
 # Echoes the flags as one line — caller does:
 #   bru run --env local $(bruno_env_flags) ...
 bruno_env_flags() {
-  printf -- '--env-var caney_fork_api_key=%s ' "$CANEY_FORK_API_KEY"
-  printf -- '--env-var point_blue_api_key=%s ' "$POINT_BLUE_API_KEY"
-  printf -- '--env-var white_buffalo_api_key=%s ' "$WHITE_BUFFALO_API_KEY"
-  printf -- '--env-var caney_fork_client_secret=%s ' "$CANEY_FORK_CONNECTOR_SECRET"
-  printf -- '--env-var point_blue_client_secret=%s ' "$POINT_BLUE_CONNECTOR_SECRET"
-  printf -- '--env-var white_buffalo_client_secret=%s ' "$WHITE_BUFFALO_CONNECTOR_SECRET"
+  printf -- '--env-var caney_fork_api_key=%s ' "${CANEY_FORK_API_KEY:-}"
+  printf -- '--env-var point_blue_api_key=%s ' "${POINT_BLUE_API_KEY:-}"
+  printf -- '--env-var white_buffalo_api_key=%s ' "${WHITE_BUFFALO_API_KEY:-}"
+  printf -- '--env-var caney_fork_client_secret=%s ' "${CANEY_FORK_CONNECTOR_SECRET:-}"
+  printf -- '--env-var point_blue_client_secret=%s ' "${POINT_BLUE_CONNECTOR_SECRET:-}"
+  printf -- '--env-var white_buffalo_client_secret=%s ' "${WHITE_BUFFALO_CONNECTOR_SECRET:-}"
 }
 
-seed_via_curl() {
-  local host="http://localhost:${ORG_PORTS[caney-fork]}"
-  local key="$CANEY_FORK_API_KEY"
-  log "Seeding asset, policies, contract def via curl against $host"
-  warn "Phase 4 seeding scripts are not in place yet — this curl-fallback is a stub."
-  warn "Run 'bru run 10-provider-seeding --env local' after installing the Bruno CLI for the real seeding path."
+# -----------------------------------------------------------------------------
+# Wipe seeded fixtures from a connector
+# -----------------------------------------------------------------------------
+#
+# Deletion order is load-bearing: contract-definitions reference policies +
+# assets, so they go first; policies are referenced by contract-defs only, so
+# they go next; assets go last.
+#
+# Defaults to dry-run — prints the curl commands + IDs that would be deleted.
+# Pass --no-dry-run to actually issue DELETEs.
+
+wipe_one() {
+  local org="$1"
+  local host="$2"
+  local api_key="$3"
+  local dry_run="$4"
+
+  log "Wiping $org ($host)  dry-run=${dry_run}"
+
+  local resource
+  for resource in contractdefinitions policydefinitions assets; do
+    local list_url="${host}/management/v3/${resource}/request"
+    local body='{"@context":{"@vocab":"https://w3id.org/edc/v0.0.1/ns/"},"@type":"QuerySpec"}'
+
+    local ids_json
+    ids_json=$(curl -fsSL --max-time 15 \
+                 -X POST "$list_url" \
+                 -H 'Content-Type: application/json' \
+                 -H "X-Api-Key: ${api_key}" \
+                 -d "$body") || die "List $resource failed against $host"
+
+    local ids=()
+    mapfile -t ids < <(printf '%s' "$ids_json" | jq -r '.[]["@id"]')
+
+    if [[ ${#ids[@]} -eq 0 ]]; then
+      log "  $resource: nothing to delete"
+      continue
+    fi
+
+    log "  $resource: ${#ids[@]} item(s)"
+    local id
+    for id in "${ids[@]}"; do
+      local del_url="${host}/management/v3/${resource}/${id}"
+      if [[ "$dry_run" == "true" ]]; then
+        printf '    [dry-run] curl -X DELETE -H "X-Api-Key: ***" %q\n' "$del_url"
+      else
+        local code
+        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 \
+                 -X DELETE "$del_url" \
+                 -H "X-Api-Key: ${api_key}" || echo "000")
+        if [[ "$code" =~ ^2 ]]; then
+          ok "    deleted $resource/$id"
+        else
+          warn "    DELETE $resource/$id → $code"
+        fi
+      fi
+    done
+  done
+}
+
+cmd_wipe() {
+  local target="local"
+  local dry_run="true"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --target) target="${2:-}"; shift 2 || die "--target requires a value" ;;
+      --target=*) target="${1#--target=}"; shift ;;
+      --no-dry-run) dry_run="false"; shift ;;
+      --dry-run) dry_run="true"; shift ;;
+      -h|--help)
+        cat <<'EOF'
+Usage: glcdi.sh wipe [--target T] [--no-dry-run]
+
+  --target T     One of: local (default) | caney-fork | point-blue | white-buffalo | all-staging
+                 Staging defaults to root@<target>.glcdi.startinblox.com; override via SSH_USER_*/SSH_HOST_* env vars.
+  --no-dry-run   Actually issue DELETEs. Default is dry-run (print the commands + IDs only).
+
+Deletes in order: contract-definitions → policy-definitions → assets.
+EOF
+        return 0 ;;
+      *) die "wipe: unknown argument: $1" ;;
+    esac
+  done
+
+  if [[ "$target" == "local" ]]; then
+    cmd_secrets
+    for org in "${ORGS[@]}"; do
+      local port="${ORG_PORTS[$org]}"
+      local org_upper
+      org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
+      local api_key_var="${org_upper}_API_KEY"
+      wipe_one "$org" "http://localhost:${port}" "${!api_key_var}" "$dry_run"
+    done
+    if [[ "$dry_run" == "true" ]]; then
+      warn "Dry-run only — re-run with --no-dry-run to actually delete."
+    else
+      ok "Wipe complete on local orgs (${ORGS[*]})"
+    fi
+    return 0
+  fi
+
+  local targets=()
+  mapfile -t targets < <(expand_target "$target")
+  for t in "${targets[@]}"; do
+    local host
+    host=$(target_host "$t")
+    local key
+    key=$(fetch_staging_api_key "$t")
+    wipe_one "$t" "$host" "$key" "$dry_run"
+  done
+  if [[ "$dry_run" == "true" ]]; then
+    warn "Dry-run only — re-run with --no-dry-run to actually delete."
+  else
+    ok "Wipe complete on staging targets: ${targets[*]}"
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -945,7 +1184,8 @@ main() {
     secrets)   cmd_secrets_show ;;
     build)     cmd_build ;;
     up)        cmd_up ;;
-    seed)      cmd_seed ;;
+    seed)      cmd_seed "$@" ;;
+    wipe)      cmd_wipe "$@" ;;
     test)      cmd_test "${1:-$TIER}" ;;
     status)    cmd_status ;;
     logs)      cmd_logs "${1:-}" ;;

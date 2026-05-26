@@ -1,0 +1,49 @@
+meta {
+  name: Delete policy definition (one at a time)
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{caney_fork_host}}/management/v3/policydefinitions/{{policy_definition_next_id}}
+  body: none
+  auth: none
+}
+
+docs {
+  Deletes the policy-definition at index 0 of `policy_definition_ids`.
+  Re-run until `policy-definitions remaining: 0` is logged.
+
+  Pre-req: all contract-definitions referencing these policies must already
+  be deleted (steps 01-02 above) or EDC will 4xx.
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+script:pre-request {
+  const nextId = bru.getVar("policy_definition_next_id");
+  if (!nextId) {
+    console.warn("policy_definition_next_id is empty — run 03-list-policy-definitions first, or the list is already empty.");
+  }
+}
+
+script:post-response {
+  let ids = [];
+  try {
+    ids = JSON.parse(bru.getVar("policy_definition_ids") || "[]");
+  } catch (e) {
+    ids = [];
+  }
+  ids.shift();
+  bru.setVar("policy_definition_ids", JSON.stringify(ids));
+  bru.setVar("policy_definition_next_id", ids[0] || "");
+  console.log(`policy-definitions remaining: ${ids.length}`);
+}
+
+tests {
+  test("delete succeeded or target already gone", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 204, 404]);
+  });
+}

@@ -1,0 +1,52 @@
+meta {
+  name: List assets (caney-fork)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/assets/request
+  body: json
+  auth: none
+}
+
+docs {
+  Final pass of `glcdi.sh wipe` — lists every asset on the connector.
+  Run AFTER contract-definitions (01-02) and policy-definitions (03-04)
+  are wiped, since assets are still referenced while contract-defs exist.
+
+  Captures `@id`s into `asset_ids` and pre-arms `asset_next_id` for
+  `06-delete-assets.bru`.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@type": "QuerySpec"
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const ids = Array.isArray(body) ? body.map(x => x["@id"]).filter(Boolean) : [];
+  bru.setVar("asset_ids", JSON.stringify(ids));
+  bru.setVar("asset_next_id", ids[0] || "");
+  console.log(`assets remaining: ${ids.length}`);
+}
+
+tests {
+  test("list succeeded", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response is an array", function() {
+    expect(res.getBody()).to.be.an("array");
+  });
+}

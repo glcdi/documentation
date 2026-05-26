@@ -7,13 +7,20 @@ vars {
   point_blue_dsp: https://point-blue.glcdi.startinblox.com/protocol
   white_buffalo_dsp: https://white-buffalo.glcdi.startinblox.com/protocol
   authority_host: https://authority.glcdi.startinblox.com/auth/realms/glcdi
-  caney_fork_participant_id: urn:glcdi:participant:caney-fork
-  point_blue_participant_id: urn:glcdi:participant:point-blue
-  white_buffalo_participant_id: urn:glcdi:participant:white-buffalo
+  caney_fork_participant_id: glcdi-connector-caney-fork
+  point_blue_participant_id: glcdi-connector-point-blue
+  white_buffalo_participant_id: glcdi-connector-white-buffalo
   m1_asset_id: urn:glcdi:asset:caney-fork:grazing-soc-2024
-  m1_access_policy_id: glcdi:access:regenerative-producers
-  m1_contract_policy_id: glcdi:contract:internal-use-only
-  m1_contract_definition_id: glcdi:contractdef:caney-fork:grazing-soc-2024
+  m1_access_policy_id: regenerative-producers-policy
+  m1_contract_policy_id: internal-use-only-policy
+  m1_contract_definition_id: caney-fork-grazing-soc-2024-cd
+  m1_research_asset_id: urn:glcdi:asset:caney-fork:grazing-summary-2024
+  m1_research_access_policy_id: research-accessible-policy
+  m1_research_contract_definition_id: caney-fork-grazing-summary-2024-cd
+  m1_researcher_only_asset_id: urn:glcdi:asset:caney-fork:grazing-raw-observations-2024
+  m1_researcher_only_access_policy_id: researcher-only-policy
+  m1_researcher_only_contract_definition_id: caney-fork-grazing-raw-observations-2024-cd
+  org_display_name: Caney Fork
 }
 vars:secret [
   caney_fork_api_key,

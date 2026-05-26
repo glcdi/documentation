@@ -1,0 +1,52 @@
+meta {
+  name: Delete asset (one at a time)
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{caney_fork_host}}/management/v3/assets/{{asset_next_id}}
+  body: none
+  auth: none
+}
+
+docs {
+  Deletes the asset at index 0 of `asset_ids`. Re-run until
+  `assets remaining: 0` is logged.
+
+  Pre-req: all contract-definitions and (orphaned) policy-definitions must
+  already be deleted, otherwise EDC will refuse to drop the asset.
+
+  After this comes back empty, the connector is in the same state as a
+  freshly-provisioned participant — re-seed with `10-provider-seeding/`.
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+script:pre-request {
+  const nextId = bru.getVar("asset_next_id");
+  if (!nextId) {
+    console.warn("asset_next_id is empty — run 05-list-assets first, or the list is already empty.");
+  }
+}
+
+script:post-response {
+  let ids = [];
+  try {
+    ids = JSON.parse(bru.getVar("asset_ids") || "[]");
+  } catch (e) {
+    ids = [];
+  }
+  ids.shift();
+  bru.setVar("asset_ids", JSON.stringify(ids));
+  bru.setVar("asset_next_id", ids[0] || "");
+  console.log(`assets remaining: ${ids.length}`);
+}
+
+tests {
+  test("delete succeeded or target already gone", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 204, 404]);
+  });
+}
