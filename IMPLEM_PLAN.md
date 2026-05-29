@@ -311,7 +311,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 |------|--------|
 | **Task** | Set `KEYCLOAK_LOGIN_URL` explicitly so the approval mail's "Log in at…" link points at a browser-reachable URL. Without it, `djangoldp_glcdi_onboarding` auto-derives the login URL from `KEYCLOAK_BASE_URL`, which is the *internal* docker hostname (`http://keycloak:8080/…`) that 404s outside the container network. |
 | **Where** | `onboarding/settings.yml.template` reads `${KEYCLOAK_LOGIN_URL}`; `docker-compose.yml` derives it from `${BASE_URL}`; `management/scripts/glcdi.sh` writes it explicitly into `authority.env` for the symmetric-port dev shape (KC is on `:8090`, BASE_URL is `:8083`, so the auto-derived value would be wrong); `governance-services/.gitlab-ci.yml` writes it from CI's `${BASE_URL}` into `.env`. |
-| **Status** | [x] Wired in source · [ ] Re-tested locally after a backend restart · [ ] Verified on staging that the approval mail's link opens the KC account console |
+| **Status** | [x] Wired in source · [x] Re-tested locally (re-submission as "Benito Toto" produced an approval mail whose "Log in at:" anchor points at `http://localhost:8090/auth/realms/glcdi/account/` — the browser-reachable KC URL, not the docker-internal `http://keycloak:8080/...`) · [ ] Verified on staging that the approval mail's link opens the KC account console |
 
 ### Dependencies & risks
 
