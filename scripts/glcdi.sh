@@ -21,7 +21,7 @@
 #                                     (dry-run by default; --no-dry-run actually deletes)
 #   test [tier]                     — run the Bruno collection (tier1 default; tier2 anticipated)
 #   status                          — quick health check on every service
-#   logs <svc>                      — tail logs for a service (svc = authority|caney-fork|point-blue|white-buffalo)
+#   logs <svc>                      — tail logs for a service (svc = authority|onboarding|caney-fork|point-blue|white-buffalo)
 #   down                            — bring down stacks (preserves volumes)
 #   reset                           — bring down + remove volumes + delete .glcdi.local/
 #   all                             — preflight + build + up + seed + test (the happy path)
@@ -87,6 +87,7 @@ declare -A ORG_TYPES=(
 )
 
 AUTHORITY_KC_PORT=8090
+AUTHORITY_ONBOARDING_PORT=8083
 TIER="${GLCDI_TIER:-tier1}"
 
 # -----------------------------------------------------------------------------
@@ -231,16 +232,18 @@ patch_realm_json() {
      --arg pb "$POINT_BLUE_CONNECTOR_SECRET" \
      --arg wb "$WHITE_BUFFALO_CONNECTOR_SECRET" \
      --arg ui "$GLCDI_UI_CLIENT_SECRET" \
+     --arg gov "$GOVERNANCE_CLIENT_SECRET" \
      '
      .clients |= map(
        if .clientId == "glcdi-connector-caney-fork" then .secret = $cf
        elif .clientId == "glcdi-connector-point-blue" then .secret = $pb
        elif .clientId == "glcdi-connector-white-buffalo" then .secret = $wb
        elif .clientId == "glcdi-ui" and (.publicClient // false) == false then .secret = $ui
+       elif .clientId == "governance" then .secret = $gov
        else . end
      )
      ' "$source_realm" > "$target"
-  ok "Realm JSON patched"
+  ok "Realm JSON patched (incl. governance client secret)"
 }
 
 # -----------------------------------------------------------------------------
@@ -258,20 +261,45 @@ up_authority() {
   # and re-copy from the .template files ourselves on every up.
   substitute_authority_secrets
 
-  # Stage a per-run .env with our rotated values.
+  # Stage a per-run .env with our rotated values. KC_GOVERNANCE_CLIENT_SECRET
+  # is the single source of truth — the realm JSON patcher above already
+  # substituted it into the bind-mounted realm, and the onboarding-backend
+  # reads it as KEYCLOAK_CLIENT_SECRET via the compose env block. The compose
+  # file also `:?`-requires it, so leaving it unset would fail fast.
+  #
+  # We write to BOTH the script-private location (passed via --env-file in
+  # the up/down/reset paths) AND $AUTHORITY_DIR/.env (compose's auto-loaded
+  # default). The second copy means bare `docker compose ...` invocations
+  # from the governance-services dir also pick up the secret — no more
+  # cryptic ":? must be set" parse errors when you're poking at the stack
+  # by hand.
+  # Dev URLs follow the symmetric "each service on its own host port" model:
+  # KC on AUTHORITY_KC_PORT (8090), onboarding on AUTHORITY_ONBOARDING_PORT
+  # (8083). BASE_URL points at the onboarding host port so approve/deny links
+  # in admin mail land on the django backend directly without nginx in the
+  # mix. Prod uses nginx-prod with a single hostname (path-based routing).
   local authority_env="$LOCAL_DIR/authority.env"
   cat > "$authority_env" <<EOF
 DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-KEYCLOAK_BASE_URL=http://localhost:${AUTHORITY_KC_PORT}
+DEBUG=true
+BASE_URL=http://localhost:${AUTHORITY_ONBOARDING_PORT}
+DEFAULT_FROM_EMAIL=noreply@glcdi.local
+GLCDI_ADMIN_MAILS=["admin@glcdi.local"]
+KEYCLOAK_BASE_URL=http://keycloak:8080
 KEYCLOAK_REALM=glcdi
 KEYCLOAK_CLIENT_ID=governance
-KEYCLOAK_CLIENT_SECRET=${GOVERNANCE_CLIENT_SECRET}
+KC_GOVERNANCE_CLIENT_SECRET=${GOVERNANCE_CLIENT_SECRET}
+# Public-facing KC URL embedded in approval mails. Internal KEYCLOAK_BASE_URL
+# would yield "http://keycloak:8080/auth/..." which 404s in a browser.
+KEYCLOAK_LOGIN_URL=http://localhost:${AUTHORITY_KC_PORT}/auth/realms/glcdi/account/
 KC_START_MODE=start-dev
 KC_HOSTNAME=http://localhost:${AUTHORITY_KC_PORT}/auth
 KC_BACKCHANNEL_DYNAMIC=false
 KEYCLOAK_ADMIN=admin
 KEYCLOAK_ADMIN_PASSWORD=${KC_ADMIN_PASSWORD}
 EOF
+  cp "$authority_env" "$AUTHORITY_DIR/.env"
+  chmod 600 "$AUTHORITY_DIR/.env"
 
   # Override file: bind-mounts the patched realm JSON over the in-repo one,
   # remaps the KC port, and pins the admin password from .env.
@@ -280,6 +308,15 @@ EOF
   # with it. Without this, the in-repo `8080:8080` mapping stays AND our
   # `8090:8080` is appended — KC ends up on both ports and we hog the
   # caney-fork nginx port.
+  # The override bind-mounts our pre-patched realm over the template that
+  # gets fed to resources/keycloak/entrypoint.sh. The entrypoint will run
+  # its sed pass on it, but jq already substituted ${KC_GOVERNANCE_CLIENT_SECRET}
+  # with the live value — so the sed is a no-op. This keeps dev and prod on
+  # the same code path.
+  # Override yaml: remaps KC to AUTHORITY_KC_PORT, publishes onboarding on
+  # AUTHORITY_ONBOARDING_PORT, bind-mounts the patched realm. Neither port
+  # mapping leaks into prod — prod runs the base compose only (with
+  # --profile prod for nginx-prod + certbot).
   local override="$LOCAL_DIR/authority.override.yml"
   cat > "$override" <<EOF
 # Auto-generated by glcdi.sh — do not edit by hand.
@@ -288,7 +325,7 @@ services:
     ports: !override
       - "${AUTHORITY_KC_PORT}:8080"
     volumes:
-      - ${LOCAL_DIR}/glcdi-realm.json:/opt/keycloak/data/import/glcdi-realm.json:ro
+      - ${LOCAL_DIR}/glcdi-realm.json:/opt/keycloak/data/import-template/glcdi-realm.json:ro
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: \${KEYCLOAK_ADMIN_PASSWORD}
@@ -296,15 +333,24 @@ services:
       # how the image's entrypoint is written. KC needs ~512MB headroom for
       # realm import + admin console; bump to 1024m if tight.
       JAVA_TOOL_OPTIONS: "-Xmx768m -Xms128m -XX:MaxMetaspaceSize=256m"
+  onboarding-backend:
+    ports:
+      - "${AUTHORITY_ONBOARDING_PORT}:8083"
 EOF
 
+  # No profile flag: nginx (profile dev) and nginx-prod (profile prod) both
+  # stay down. Onboarding + KC are reached directly on their host ports.
   ( cd "$AUTHORITY_DIR" \
-    && docker compose --env-file "$authority_env" -f docker-compose.yml -f "$override" up -d \
+    && docker compose --env-file "$authority_env" \
+         -f docker-compose.yml -f "$override" up -d --build \
   ) || die "docker compose up failed for Authority Keycloak"
 
   wait_for_authority
-  ok "Authority Keycloak running at http://localhost:${AUTHORITY_KC_PORT}/auth"
-  ok "Admin: admin / ${KC_ADMIN_PASSWORD}"
+  wait_for_onboarding
+  ok "Authority Keycloak:        http://localhost:${AUTHORITY_KC_PORT}/auth"
+  ok "  Admin: admin / ${KC_ADMIN_PASSWORD}"
+  ok "Onboarding registration:   http://localhost:${AUTHORITY_ONBOARDING_PORT}/registration/"
+  ok "Onboarding admin dashboard: http://localhost:${AUTHORITY_ONBOARDING_PORT}/registration/admin/  (login admin/admin)"
 }
 
 # Substitutes {{POSTGRES_USER}}, {{POSTGRES_PASSWORD}}, {{KC_DB_USERNAME}},
@@ -364,7 +410,28 @@ wait_for_authority() {
     fi
     sleep 1
   done
-  die "Authority KC did not become ready within 60s. Check: docker compose -f $AUTHORITY_DIR/docker-compose.yml logs keycloak"
+  die "Authority KC did not become ready within 180s. Check: docker compose -f $AUTHORITY_DIR/docker-compose.yml logs keycloak"
+}
+
+# Onboarding-backend is published directly on AUTHORITY_ONBOARDING_PORT in
+# dev (no nginx in front). First-boot work — djangoldp install + migrate +
+# collectstatic — can take a minute. Subsequent boots are quick.
+wait_for_onboarding() {
+  local url="http://localhost:${AUTHORITY_ONBOARDING_PORT}/registration/"
+  log "Waiting for onboarding backend to serve $url"
+  local i
+  for i in {1..240}; do
+    local code
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$url" || echo "000")
+    # 200 = form rendered. 301/302 = django redirect (also fine).
+    if [[ "$code" =~ ^(200|301|302)$ ]]; then
+      ok "Onboarding backend ready (after ~${i}s, HTTP $code)"
+      return 0
+    fi
+    sleep 1
+  done
+  warn "Onboarding backend did not serve /registration/ within 240s."
+  warn "Check: docker compose -f $AUTHORITY_DIR/docker-compose.yml logs onboarding-backend"
 }
 
 # -----------------------------------------------------------------------------
@@ -1051,6 +1118,25 @@ cmd_status() {
     2>/dev/null \
     || warn "  Authority KC not reachable on port $AUTHORITY_KC_PORT"
 
+  log "Onboarding"
+  local reg_code
+  reg_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://localhost:${AUTHORITY_ONBOARDING_PORT}/registration/" || echo "000")
+  if [[ "$reg_code" =~ ^(200|301|302)$ ]]; then
+    ok "  /registration/ → $reg_code"
+  else
+    warn "  /registration/ → $reg_code (expected 200/301/302)"
+  fi
+  local gov_token_code
+  gov_token_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+    -X POST "http://localhost:${AUTHORITY_KC_PORT}/auth/realms/glcdi/protocol/openid-connect/token" \
+    -d "grant_type=client_credentials&client_id=governance&client_secret=${GOVERNANCE_CLIENT_SECRET}" \
+    || echo "000")
+  if [[ "$gov_token_code" == "200" ]]; then
+    ok "  governance client_credentials → 200 (realm-admin token mintable)"
+  else
+    warn "  governance client_credentials → $gov_token_code (expected 200)"
+  fi
+
   for org in "${ORGS[@]}"; do
     local port="${ORG_PORTS[$org]}"
     local org_upper
@@ -1075,10 +1161,12 @@ cmd_status() {
 
 cmd_logs() {
   local svc="${1:-}"
-  [[ -z "$svc" ]] && die "Usage: $0 logs <authority|caney-fork|point-blue|white-buffalo>"
+  [[ -z "$svc" ]] && die "Usage: $0 logs <authority|onboarding|caney-fork|point-blue|white-buffalo>"
 
   if [[ "$svc" == "authority" ]]; then
     ( cd "$AUTHORITY_DIR" && docker compose logs -f --tail=200 )
+  elif [[ "$svc" == "onboarding" ]]; then
+    ( cd "$AUTHORITY_DIR" && docker compose logs -f --tail=200 onboarding-backend )
   elif [[ -n "${ORG_PORTS[$svc]:-}" ]]; then
     local org_dir="$LOCAL_DIR/$svc"
     [[ -f "$org_dir/.env" ]] || die "Participant $svc not started — no .env at $org_dir"
@@ -1143,9 +1231,23 @@ cmd_reset() {
       && docker compose --env-file "$LOCAL_DIR/authority.env" \
            -f docker-compose.yml \
            -f "$LOCAL_DIR/authority.override.yml" \
-           down -v \
-    ) || warn "down -v failed for authority"
+           down -v --remove-orphans \
+    ) || warn "down -v failed for authority (with override)"
   fi
+
+  # Always also issue a base-only down -v across all profiles. Covers:
+  # (a) authority.env was wiped previously, the override-aware path above did
+  #     nothing, and the named volume + containers from the prior run linger
+  #     — the next `up` would then hit a stale password on the keycloak DB.
+  # (b) orphan containers from earlier compose versions (e.g. the removed
+  #     onboarding-approval service, the now-unused dev nginx) need cleanup.
+  ( cd "$AUTHORITY_DIR" \
+    && KC_GOVERNANCE_CLIENT_SECRET=stub-for-reset-only docker compose --profile dev --profile prod down -v --remove-orphans \
+  ) || warn "base-only down -v failed for authority (likely nothing to do)"
+
+  # On-disk artefacts left behind by onboarding-backend (the file-based mail
+  # outbox, uploaded org logos): wipe so the next `up` starts clean.
+  rm -rf "$AUTHORITY_DIR/onboarding/mails" "$AUTHORITY_DIR/onboarding/media" 2>/dev/null || true
 
   rm -rf "$LOCAL_DIR"
   ok "Reset complete. Re-run: $0 up"

@@ -26,8 +26,8 @@
       "@id": "glcdi:membership",
       "@type": "xsd:string"
     },
-    "organisation": {
-      "@id": "glcdi:organisation",
+    "organization": {
+      "@id": "glcdi:organization",
       "@type": "xsd:string"
     },
     "roles": {
