@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLCDI — Authentication Roadmap</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+  <style>
+    :root {
+      --r-heading-color: #1565C0;
+      --r-link-color: #1565C0;
+      --r-selection-background-color: #E3F2FD;
+    }
+    .reveal h1, .reveal h2, .reveal h3 { text-transform: none; }
+    .reveal h1 { font-size: 1.8em; }
+    .reveal h2 { font-size: 1.4em; }
+    .reveal h3 { font-size: 1.05em; color: #424242; }
+    .reveal p, .reveal li, .reveal td, .reveal th { font-size: 0.7em; }
+    .reveal table { margin: 0.5em auto; font-size: 0.6em; }
+    .reveal th { background: #E3F2FD; color: #1565C0; }
+    .reveal td, .reveal th { padding: 0.3em 0.6em; border: 1px solid #E0E0E0; text-align: left; vertical-align: top; }
+    .reveal blockquote { background: #F5F5F5; border-left: 4px solid #1565C0; padding: 0.5em 1em; font-size: 0.7em; text-align: left; width: 85%; }
+    .reveal code { background: #F5F5F5; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.85em; }
+    .reveal .slide-number { font-size: 0.5em; }
+    .badge { display: inline-block; border-radius: 4px; padding: 0.1em 0.55em; font-size: 0.55em; margin-bottom: 0.3em; font-weight: 600; }
+    .badge-p1 { background: #E8F5E9; color: #2E7D32; border: 1px solid #2E7D32; }
+    .badge-p2 { background: #FFF9C4; color: #F9A825; border: 1px solid #F9A825; }
+    .badge-p3 { background: #FFE0B2; color: #EF6C00; border: 1px solid #EF6C00; }
+    .badge-p4 { background: #E1BEE7; color: #7B1FA2; border: 1px solid #7B1FA2; }
+    .two-columns { display: flex; gap: 2em; align-items: flex-start; }
+    .two-columns > * { flex: 1; }
+    .highlight-box { background: #FFF9C4; border: 1px solid #F9A825; border-radius: 6px; padding: 0.6em 1em; margin: 0.5em 0; text-align: left; font-size: 0.85em; }
+    .highlight-box p { font-size: 0.95em; margin: 0.2em 0; }
+    .highlight-box ul { font-size: 0.95em; margin: 0.2em 0 0.2em 1em; padding: 0; }
+    .check { color: #2E7D32; font-weight: bold; }
+    .cross { color: #C62828; font-weight: bold; }
+    .diagram { margin: 0.5em auto; max-height: 78vh; width: auto; }
+    .diagram-wide { max-width: 95%; }
+    .small { font-size: 0.55em; color: #757575; }
+    .nochange { background: #E0F2F1; border-left: 4px solid #00897B; padding: 0.4em 0.8em; font-size: 0.85em; margin: 0.4em 0; }
+    .change    { background: #FFF3E0; border-left: 4px solid #EF6C00; padding: 0.4em 0.8em; font-size: 0.85em; margin: 0.4em 0; }
+    .reveal section img { background: transparent; border: none; box-shadow: none; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================ -->
+<!-- TITLE -->
+<!-- ============================================================ -->
+<section>
+  <h1>Authentication Roadmap</h1>
+  <h3>GLCDI &mdash; Grazing Lands Carbon Data Initiative</h3>
+  <p style="margin-top: 2em; font-size: 0.7em; color: #424242;">
+    Where we are today (Phase&nbsp;1), and<br>
+    where authentication is heading next.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<!-- PHASE 1 -->
+<!-- ============================================================ -->
+<section>
+  <h2><span class="badge badge-p1">Phase 1</span> Authority KC + onboarding</h2>
+  <h3>Where we are today</h3>
+  <p>One central Authority Keycloak. One realm (<code>glcdi</code>). One user directory.<br>
+  Participants run EDC connectors that authenticate as themselves &mdash; not as end users.</p>
+  <div class="highlight-box">
+    <p><strong>Shipped in Phase 1.6:</strong></p>
+    <ul>
+      <li><code>djangoldp-glcdi</code> registration form + admin dashboard</li>
+      <li><code>governance</code> client with <code>realm-admin</code> service-account role</li>
+      <li>Realm roles: <code>glcdi_member</code>, <code>glcdi_producer</code>, <code>glcdi_researcher</code>, <code>glcdi_non_profit</code>, <code>glcdi_non_regulatory</code></li>
+      <li><code>glcdi_organization</code> user attribute (renamed from <code>organisation</code>)</li>
+      <li>SMTP relay wiring for notifications + invites</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="badge badge-p1">Phase 1</span> Architecture</h2>
+  <img class="diagram diagram-wide"
+       src="https://www.plantuml.com/plantuml/svg/VLFHRXCn47ptLopb9G7kge9045LLhqcZbgeqQfg2H52riTsBYMzzylaGAQh4N_3Eh_0dV0bhDxHfXNWw-Rmpixip5hjDG1_Qoef7OQuh3RL5Gw9P6AhHOmLANs9hmz1H69ih3LjRQvVUjQIaywGzl5hxBrrLEz8C2KkhmMiPa4ghXTMN0O83Ryfv06NYZN4aXBIkLR1Hj67kl0bBE3-U4luzvQMLokIfLqCpwxxcBB41s40nEJk0n_ilXi-70_Wcu4vxdUr8Bra15rFo6ctLWqIO28xw2NOFsBU6lqrlIh-__uJIVT6UaAI6phZeGQB8K5M6kgkAo9P9HyJpE9zjEr_kmAyVy6ubqN-eS1evU7zMHvM4lwYzKwtKVafvdg-0fm-1auPtZI5uCsk3liMo89AvmhZD5RHWwFNzXPpGpA5NXagOeLneKbFggC_iZREgpX9LDy5FziJrhIkZk7PfQcIEysFenC5uSfsNEKWalSmkdL_ynwJHELlqUlXo_yr3Y_eOqBeI9eVGEMXdzaPzSdY_Qd_GXpudaFV5-IGzfQSmO6Gw90HNn8PJ6hAFSwEKfayfPHch2t6o1tc-4ytkGH6TWs9qoCElUGdZeYkYqcsXJ36ua5upMp1e6qRyq-kku06oR2VsmS3D2WbBVauKDXdo8Ijgat46mP5TteXitrKFnYCksjFesTgtxy-UtUJfuWatWAPgkcANdOflz0y0"
+       alt="Phase 1 architecture">
+</section>
+
+<section>
+  <h2><span class="badge badge-p1">Phase 1</span> Onboarding sequence</h2>
+  <img class="diagram"
+       src="https://www.plantuml.com/plantuml/svg/TLJ1RXen4BtxAwQS6bgASetKAYiG52N02YBrWeJChbccU6tBdYKYfvxw0LM-C5_IiO6GKFNczRmty-PvPiLj8EcfgRNuG1jLAt1QeX5XYyP9BsierLescWRMq1oV55nV2o4BiXvQKrz9Wq4IMhCmrYal-Ru5Ci0q5qmdBD19GmmrAojzYQQ2jVNrmdIzgZ2GJ-HkuWoci_5xLlbJcihgqdKgNPIOKFtXUyny_92dm3WRtP-KzIN9u6IX5YPhQ6CzqXvaMQD9qAn_KIYB8IXbs2IPb_8Iyo2odys_Nt1V2zprk5pAbEMZXBxhyKc8QGwTRwa_k841QWtML-miITG1FYrCuxIL9MXRMP5W3EyF6PnFvmymIrgKpyzb1KTF67v1QW9yXPPJ9bhSEaQZ8noVMC8r5gaLK3NNN9YNttzWUD_hZvRinMYoZD2vI8GEC_cIYQs9UeItHhH43CIwx083Pcg730dDgiOG670HpvppTiUFyD5XiGsfQzex5LlsLYksA61bQcKeN8b4Od8oxTHxj_AsSO5JH7Bw-1-o2Sf7O504QLwMDWteqt509P77LKFgtmIpAAQMph5xDmjpODUgNYaVjIRDKR0u43hd5cDHmF8ruz7paTaXgPFRKLB7SREFrlChezbUdRtcuRY17qeNbhVlvTSpHFqdi32Mqx27dj_wyt6U0FAD3BoAGBQKU_RvpGW21k1DPb2xROtUjzi7ZILw5PTZ3poV3E1fF-x85y5Z0x6GkELJ_1Vy1G00"
+       alt="Phase 1 onboarding sequence">
+</section>
+
+<section>
+  <h2><span class="badge badge-p1">Phase 1</span> Connector &harr; connector trust</h2>
+  <img class="diagram"
+       src="https://www.plantuml.com/plantuml/svg/NLFRRXen47ttLqpp18YbocjKeYGkgHGgTILGyh9IPBm3M7Wz6rzGo0Vq0_g9_PAE5mAKfztrp1oVS-Qik0jH-PWQAxx4DJO8hLN6YR0nhbLUDL3ZKYKR7yd5cVb0kBuMWYlHQDCg5-5AaWkfGLyvJSwXZiIllP8C5nzimluLg01I_Zzrd-AQl8axcCgkONhHK7hQcleILYg7EtWalzd3bbA8yHZcj447Ihyb4qmqv60y5b92SSkuS0FbhzaSliRSnNZMe8klscFDJwDiOE2LrRKfZbSLRUPVB39_CJq1_IJQG6fXTWyfP79_V_y1Zu7i5g73U1s0PWkRq8tndCnpJozpw0MpSbZ38ciULcxVtc2pG1_MfZqUUR8OXZ0QZVgTkk-p4l1ThvLRuKbOcN5pIQkeBAsOnbl242jtyFP3PITku06LHm_VcCEjA4zQVapO4uq-1kWzlKnd_K_67NAR5jPesE0k78QwusVqPhc3B4N5vB5oa_VebOuNwYl7_X78_D5jvnoa98RU0MwLJHr9Ni31XuAStR4J7bVeq7DrYqNhgKxCD72XSwKyirOUvFUMnaRqdS6LQ_TNK8gQ6jwXS1GHQCj6I3dCkG6Gdzi6qoM1msW230RSEXW0khh8EpuMHpmoKNeD-ZGNmCI0TWaAk7LhD78ADILEC8VmFEGZmO2GMOWxVij_t3y0"
+       alt="Phase 1 connector trust sequence">
+</section>
+
+<!-- ============================================================ -->
+<!-- TRANSITION TO FUTURE PHASES -->
+<!-- ============================================================ -->
+<section data-background-color="#F5F5F5">
+  <h2>That's what's running today.</h2>
+  <p style="margin-top: 1.5em;">The rest of this deck is <strong>forward-looking</strong> &mdash;<br>
+  three proposed phases, in order of how soon they could ship.</p>
+  <p class="small" style="margin-top: 2.5em; color: #757575;">A natural pause point. Stop here if the conversation is about the deployed system.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- ROADMAP OVERVIEW (now framed as forward-looking) -->
+<!-- ============================================================ -->
+<section>
+  <h2>Roadmap: four phases, one claim shape</h2>
+  <img class="diagram diagram-wide"
+       src="https://www.plantuml.com/plantuml/svg/RPFFSjCm4CRlVegblK0wIaWSeEs1QUeaJAOCU2P_wC6NZQNOelBA8ykJXXCd7e3X2Viah19AEzFS9Est-dtxoOwk6e_EjvM9NlbILGfgWvgYvavJZGuha6g3hV5JItwkVoZe3vuLdMr9vjQHSd0UHKxb7gam2auwdRJ4XkNmyFCFBAp4NQUJqQZrfNNQx-0cWJEmjBRefAOYeyGISRzrmfBPmNYUWdTjupEw5QDQYnkr0_J0Bc4vEm5i8Et3wUHy-cvoSOmys9E_g7iVmCk6BNwTZHF0WWSCrpxtaf55tWv4xUpz2yu0JgVJwKKoFCQ9zvpFw9KBe5GvmU5udUiQoGFRpet5koQZZPBAiKw2j_2Vdj5YQuNNx6yv0sCBJGTg7AYJjzU3OzJXWMgf40ok0fcd6wwI6VHWlqepMYcdDnhNt9WuXfFNQDZ8MEMyTcXq4yo4b0_88GVQlvvCFaGHXokSBaelFeO0BW6bXFOnnOYFdienbn-7EsYgel8HdpzfXgnfjbY7Xt_uzHjMIM-LHX5PRbbRxsq5TXEUz1BcfQvhDlRl2-g-p-Yr_Cu1M2DhKPXSQeYx_MuCPnavXQOIA2jDC1-zUN5Xu8wCBgY1hVObJ9RZ6Nn3OvI7NaQVKAEuXKM8Fuwk5CdmB_m5"
+       alt="Phase timeline">
+  <p class="small">
+    Each future phase adds capability without rewriting Phase 1.<br>
+    The <code>glcdi_*</code> claim names &mdash; and the EDC policy functions that read them &mdash; survive intact across all four.
+  </p>
+</section>
+
+<section>
+  <h2>What each phase adds &mdash; and leaves alone</h2>
+  <table>
+    <thead>
+      <tr><th>Phase</th><th>What it adds</th><th>What it leaves alone</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-p1">P1</span> Authority KC + onboarding</td>
+        <td>Central Authority Keycloak; per-org connector service accounts; <code>djangoldp-glcdi</code> onboarding; realm-admin SA.</td>
+        <td>Catalog UI is gated by <code>X-Api-Key</code> only &mdash; no end-user OIDC anywhere.</td>
+        <td><span class="check">Shipped</span><br><span class="small">(Phase 1.6)</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-p2">P2</span> User OIDC on Authority KC</td>
+        <td><code>glcdi-ui</code> OIDC client; per-org groups; human users; <code>oauth2-proxy</code> in front of <code>/management/</code>.</td>
+        <td>Connector trust chain. <code>X-Api-Key</code> stays as defence in depth.</td>
+        <td>Proposed</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-p3">P3</span> Local KCs, federated</td>
+        <td>Per-participant Keycloaks, OIDC brokered by Authority KC. Two-tier UI login.</td>
+        <td>All EDC-side policy / claim / DSP machinery.</td>
+        <td>Proposed</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-p4">P4</span> OID4VCI / OID4VP</td>
+        <td>VC issuer, wallets, VP verifiers, issuer-DID trust list.</td>
+        <td>The <code>glcdi_*</code> claim names and the EDC policy functions.</td>
+        <td>Long-term</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- PHASE 2 -->
+<!-- ============================================================ -->
+<section>
+  <h2><span class="badge badge-p2">Phase 2</span> User identity from the governance VM</h2>
+  <h3>The first time end users actually log in</h3>
+  <p>Phase 1.6 already provisions users into Authority KC.<br>
+  Phase 2 lets them <strong>use</strong> the Catalog UI with their own identity instead of pasting an API key.</p>
+
+  <div class="two-columns">
+    <div class="change">
+      <strong>What's new</strong>
+      <ul>
+        <li><code>glcdi-ui</code> OIDC client on Authority KC</li>
+        <li>Per-org groups (<code>caney-fork-team</code>, &hellip;)</li>
+        <li><code>oauth2-proxy</code> in front of <code>/management/</code></li>
+        <li>Catalog UI becomes a real OIDC client</li>
+      </ul>
+    </div>
+    <div class="nochange">
+      <strong>What stays the same</strong>
+      <ul>
+        <li>Connector-to-connector trust chain (P1)</li>
+        <li><code>glcdi_*</code> claim shape</li>
+        <li><code>X-Api-Key</code> floor at <code>/management/</code></li>
+        <li>Onboarding flow &mdash; users already land in Authority KC</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="badge badge-p2">Phase 2</span> Architecture</h2>
+  <img class="diagram diagram-wide"
+       src="https://www.plantuml.com/plantuml/svg/NLFjRjD04Fn_Jx6KFuagfseG229KDSs7IAEII6bI98oghUzYdtBUC-TpGufu3Xw85sFF3cd3J-_EpixEdCLbwT7vAZVYbSzKhg0mg4cK6qq5Ein1gZLMneyj-OL-Kd1-_gAPsBomfBZbTqQ1Kub7IeqIHgqzU0jEfva7gKD7Mn8YCRQISDAlV6QTzZjOtPm0bj1Vtdw2rwCtu-vu23y5F5E_14_LZWbm4vDJQF8Uf2QHEgOeYkcq-OWg3QsgL0vca-404gEPentQXNAHTIcapbP56IfPbID109UmrJwB2Q1XkMSWadx2eBeME1qSYvhHWqKdDQNmWCb6aOofDS-mP8iwxw2Y96Chb6pNqxChyUjm_9mTruaka7bMDz3wyni-Dx3vYZruFtux-l2_1mFqQ6mAomcl8Rkjhsk6bfDZg4NsgniLplxOCVWHZPReLGdNTxTxDVFkySWeE6M9E2NhQWXNWk8wbkXhfgLKzArECsALGYmdqEbSi2lGsnjjfOAriLjUUGXYxtv0Hz55sClmCpOTKtvhvCzYkbBeEAnJ-1Br2nrnmYB00Zoewi4__PAVr_TAbRwi0OVjZyhfzOuV6sV0kw_lfeks2ACVdpc6YtbTEWmrmkuJf_Wkhz6Kuf8Z3F_1Nm00"
+       alt="Phase 2 architecture">
+</section>
+
+<section>
+  <h2><span class="badge badge-p2">Phase 2</span> User login sequence</h2>
+  <img class="diagram"
+       src="https://www.plantuml.com/plantuml/svg/LLJRSjem47tNLsnv0ehnf7tpD9aGXxI4T62Qa7IcT3gAl1WLMN8b6KAU-jGFw4Vqm_8bNLyWy6PhppcxvsXjTkuyjxx857lZbvWXv8fBpTnAwfnRda622rueVsMqlvNF22SdZ77XZONMpA6TwtRCDMxXojXLfmNSmOmHqqiXSwuzj6BkkJ8fp4Q4_LGygWOrEeOD2hyqLlejZEEvjiXL5a6gH28h-3W-XXjE-7T1RitJbdIvXyCo9YdMRIRJOzxmCeRFNFEKlDBxO3ggO7JCs0o2CveB8hYNJlgvNdgVkoWCHUamM933bz__wAqoL63824oKSKoKoOYKBIRIeY1gMoX93HeBGI4xjNo5lJ6fr8GfA41GSeqEf8R313gCWC5kdARopBqq6eH9yB3py4aikKwnAi3Bdx_WpGgrEv8ONS9Ru4AWStMPsbUZ_J0svRhHFdrrsflhkcwDGdVwBSFi4MqFAF6a46Y_TvePAlalg1Foif5-2IGOE65oJEWUYHpm3RTONlXhmB6IOWMj2sisZWQl4sqrYfCf8JuExo3CzZSLhj_lWWyj_YhGKSX7kKHmWTJ7meUV6tysrr-3GIw3CMuZe5jZ9BeBx1wjN6pX-k4EsjSFuzjzs5NZDLSoeR04VGYPQtZbsaJbZfEL19e1M7cwvpNJLOITpTrPwQiysoV5c3OUmQnftbclMZ-0RdUY4KR9j0U67bIv9Vrk5mPAGRaghjeLgW5zgaVhqYVsz7ND7MX3TDe92xQeuDA2sUZIFrrkhTPdD0gKSx1pUYh_0Vy1"
+       alt="Phase 2 user login sequence">
+</section>
+
+<section>
+  <h2><span class="badge badge-p2">Phase 2</span> Trade-offs</h2>
+  <table>
+    <thead><tr><th>Pro</th><th>Con</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Per-user audit ("who at caney-fork pressed negotiate?")</td>
+        <td>All user accounts in governance team's directory &mdash; participants depend on them for HR cycles, role changes, password resets</td>
+      </tr>
+      <tr>
+        <td>One IdP to operate, one set of SSO integrations</td>
+        <td>Governance KC outage breaks every participant's UI login simultaneously</td>
+      </tr>
+      <tr>
+        <td>Role-aware UI (show/hide views based on <code>glcdi_roles</code>)</td>
+        <td>Centralised user mgmt is at odds with the self-sovereign long-term direction</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="highlight-box">
+    <p>Operationally the simplest "users in the dataspace" model, and the fastest to ship from Phase 1.6.<br>
+    <strong>Not the end-state.</strong> Phase 3 walks back the centralisation.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PHASE 3 -->
+<!-- ============================================================ -->
+<section>
+  <h2><span class="badge badge-p3">Phase 3</span> Local Keycloaks for proper user mgmt</h2>
+  <h3>Federation, with the governance tier preserved</h3>
+  <p>Each participant runs its own Keycloak. The Authority KC stays in place as the dataspace's federation point &mdash; it brokers to each local KC via OIDC instead of holding participant users.</p>
+
+  <div class="two-columns">
+    <div class="change">
+      <strong>What's new</strong>
+      <ul>
+        <li>Per-participant Keycloak (e.g. realm <code>caney-fork</code>)</li>
+        <li>One IdP entry per participant on Authority KC</li>
+        <li><code>KC_IDP_HINT</code>-driven brokering</li>
+        <li>Catalog UI does a <strong>two-tier OIDC flow</strong></li>
+      </ul>
+    </div>
+    <div class="nochange">
+      <strong>What stays the same</strong>
+      <ul>
+        <li>EDC machinery (policies, claims, DSP trust)</li>
+        <li>Connector-to-connector via <code>client_credentials</code></li>
+        <li><code>oauth2-proxy</code> + <code>X-Api-Key</code> at the edge</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="badge badge-p3">Phase 3</span> Architecture</h2>
+  <img class="diagram diagram-wide"
+       src="https://www.plantuml.com/plantuml/svg/ZLHHJzim47xthxZ12zK8MeCcRMX3bBOHKRSr6fIdIkYQkC6gOqUE0miJ_ttd96tIldGFLHtxli_VVRuxTbDODBRC9FjWdtd68PSe52isGkLeC8E4hx6KDj3Ateit3iDXxp3MMQuLfoDRIGw6nnPLAZbZiTHb0YUZqZvh8sm5ZpzF00iOBHxku7Hw6VZ11Fuow2ZwmJDU4G5kbifmbDaLf39EH4qm6zUmFM2OHB0oUiEDKEbIdT4skBsS6o2XLiGYHsK7BS7j8JxW2JTeUG9bmKsnL1yXrI_SA5GnPQKbR_QSY2TjKbJY3QtGgYLS4E7xVYvpjT9e4j83AumtN2MaApVwHHI4Asfv56Y4ezOAC7U7A1kDyrlsllDmZ8fN46YpsPeOFGx9mo_1v-dNGmz_w1WbITev5pkqjoPq0vsDX_k8CLgKEeL5M0SimeDpZVGilaVo_bIDkEWWOZePqwTIzFhQr26qC-nb46b1SRUov5q6Ffm6GN0v_NGqWzoXlHMXjnduHpBmZsRW_qS6lik0gWKkBgvht-0AvY55zajjDduA9z7JNVZhuNjdzQ2Fyu_XkWG7ZCqR79KvlHqvOFckLggb8d9G_BLVrLj4gx35z080aqmeklD588pS6aPHI5VHKtTtrGhFuiPAhnHUrm63NMHxHo6aiyr1YBR3d8DOqrXe0PvtNTSA_UfrNHHqukzVkjjfhUgHrqSDZKyq_fR6PyoHmRVjDy4czn5ZIbFgAssjpa2lNP_GEqSzAtHUW7vLa63bMUtH7mMufeSC5QOq02dexExtUTtr43_JEEF5EGNbM1IlsYGqv0fkYm5GqzB450PaMx0NZBeSd0HsGoitK_y1"
+       alt="Phase 3 architecture">
+</section>
+
+<section>
+  <h2><span class="badge badge-p3">Phase 3</span> Two-tier login sequence</h2>
+  <img class="diagram"
+       src="https://www.plantuml.com/plantuml/svg/PLJ1Sjem4BthAxQSW8d394UcP4ATfd59YwU1j0TcCekzDXfaoIFB9UJKh-c7zKkwji6OzcPht-w-ztObSLiujAxCb7ZdDfGHv0gb5iLMwXmjPX1JWgLozqQx9_b6S7Kb14REMEWj2x8htVTHqnxkZTqEUe05B0LdEXd97BM3deyEbKbX6J3seLoh0oeuXqrBjp5MkZtC_9MsX2eRGwgYMDRmwSm_np-Q25KN6rKql8Hfr0dXlma6kSErbrlpkcSctHZ5AJMivk5vqiSx7xwacODf6DG0FX1YCe6590jNpD3y9AjHHmGiKcgOJCGIl1lM1sDubeLqpAnseAIHu5EEiHWEpeCxPjy_HBrIUgTY5oizyr-2k_3b8VYwc9oq3KILp3N2kaOGXx2sPajMwXGinT9Iv1e63UAnPeKEXaDri6mu55NCQvaik826Va8nMNGK7veSLNmwQVpyVS6Kwx6y69kYbc_efD7Cj-E4DOgAmScdwp4KKX4RsZNNrLqhlu8JtQS6zvyt42d90UupQafvh4MjCTfURbocG2Qyh3HeXTN4cnrfE7SwUqLaSegxD7qkLZbOpRjbD0-vnYX3ZIdV3Er6VtxzNkd3eZQwn_21qBB4z-hOwsQbVtZJN7epse-1KmJNQVKzywIIFVIFyDdJYNFTRpuxu2igu-fQxT36elfhCT-eo8qkg4OUnRQ7GXj7K4q3bXVrmW8iTiPprIWIPNQWo1NTpSKovZNjxJO6-6gpCqR3cZQe4Z19zs9nfTs6xJ-ReyaBs1BbWEqLhflpUo8jc9s6aXyAQ5RJsFsb81r3HLBSybVrzlm5"
+       alt="Phase 3 two-tier login sequence">
+</section>
+
+<section>
+  <h2><span class="badge badge-p3">Phase 3</span> Why two tiers?</h2>
+  <p>The naive simpler model &mdash; "Catalog UI logs into the local KC directly" &mdash; works, but it loses two things:</p>
+  <ol>
+    <li><strong>Federated audit</strong> at the governance layer. Authority KC can no longer see which orgs are participating in which DSP exchanges.</li>
+    <li><strong>A single SSO entry point</strong> for governance tooling &mdash; onboarding dashboard, contract-management UI, certification status &mdash; all of which live on the governance VM.</li>
+  </ol>
+  <div class="highlight-box">
+    <p>The two-tier flow keeps both properties while delegating user mgmt to the participant that actually owns the org.<br>
+    The silent participant-KC step is specifically so the <code>/management/</code> edge can be locked down by an <code>oauth2-proxy</code> that the participant operator controls.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PHASE 4 -->
+<!-- ============================================================ -->
+<section>
+  <h2><span class="badge badge-p4">Phase 4</span> OID4VCI / OID4VP</h2>
+  <h3>The long-term direction</h3>
+  <p>Authority Keycloak (and the per-participant KCs from Phase 3) step out of the runtime trust path.<br>
+  Users hold <strong>Verifiable Credentials</strong> in wallets. Connectors hold VCs in their Identity Hubs. Verifiers check signatures + a trust list of issuer DIDs.</p>
+  <div class="highlight-box">
+    <p><strong>The road there is mostly replacement, not addition:</strong></p>
+    <ul>
+      <li>Authority KC &rarr; OID4VCI issuer (Walt.id / KC plugin / custom)</li>
+      <li><code>glcdi-iam-keycloak</code> &rarr; <code>iam-identity-trust</code> in EDC</li>
+      <li>Catalog UI OIDC client &rarr; Catalog UI VP verifier</li>
+      <li>Per-participant KCs &rarr; removed, or repurposed as participant-local issuers</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="badge badge-p4">Phase 4</span> Architecture</h2>
+  <img class="diagram diagram-wide"
+       src="https://www.plantuml.com/plantuml/svg/VLJRRjf047ttLqoJbw8Kfv16Qgig2h5nurmQoiNf0o-BFTWhrhjeTqrAg_vxPsq213LzmyoPC-VCPRrBOvcsLIcyDxR04c4f69UUMN2vP9gLaE6SLS96IjeH_uNGwUm5KrKkbKGAsRL0q9XQ9dE1dfSALMLmrAjieJItQqZkZu0Pw4t6rt3SFukwKGY_FTXHm54IG6nCXNegtpx4uOSaY5jJYNxkmoCJrkSPdC9jG1AhdCkQBXwDNdACTMKi26uiaV2Q3S8uDAqQFhvxYNwGCyLqncKECvOkK6QKPJNFSzG6I8zZO3B5gLGIs7AfrOg9XklXolkpzJanL2V35K-n3av2E8xE-kVH-Q79_YICdHs1f53fEiGidr7x2YKor7N-O-zkZprW4jSGARruRkCWwL0NFqRd_K-71G9ccL0vJEBdDWvWXPhFEUf6-IJk76WA0_gKaiQdgFadm5dPvXd5Q79jwrfQ9nBk83FUWE2wcb4vvy3rpS2yjhQXRCh6rvqzJmF5YU1ALBZprAMcHTIszwzxsXZe_iV0izJkwr8tUhfE3wqG-Fw5QpbyRXOGAZVE97YnX_TOpcWh2huCDDPSJBoRog4IkFjZoqPcjsnRPKIv1-Z-6-0v8Gv1OoB4GADn-fF1Rfody7r8IHcsF0TouB4JFqIZn0fXj_TJMOz-3VKGFJT0-D9kNzJzeOnmHCl16OI1ez_gC80_qu9EcOOpC2tFayeYp9IrgWGrR-xecuARnziHgTbTELqdbq0lILCGQBKBdx39PW4Df0Mc2p0ybynMv0rEDb1timxQ4nGpyCHj0LyPP-qVq1nrH2yEFhaZE8NwYdh3oFVePi6fyoxfbtl7_W80"
+       alt="Phase 4 architecture">
+</section>
+
+<section>
+  <h2><span class="badge badge-p4">Phase 4</span> VC issuance (OID4VCI)</h2>
+  <img class="diagram"
+       src="https://www.plantuml.com/plantuml/svg/LLF1Zjem4BtxAwPSkb1WjMhLGm_LKb2bLAgW3P1BfChO0x58ngdjBA9VlsC7bdAACtxpvhsPiNZsGRhGDRLu5ofi4DfQ6XB-QAYLJZQWSI-xEdot57Bp3-7fIGYfWdKmcBMjio-eeVFe1Y0zR0Gd1QDCAod0e91rZI7T5FStIzfPwRIXGqaxgOv8Ei6Mt-vnspbatdVeIdfOPejFstasJC0ip--HiovKrfbmBadgnb12pHO_XTZ0v2iJmnV8krrZGc353W_61oU3iSJKgqfwjZRz3FlQdiQmwmAGFPLaIDMTHfyimY9R30LplX5UEY3uXqEiASPw8TmgmyebAUG23JOxTBuoBNm0Psk4xNmeOiBaoZLtg962aJNO_Juv_lKR7da0s49jw3XCPHY-OVGWLv8WLCR3oOGAphPpSEhxtJikek48IcoYk2bSM-utj-1lXpvmcTRXH5vLwp_AQhnfYpGpfT1x237lVwBLCb_3eteJtYTTRtDp8BQPz74dqnXZ2zzxEEBvhW2Z7egFS_wEIyeNan_5Ui8nNhB-DEoh9akyUWYtcd565-D2a0q8F107cp6l7C0cZkq6zY0vUJHYt6W4d2Zf39bUnM_3l5DEMLTuvdw_OBpdDt4X7qD7cibY92u3kr3y9dYMKy7R2x6qUEPJV4kl"
+       alt="Phase 4 VC issuance sequence">
+</section>
+
+<section>
+  <h2><span class="badge badge-p4">Phase 4</span> VP presentation (OID4VP)</h2>
+  <img class="diagram"
+       src="https://www.plantuml.com/plantuml/svg/LLDBRXin3Dth5AnNjHF7IDjLK0H9x1IODa5SVxim42WQUaQ8HffAb1rdrKFq33rOJr9gxBZsJYAfn_V89t4LI7gAbH7lgCGAeJPIMn6UjQsbbnNak9JHq1TdQQnV4SxFXP2Ad8VMDA1lWGmm5LnBMkbQMeBMN1g3r6Jcnvc-96bS0TDiOTy_P8DFio6iqEkbHj_UGcN7BoO-1WAZmnPlSdUSlXtquRwe2Aw7MLF00I6cqBra9BY0cGwQG6tRHkm9ZhxbRg8sEJ03ZpyZ1c9A5Z4FS8_L4_fGwhhlCKTBMfg5FO6HC_W_qcwm4XXZZKktXkyZw87oBeHkZYkj49R6hRTivgb8IIlc-niQL0IL95LgMy2i7vX1v9c2SZPmaz3ULZTiXm_Z2TGUKqAITlOnnATAXy17VXTqOJ6fQHzAdANPRfB6b9SKFUxIapjEZp0uiq9WbCXj1zb0SBpxzZhRXo5tAbRScJkT03KxMR8xSEtyCx25A8QZnhSlvDabK1YLwySEA7PLnVgMtbMiD2cafF1eXjY80Lw5VEADbvWdOQNpr3LwnUg-pYUmPETDi_RXalj6gsTetNYt3lYsxDQEJdB81VGgQMM1IKBlxwy_2tiTYO7rQpDAzW9Apr8_Xnq7xdIvi3-wrxNkViFD1V0ZaQ3smzbP-L3026sENWZh2C6nhs5wsXWIOCopEY81c1UO33lyq1j-PFZVwQUXPTDeoyUQokssFGi_OuHvATd8fRG51buOT3h9SlndeR5CxRbXW7NfKcm3BAVJOGCCJu7f0F-r_fbWVkc6uefFwS__0m00"
+       alt="Phase 4 VP presentation sequence">
+</section>
+
+<section>
+  <h2><span class="badge badge-p4">Phase 4</span> Why long-term?</h2>
+  <p>The <code>IDENTITY.md</code> analysis covers why OIDC &mdash; not OID4VC &mdash; is right for the prototype today:</p>
+  <ul>
+    <li>OID4VC specs are still Implementer's Drafts &mdash; breaking changes between drafts are common</li>
+    <li>The wallet ecosystem (EUDI Wallet, etc.) is pilot-stage, not production-stage</li>
+    <li>Trust frameworks (EUDI ARF, Gaia-X Trust Framework) are still firming up</li>
+  </ul>
+  <div class="highlight-box">
+    <p>Phase 4 here is the <strong>operational shape</strong> when those preconditions are met.<br>
+    The point of writing it down now is that Phases 1&ndash;3 stay compatible with this end-state: the claim shape and the EDC policy functions survive intact.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- TAKEAWAYS -->
+<!-- ============================================================ -->
+<section>
+  <h2>Takeaways</h2>
+  <ol>
+    <li><strong>Phase 1 is real and shipped.</strong> Authority KC, the onboarding form, the admin dashboard, the realm-admin SA, the SMTP wiring &mdash; all live in <code>governance-services/</code> and on the staging VM.</li>
+    <li><strong>Each next phase is additive.</strong> Phase 2 lifts the X-Api-Key floor by adding user OIDC on top. Phase 3 federates it. Phase 4 swaps the issuer for VCs.</li>
+    <li><strong>The claim shape is the load-bearing design choice.</strong> Because <code>glcdi_organization</code>, <code>glcdi_roles</code>, etc. are the same string in every phase, the EDC-side policy functions and the access-control rules never need a rewrite.</li>
+    <li><strong>Operational complexity grows then shrinks.</strong> P1 is simple. P2 adds an OIDC client. P3 adds N participant KCs. P4 ultimately replaces all of them with a trust list of issuer DIDs.</li>
+  </ol>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    width: 1280,
+    height: 800,
+  });
+</script>
+</body>
+</html>
