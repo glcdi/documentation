@@ -741,6 +741,46 @@ edc.iam.token.scope=openid profile glcdi_claims
 | **Pattern** | At CI time (or via local helper script): clone `edc-glcdi-extension`, copy its `extensions/<name>/` directories into `edc-connector/extensions/`, run the standard Gradle build. The copies are not tracked in `edc-connector` git (added to `.gitignore` as `extensions/glcdi-*`) so the fork stays clean of GLCDI-specific code that lives upstream. |
 | **Status** | [x] `edc-connector/gradle/libs.versions.toml`: added `edc-spi-policy-engine` + `edc-runtime-metamodel` aliases (both required by the extension build) · [x] `edc-connector/settings.gradle.kts`: added `include(":extensions:glcdi-policy-functions")` + `include(":extensions:glcdi-iam-keycloak")` · [x] `edc-connector/runtimes/controlplane/build.gradle.kts`: `runtimeOnly(project(":extensions:glcdi-policy-functions"))` + `runtimeOnly(project(":extensions:glcdi-iam-keycloak"))` · [x] `edc-connector/.gitignore`: ignores `extensions/glcdi-*` (synced from sibling repo, not tracked) · [x] `edc-connector/.gitlab-ci.yml`: `before_script` clones `edc-glcdi-extension` (auth via `CI_JOB_TOKEN`, branch override via `EDC_GLCDI_EXTENSION_BRANCH`) and copies its extensions into `./extensions/` ahead of every Gradle/Kaniko step · [x] `edc-connector/scripts/sync-glcdi-extensions.sh`: local-dev helper (looks for `../edc-glcdi-extension/` by default; override with `EDC_GLCDI_EXTENSION_DIR`); now syncs both `glcdi-policy-functions` + `glcdi-iam-keycloak` · [x] First successful local build with the extensions in place (controlplane image rebuilt + 33/35 Bruno tests passing) · [ ] First successful **CI** build (local-only verification so far) · [ ] Job-token permission granted on `edc-glcdi-extension` repo (Settings → CI/CD → Job token permissions → allow `edc-connector`) |
 
+### 3.7 Known limitation — `odrl:purpose` claim plumbing (refine later)
+
+| Item | Detail |
+|------|--------|
+| **Symptom** | Transfer attempts against assets whose contract policy carries `odrl:purpose == glcdi:InternalAnalysis` (the M1 `internal-use-only` contract policy) terminate at the provider with `dspace:code:409 / "Cannot process TransferRequestMessage because agreement not found or not valid"`. Provider logs the real cause: `[glcdi-policy] [odrl:purpose] consumer didn't state a purpose claim — denying.` |
+| **Root cause** | `PurposeConstraintFunction` (§ 3.x) at `transfer.process` scope reads a `"purpose"` claim from the consumer's `ParticipantAgent`. The consumer's KC client-credentials token uses scope `glcdi-claims`, whose protocol mappers emit `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` — **but not `purpose`**. No mapper produces it, no plumbing propagates the negotiation-time purpose into the transfer-time token. So the constraint denies, EDC surfaces a misleading "agreement not found or not valid" umbrella error, and the M1 transfer never reaches STARTED. The catalog branch returns `true` permissively, which is why catalog browsing isn't affected. |
+| **Quick fix (applied)** | In `PurposeConstraintFunction.evaluate()`, short-circuit `true` at `transfer.process` scope — negotiation already validated the purpose, transfer-time re-evaluation is defence-in-depth that breaks without the claim. One-line change, restores end-to-end M1 flow. Tier-1 simplification, matches the class doc's own admission that the negotiation gate is "provisional". |
+| **Proper fix (Tier-2, deferred)** | Two parts: (a) add a KC protocol mapper to the `glcdi-claims` client scope that emits a `purpose` claim — initially hardcoded per-participant, eventually driven by the negotiation request body once the consumer-side UI / sib-core can collect the consumer's intended purpose; (b) at the consumer's connector, propagate the negotiation-time purpose into the outbound transfer-request token (or onto the DSP message body and read it server-side from the message rather than the claim). The `PurposeConstraintFunction.evaluate()` transfer-scope branch then reverts to enforcing equality against the agreement's `rightOperand`. |
+| **Where to refine** | Lift this section into a proper Phase 3.x rework once Tier-2 lands. Cross-reference from `AUTHENTICATION.md § Tier-2` and from the memory file `reference_glcdi_edc_transfer_diag.md § 7` so the trap is documented in three places. |
+| **Status** | [x] Quick fix applied to `PurposeConstraintFunction.evaluate()` (transfer-scope short-circuit) · [ ] KC protocol mapper for `purpose` on the `glcdi-claims` scope · [ ] Consumer-side purpose collection in the negotiation/transfer UI flow · [ ] Restore strict transfer-scope evaluation in `PurposeConstraintFunction` once (a) + (b) are in place · [ ] Unit test that covers the transfer-scope branch (currently bypassed, deserves an explicit test once Tier-2 makes it active again) |
+
+### 3.8 Embed the data plane in the controlplane runtime + register an EndpointGenerator for HttpData
+
+| Item | Detail |
+|------|--------|
+| **Symptom** | After § 3.7's purpose-policy patch unblocks transfer dispatch, the provider accepts the DSP `TransferRequestMessage` but immediately terminates with `SEVERE … failed to Start DataFlow. Fatal error occurred. Cause: No dataplane found`. Provider state machine: INITIAL → PROVISIONING → PROVISIONED → STARTING → TERMINATED. Consumer receives `TransferTerminationMessage`, lands TERMINATED with `errorDetail: null`, and the UI 404s the EDR endpoint 10× in a row. **After § 3.8's BOM patch:** error advances to `No Endpoint generator function registered for transfer type destination 'HttpData'` — different gap, see §§ 3.8.1–3.8.2. |
+| **Root cause** | `edc-connector/runtimes/controlplane/build.gradle.kts` only depended on `edc-bom-controlplane` + `edc-bom-controlplane-sql`. It booted in "remote Data Plane client" mode (visible in startup logs: `Initialized Data Plane Signaling Client / Using remote Data Plane client`) and waited for a separate data plane to register itself via the selector API. None ever did — `participant-agent-services/docker-compose.yml` has no dataplane container, and there's no separate dataplane runtime module in this repo. Aliases for `edc-bom-dataplane` + `edc-bom-dataplane-sql` already existed in `libs.versions.toml` but were never referenced. |
+| **Quick fix (applied)** | Add `runtimeOnly(libs.edc.bom.dataplane)` + `runtimeOnly(libs.edc.bom.dataplane.sql)` to `runtimes/controlplane/build.gradle.kts`. The BOM brings in `data-plane-core`, `data-plane-http`, `data-plane-http-oauth2`, `data-plane-iam`, `data-plane-selector-client`, `data-plane-self-registration`, `data-plane-signaling-api`. Verified by inspecting `https://repo.maven.apache.org/maven2/org/eclipse/edc/dataplane-base-bom/0.15.1/dataplane-base-bom-0.15.1.pom`. **Caveat:** the historical `data-plane-public-api-v2` artifact has no 0.15.x build (last is 0.13.0) — do NOT try to add it as a `runtimeOnly`, the build fails to resolve. The public/data-fetch path is bundled inside `data-plane-http` in 0.15.x. |
+| **Config note** | The data plane's self-registration reads `edc.dataplane.api.public.baseurl` from `participant/configuration.properties` to register its public endpoint with the controlplane. Default is `http://localhost:<public-port>/public` if unset; for dev this works inside the docker network because controlplane and dataplane share the JVM. For prod (or for cross-container reachability when the dataplane is split out), set it explicitly to the externally-reachable URL — same constraint as `edc.dsp.callback.address`. Also reserve a host port for `/public` on each participant's nginx config and proxy it to the connector — without that the consumer's EDR-token-bearing GET can't reach the source data plane. |
+| **Alternative (deferred — Phase 7+ if/when the dataplane needs independent scaling)** | Split the dataplane into a separate runtime module under `edc-connector/runtimes/dataplane/`, package it as its own Docker image, add a `dataplane` service to `participant-agent-services/docker-compose.yml`, and configure it to register against the controlplane's `/management/v3/dataplanes`. More moving parts; only worth it when a participant wants to scale the data path independently of negotiation. |
+| **Status** | [x] `runtimes/controlplane/build.gradle.kts` adds `edc.bom.dataplane` + `edc.bom.dataplane.sql` runtimeOnly · [x] Verified `data-plane-public-api-v2` is NOT publishable at 0.15.x (last 0.13.0 — do NOT try to add as dep, build won't resolve) · [x] Verified dataplane self-registration writes a registration with `allowedTransferTypes=["HttpData-PULL-HttpData","HttpData-PUSH-HttpData","HttpData-PULL","HttpData-PUSH"]` and `url=http://localhost:9192/control/v1/dataflows` (the SIGNALING endpoint — not a consumer-facing URL) · [x] Verified that boot has NO `public` web context (only `default / control / management / protocol`) — by design in 0.15.x · [x] M1 PULL transfer now passes the "No dataplane found" gate (provider reaches STARTING) · [ ] Provider now fails at STARTING with `No Endpoint generator function registered for transfer type destination 'HttpData'` — next phase: § 3.8.1 |
+
+### 3.8.1 Register a `PublicEndpointGeneratorService` function for `HttpData` destination
+
+| Item | Detail |
+|------|--------|
+| **Symptom** | Provider's transfer goes INITIAL → PROVISIONING → PROVISIONED → STARTING → terminates with `WARNING Error obtaining EDR DataAddress: No Endpoint generator function registered for transfer type destination 'HttpData'`. The `PublicEndpointGeneratorService` interface and `PublicEndpointGeneratorServiceImpl` are both in the fat jar (from the BOM); the service is wired but its registration map is empty — no `addGeneratorFunction("HttpData", ...)` call ever fires. |
+| **Root cause** | The old `data-plane-public-api-v2` artifact (last published at 0.13.0) was responsible for calling `endpointGenerator.addGeneratorFunction("HttpData", dataAddress -> Endpoint(...))` on boot. EDC 0.15.x's `dataplane-base-bom` does NOT include any extension that does this. None of the bundled extensions (`data-plane-http`, `data-plane-signaling-api`, `data-plane-iam`, `data-plane-self-registration`) wires it. So every HttpData-PULL transfer reaches STARTING and dies because the data plane can't generate the consumer-facing URL for the EDR. |
+| **Fix (to implement)** | Add a tiny custom extension to `edc-glcdi-extension/extensions/glcdi-dataplane-public-api/` that injects `PublicEndpointGeneratorService` and registers a generator function for `"HttpData"` destination. The function takes the asset's `HttpDataAddress` and returns an `Endpoint` whose properties include `endpoint = <externally-reachable URL>` + `endpointType = "HttpData"`. Bytecode signatures already verified from the running jar: `addGeneratorFunction(String type, Function<DataAddress, Endpoint>)` is the call to make. |
+| **URL strategy decision needed** | The Endpoint URL must be browser-reachable on the consumer side. Two viable approaches: (a) **direct fetch** — Endpoint URL = asset's `baseUrl` rewritten to externally-reachable host (e.g. `http://nginx:8080/ldp/...` → `http://host.docker.internal:8081/ldp/...`); consumer's UI sends the EDR's bearer token + DSP-* headers; `djangoldp_edc` permission class on the LDP backend validates. Simplest, mirrors the existing M1 fixture wiring. (b) **dataplane proxy** — Endpoint URL points to a custom `public` HTTP endpoint we add to the connector, which proxies requests to the asset's source and injects DSP-* headers; consumer UI never sees the source URL. More moving parts but hides backend topology. Recommend (a) for Tier-1 and revisit at Tier-2 when DCP-based identity rotation lands. |
+| **Status** | [x] Scaffold `edc-glcdi-extension/extensions/glcdi-dataplane-public-api/` (mirrors policy-functions / iam-keycloak layout) · [x] Implement `GlcdiDataplanePublicApiExtension` — registers EndpointGenerator for `HttpData`, binds the `public` web context via `PortMappingRegistry`, bridges the InMemoryVault gap by loading `edc.vault.secrets.<n>.key/value` pairs from config into the vault · [x] Implement `GlcdiPublicApiController` — JAX-RS `/` resource: validates `Authorization: Bearer <token>` via `DataPlaneAuthorizationService`, resolves AccessTokenData via `DataPlaneAccessTokenService.resolve(token)`, extracts `agreement_id` + `participant_id` from `AccessTokenData.additionalProperties()`, injects them as `DSP-AGREEMENT-ID` / `DSP-PARTICIPANT-ID` headers, proxies GET to the resolved `DataAddress.baseUrl` via OkHttp · [x] Strategy chosen: (b) dataplane proxy · [x] Wired into `runtimes/controlplane/build.gradle.kts` + `scripts/sync-glcdi-extensions.sh` · [x] `glcdi.sh` per-org rewrite of `edc.dataplane.api.public.baseurl` so each participant advertises its own host port · [x] `glcdi.sh` nginx-config heredoc augmented with the `/ldp/` proxy block · [x] `glcdi.sh` `EDC_URL` no longer carries trailing `/management` (djangoldp_edc's `utils.py` appends `/management/v3/…` itself — double-`/management` was causing 404s on agreement lookups) · [x] `glcdi.sh` seed-ldp now writes asset baseUrls pointing at `djangoldp-backend:8083` directly (bypassing nginx) — was `http://nginx:8080/ldp/…`; nginx stripped `/ldp/` before forwarding so django saw `/farms/…` and V3's coverage check couldn't match the asset's stored baseUrl · [x] `glcdi.sh` per-org config now uses `/public/` (trailing slash) so nginx doesn't 301-redirect and the browser doesn't drop `Authorization` on the redirect · [x] `djangoldp-glcdi==3.1.4` published with the `permission_classes = [(AuthenticatedOnly & ReadOnly) \| EdcContractPermissionV3]` wiring on Farm/Plot/Metric · [x] `participant-agent-services/djangoldp/Dockerfile` bumped to `DJANGOLDP_GLCDI_VERSION=3.1.4` · [x] `glcdi.sh` defaults `GLCDI_PATH` to pinned `@startinblox/glcdi@1.0.4` (was empty → fell through to `@latest` → Workbox SW cached indefinitely) — survives across `up` re-templating · [x] **CLI end-to-end verified**: caney-fork → point-blue / `grazing-soc-2024` reaches `STARTED`; EDR returns 200; proxy fetch returns the `Farm` JSON-LD · [x] **UI end-to-end verified in browser**: full chain operates through the modal's Access Data click — `Farm` JSON-LD (name="Point Blue demo farm", plots, metrics, field_levels) renders in the modal · [ ] **`@startinblox/glcdi` follow-up publish**: `dsp-catalog.ts:303` binds `.displayServiceTest=${this.displayServiceTest}` to the modal, but `dsp-catalog` doesn't have its own `@property displayServiceTest` declaration — so it passes `undefined` and overrides the modal's `=true` default. Fix: add `@property displayServiceTest = true;` on `dsp-catalog` (or `… ?? true` on the binding). Today's UI test required `m.displayServiceTest = true` in the console to render the button — but the resulting click worked end-to-end. Publishing the patch + bumping `glcdi.sh`'s pinned version removes the manual step. · [ ] Bruno integration test for the full UI flow · [ ] PR / commit the `glcdi-dataplane-public-api` extension and the `glcdi.sh` per-org fixes |
+
+### 3.8.2 Cleanup: remove stale `public`-context wiring once § 3.8.1 lands
+
+| Item | Detail |
+|------|--------|
+| **Task** | The current per-org `participant/configuration.properties` carries `web.http.public.port=9291` / `web.http.public.path=/public` / `edc.dataplane.api.public.baseurl=…/public`, and `nginx-dev.conf` + `nginx-prod.conf` carry a `location /public/ → edc-connector:9291` block. These are pre-0.15.x leftovers — EDC 0.15.x doesn't bind a `public` context (verified empirically and via POM inspection of `dataplane-base-bom-0.15.1`). They're inert today (no upstream listening, so any traffic 502s — but no traffic flows there in practice). |
+| **Action when § 3.8.1 lands** | If § 3.8.1's chosen URL strategy is (a) direct fetch, drop the `public` lines from both `configuration.properties.example` and the two nginx conf files. If strategy is (b) dataplane proxy, replace the upstream port (9291 → whatever the custom public extension binds) and keep the location block. |
+| **Status** | [ ] Strategy chosen in § 3.8.1 · [ ] Stale `public`-context settings removed / updated accordingly · [ ] Note in IMPLEM_PLAN.md release notes that EDC 0.15.x flipped from public-api artifact to caller-registered generator |
+
 ---
 
 ## Phase 4: Update Seeding Scripts & Contract Definitions
@@ -1116,6 +1156,106 @@ Long-term migration replacing the Authority Keycloak as the *issuer* of connecto
 | **Why** | Currently policies are registered via API/scripts. A UI lowers the barrier for non-technical participants (ranchers). |
 | **Requires** | `participant-ui` development |
 | **Status** | [ ] Not started |
+
+### 7.6 Per-participant DjangoLDP backend, gated by `djangoldp_edc` V3
+
+Each participant runs its own `djangoldp-backend` alongside the connector,
+exposing the domain models (Farm / Plot / Metric and the per-org variants
+in `djangoldp_glcdi_pointblue` / `djangoldp_glcdi_whitebuffalo`) under
+`/ldp/`. Every read goes through `djangoldp_edc.EdcContractPermissionV3`,
+which validates the DSP-AGREEMENT-ID / DSP-PARTICIPANT-ID headers against
+the local connector's contract agreements — so the same M1 contract that
+gates `/management/` now gates the *actual dataset*.
+
+| Item | Detail |
+|------|--------|
+| **Task** | Wire `djangoldp-backend` + `db-djangoldp` into `participant-agent-services/docker-compose.yml` behind the `dev` profile (local-only at this phase). Domain models in `djangoldp-glcdi/djangoldp_glcdi*` get `EdcContractPermissionV3` on the top-level model (Farm) and `EdcInheritPermission` + `inherit_permissions` on every descendant. |
+| **Why** | Phase 1's M1 demo seeded a placeholder `http://provider-data-source/...` URL on each asset; nothing was actually behind it. Phase 7.6 makes contract negotiation resolve to a real, permission-gated dataset, completing the data-exchange story end-to-end. |
+| **Requires** | `djangoldp~=5.0.0`, `djangoldp-edc` (this work's prerequisite), local Docker. Staging deployment is out of scope here — both new services are `profiles: ["dev"]`, so the GitLab CI `compose --profile prod` deploy ignores them. |
+| **Status** | [x] Models wired with V3 permissions · [x] Compose stack gated to `dev` profile · [x] `glcdi.sh seed-ldp` + Bruno baseUrl plumbing · [ ] Staging rollout |
+
+#### 7.6.1 How it fits together
+
+1. `djangoldp-backend` builds from `participant-agent-services/djangoldp/Dockerfile`,
+   installing `djangoldp-glcdi==3.1.3` + `djangoldp-edc`. Its
+   `settings.yml.template` enumerates one of the three subpackages
+   (`djangoldp_glcdi`, `djangoldp_glcdi_pointblue`, `djangoldp_glcdi_whitebuffalo`)
+   under `ldppackages` based on `${LDP_DOMAIN_PACKAGE}`.
+2. `EDC_URL` / `EDC_PARTICIPANT_ID` / `EDC_API_KEY` point the V3 permission
+   class at the same connector this participant runs, so agreement lookups
+   stay on the internal compose network.
+3. `glcdi.sh seed-ldp` shells into each participant's `djangoldp-backend`
+   via `manage.py shell` and creates one Farm + Plot + Metric. The Farm's
+   urlid (e.g. `http://localhost:8080/ldp/farms/abc.../`) is written to
+   `.glcdi.local/<org>/ldp-farm-urlid.txt`.
+4. `glcdi.sh seed` reads that file and passes the urlid as Bruno's
+   `m1_asset_base_url` env-var, so the M1 asset is created with
+   `dataAddress.baseUrl = <farm-urlid>` from the start. **Order matters:**
+   `cmd_all` runs `seed-ldp` before `seed`; running them in the other order
+   would create the asset with a stale baseUrl and break the negotiate-then-
+   fetch chain (assets in EDC v3 are not safely PATCH-able for that field
+   without losing the contract-definition selector linkage).
+5. Local nginx routes `/ldp/` → `djangoldp-backend:8083`, forwarding
+   `DSP-*` headers so the V3 permission class can read them.
+
+#### 7.6.2 Local validation walkthrough
+
+Run on a clean host (no GLCDI containers running):
+
+```bash
+cd management/scripts
+./glcdi.sh reset    # wipe any previous local state
+./glcdi.sh all      # preflight → build → up → seed-ldp → seed → test
+```
+
+After `glcdi.sh all` returns green, the LDP-protected datasets are reachable
+through one of the M1 contract agreements. The minimal manual check:
+
+```bash
+# 1. Confirm the LDP backend rejects naked GETs (no DSP headers → 403).
+curl -i http://localhost:8080/ldp/farms/
+
+# 2. Read the seeded Farm urlid out of the per-org state file.
+FARM_URLID=$(cat management/scripts/.glcdi.local/caney-fork/ldp-farm-urlid.txt)
+echo "$FARM_URLID"
+
+# 3. From point-blue's connector, negotiate the M1 caney-fork contract
+#    (Bruno collection 30-negotiation/01-negotiate-internal-purpose). After
+#    the negotiation finalizes, the connector logs the agreement id. Note it.
+AGREEMENT_ID=<paste from Bruno or connector logs>
+
+# 4. Replay the LDP request with the DSP headers the connector would send
+#    on consumer-side fetch — same DSP-AGREEMENT-ID, DSP-PARTICIPANT-ID
+#    matching point-blue's edc.participant.id. Expect 200.
+curl -i "$FARM_URLID" \
+  -H "DSP-AGREEMENT-ID: $AGREEMENT_ID" \
+  -H "DSP-PARTICIPANT-ID: glcdi-connector-point-blue"
+
+# 5. Same request with a bogus agreement id — expect 403.
+curl -i "$FARM_URLID" \
+  -H "DSP-AGREEMENT-ID: bogus-agreement-uuid" \
+  -H "DSP-PARTICIPANT-ID: glcdi-connector-point-blue"
+```
+
+What to look for in logs:
+
+- `docker compose logs djangoldp-backend` — the `EDC V3 ALLOWED` /
+  `EDC V3 DENIED` line emitted per request by `djangoldp_edc.permissions.v3`
+  tells you which validation step (agreement lookup, participant match,
+  asset match) fired.
+- `docker compose logs edc-connector` — agreement + negotiation state on the
+  provider side. If `_resolve_agreement` denies, the provider's
+  `agreementId` field and the consumer's DSP-AGREEMENT-ID don't match —
+  check the negotiation's `contractAgreement.@id` vs `agreementId`.
+
+What can go wrong, and where to look:
+
+| Symptom | Likely cause |
+|---------|--------------|
+| 403 with `Missing DSP headers` in the LDP log | nginx isn't forwarding the `DSP-*` headers — check `Access-Control-Allow-Headers` includes them and the route doesn't strip with default `proxy_set_header`. |
+| 403 with `Participant mismatch` | The consumer connector's `edc.participant.id` (used as its DID for agreements) doesn't match the `DSP-PARTICIPANT-ID` header value. |
+| 403 with `Asset not covered` | The asset's `dataAddress.baseUrl` doesn't match the LDP urlid you're requesting. Re-run `seed-ldp` then `seed` (in that order). |
+| `djangoldp-backend` won't come up | Check `LDP_DOMAIN_PACKAGE` matches one of the three subpackages and that `db-djangoldp` is healthy. |
 
 ---
 

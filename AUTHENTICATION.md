@@ -221,6 +221,20 @@ an API key.
   the connector JWTs already carry; the EDC policy functions don't care
   whether the JWT came from a user login or a service account.
 
+### Side-channel — LDP-backed datasets
+
+Phase 2 is *orthogonal* to a second additive change that has already landed
+locally: every participant now runs a `djangoldp-backend` alongside its
+connector, exposing the GLCDI domain models (Farm / Plot / Metric, plus the
+per-org variants in `djangoldp_glcdi_pointblue` /
+`djangoldp_glcdi_whitebuffalo`) under `/ldp/`. Each read goes through
+`djangoldp_edc.EdcContractPermissionV3`, which validates DSP-AGREEMENT-ID /
+DSP-PARTICIPANT-ID against the local connector — so the same M1 contract
+gates `/management/` *and* the dataset bytes. See
+[IMPLEM_PLAN.md § 7.6](IMPLEM_PLAN.md) for the wiring and a local validation
+walkthrough. The LDP backend is gated behind the `dev` compose profile and
+is not deployed to staging yet.
+
 ### Architecture
 
 ```plantuml
@@ -637,16 +651,26 @@ that makes this roadmap incremental rather than a series of rewrites.
 
 The PlantUML sources above are the canonical form. The HTML presentation
 embeds them as rendered SVGs via the public PlantUML server; the URLs are
-deterministic deflate+base64 encodings of the same sources.
+deterministic deflate+base64 encodings of the same sources, so editing a
+diagram and pasting the new URL into `AUTHENTICATION.html` is the whole
+workflow.
 
-To regenerate after an edit, run the URL encoder:
+For a one-off edit of a single diagram, pipe its `@startuml … @enduml` into
+the encoder:
 
 ```bash
 cd /var/home/balessan/Workspaces/Dataspaces/glcdi
-python3 management/scripts/plantuml-encode.py < diagram.puml
+python3 management/scripts/plantuml-encode.py < my-diagram.puml
 ```
 
-To bulk-regenerate every URL embedded in `AUTHENTICATION.html`, edit the
-diagram source list at the top of `/tmp/glcdi-auth-diagrams.py` (a one-shot
-generator that lives outside the repo by design) and paste the JSON output
-into the `URLS` map inside `AUTHENTICATION.html`.
+For bulk edits, `management/scripts/generate-auth-diagrams.py` holds every
+diagram in one place. Edit the matching `DIAGRAMS["…"]` entry, then:
+
+```bash
+python3 management/scripts/generate-auth-diagrams.py
+```
+
+It prints a JSON map of `{diagram-key: plantuml-server URL}`. Paste the
+URL for the changed diagram into the matching `<img src="…">` in
+`AUTHENTICATION.html`, and sync the PlantUML source back into this file's
+`` ```plantuml `` fence.

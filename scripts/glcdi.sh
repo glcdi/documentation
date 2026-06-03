@@ -17,6 +17,11 @@
 #   build                           — build edc-connector + participant-ui images
 #   up                              — bring up authority + 3 participants
 #   seed [--target T]               — seed M1 fixtures via Bruno (default T=local)
+#   seed-ldp                        — Phase-2: seed Farm/Plot/Metric in each
+#                                     participant's djangoldp-backend (local
+#                                     only). Must run BEFORE `seed`, because
+#                                     it writes the Farm urlid that `seed`
+#                                     bakes into the M1 asset's baseUrl.
 #   wipe [--target T] [--no-dry-run] — delete contract-defs + policies + assets
 #                                     (dry-run by default; --no-dry-run actually deletes)
 #   test [tier]                     — run the Bruno collection (tier1 default; tier2 anticipated)
@@ -84,6 +89,16 @@ declare -A ORG_TYPES=(
   [caney-fork]=regenerative-producer
   [point-blue]=researcher
   [white-buffalo]=regenerative-producer
+)
+
+# Each participant exposes one djangoldp-glcdi subpackage under its /ldp/
+# prefix. Caney-fork is the generic baseline; the other two carry their
+# own domain models (BiomassPlot / FieldLevel for Point Blue, CattleRotation
+# for White Buffalo). Used by write_participant_configs + seed_ldp_one.
+declare -A ORG_LDP_PACKAGES=(
+  [caney-fork]=djangoldp_glcdi
+  [point-blue]=djangoldp_glcdi_pointblue
+  [white-buffalo]=djangoldp_glcdi_whitebuffalo
 )
 
 AUTHORITY_KC_PORT=8090
@@ -482,6 +497,26 @@ PARTICIPANT_DOMAIN=localhost
 NGINX_PORT=$nginx_port
 IDH_LOG_LEVEL=INFO
 
+# --- Participant DjangoLDP backend (djangoldp_edc V3 permissions) ---
+# The domain package gates which models are exposed under /ldp/. Each
+# participant picks its own (see ORG_LDP_PACKAGES at the top of glcdi.sh).
+LDP_DOMAIN_PACKAGE=${ORG_LDP_PACKAGES[$org]}
+LDP_BASE_URL=http://localhost:${nginx_port}/ldp
+DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
+LDP_DB_PASSWORD=ldp-${org}
+LDP_DB_BOOTSTRAP_PASSWORD=postgres
+
+# EDC permissions V3: validate every LDP read against the local connector's
+# contract agreements. EDC_URL is the connector's base URL (NO trailing
+# `/management` — djangoldp_edc's utils.py appends `/management/v3/...`
+# itself, so including `/management` here results in a 404 from double-pathing).
+EDC_URL=http://edc-connector:9193
+EDC_PARTICIPANT_ID=glcdi-connector-$org
+EDC_ASSET_ID_STRATEGY=full_url
+EDC_AGREEMENT_VALIDATION_ENABLED=True
+EDC_AUTO_NEGOTIATION_ENABLED=False
+EDC_POLICY_DISCOVERY_ENABLED=False
+
 # Local-package iteration (mirrors TEMS catalogue-ui pattern):
 # Set GLCDI_USE_LOCAL_PACKAGES=true on the glcdi.sh invocation to toggle
 # the catalogue-ui's npm[] paths from jsdelivr to localhost Vite dev-server
@@ -490,7 +525,15 @@ USE_LOCAL_PACKAGES=${GLCDI_USE_LOCAL_PACKAGES:-false}
 SIB_CORE_PATH=${GLCDI_SIB_CORE_PATH:-}
 SOLID_TEMS_UI_PATH=${GLCDI_SOLID_TEMS_UI_PATH:-}
 SOLID_TEMS_PATH=${GLCDI_SOLID_TEMS_PATH:-}
-GLCDI_PATH=${GLCDI_PKG_PATH:-}
+# Default to a pinned `@startinblox/glcdi` version rather than `@latest` —
+# jsdelivr's `@latest` alias is aggressively cached by the participant-ui's
+# Workbox service worker and by the browser HTTP cache, so it can serve a
+# bundle that's months stale even after a new publish. Pinning the version
+# breaks that cache key. Bump this when a newer @startinblox/glcdi release
+# is verified to work end-to-end against this version of the connector +
+# extensions. Override with GLCDI_PKG_PATH=... to point at the Vite dev
+# server during local iteration.
+GLCDI_PATH=${GLCDI_PKG_PATH:-https://cdn.jsdelivr.net/npm/@startinblox/glcdi@1.0.4/+esm}
 
 APP_TITLE=$(echo "$org" | sed 's/.*/\u&/' | tr - ' ') - GLCDI
 PRIMARY_COLOR=#2E7D32
@@ -511,6 +554,7 @@ EOF
         -e "s|edc.api.auth.key=.*|edc.api.auth.key=$api_key|" \
         -e "s|edc.api.control.auth.apikey.value=.*|edc.api.control.auth.apikey.value=$api_key|" \
         -e "s|edc.dsp.callback.address=.*|edc.dsp.callback.address=http://host.docker.internal:${nginx_port}/protocol|" \
+        -e "s|edc.dataplane.api.public.baseurl=.*|edc.dataplane.api.public.baseurl=http://host.docker.internal:${nginx_port}/public/|" \
         -e "s|edc.participant.id=.*|edc.participant.id=glcdi-connector-${org}|" \
         -e "s|glcdi.iam.kc.client.id=.*|glcdi.iam.kc.client.id=glcdi-connector-${org}|" \
         -e "s|glcdi.iam.kc.client.secret=.*|glcdi.iam.kc.client.secret=${connector_secret}|" \
@@ -600,6 +644,20 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
+    # Participant DjangoLDP backend (domain-data API gated by djangoldp_edc
+    # EdcContractPermissionV3). Strip the /ldp prefix before forwarding so
+    # the LDP container paths (/farms/, /plots/, ...) match Django's
+    # ROOT_URLCONF, and propagate the DSP-* headers so the permission class
+    # can validate the contract agreement on each request.
+    location /ldp/ {
+        proxy_pass http://djangoldp-backend:8083/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+    }
+
     location /ui/ {
         proxy_pass http://catalogue-ui:80/;
         proxy_set_header Host \$host;
@@ -644,6 +702,12 @@ services:
       - ${org_dir}/participant/nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
   catalogue-ui:
     image: glcdi-participant-ui:local
+    pull_policy: never
+  djangoldp-backend:
+    # Pin to the locally-built image (produced by glcdi.sh build).
+    # pull_policy: never keeps compose from trying to pull a non-existent
+    # registry tag and from silently using a stale cached image.
+    image: glcdi-djangoldp-backend:local
     pull_policy: never
 EOF
   done
@@ -777,6 +841,25 @@ cmd_build() {
   else
     warn "$PARTICIPANT_UI_DIR/Dockerfile not found — UI image not built"
   fi
+
+  # djangoldp-backend (participant LDP server, Tier-2 / Phase-7.6).
+  # Built explicitly to a known tag so the per-org override.yml can pin it
+  # with pull_policy: never — same pattern as controlplane:latest and
+  # glcdi-participant-ui:local above. Without this step, `docker compose
+  # up` would do an implicit build on first run and silently reuse a stale
+  # image on subsequent runs after Dockerfile / runserver.sh / template
+  # edits — exactly the iteration trap we want to avoid.
+  log "Building djangoldp-backend image (participant LDP server)"
+  if [[ -f "$PARTICIPANT_DIR/djangoldp/Dockerfile" ]]; then
+    ( cd "$PARTICIPANT_DIR/djangoldp" \
+      && docker build \
+           -t glcdi-djangoldp-backend:local \
+           . \
+    ) || die "djangoldp-backend build failed"
+    ok "djangoldp-backend image built (glcdi-djangoldp-backend:local)"
+  else
+    warn "$PARTICIPANT_DIR/djangoldp/Dockerfile not found — djangoldp-backend image not built"
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -878,9 +961,36 @@ seed_one() {
   local org_display
   org_display=$(org_display_name "$org")
 
+  # If seed-ldp produced LDP urlids for this org, pass them so each M1
+  # asset's dataAddress.baseUrl resolves to a real LDP-protected resource:
+  #   01-create-asset            (grazing-soc-2024)           → Farm urlid
+  #   06-create-asset-research-summary (grazing-summary-2024) → Plot urlid
+  #   09-create-asset-research-only (grazing-raw-observations) → Metric urlid
+  # If urlids are missing (staging today, or local pre-seed-ldp), Bruno
+  # falls back to the legacy http://provider-data-source/... defaults in
+  # environments/<env>.bru — the asset still gets created, contract negotiation
+  # still works, but the data path doesn't end at a real protected resource.
+  local farm_file="$LOCAL_DIR/$org/ldp-farm-urlid.txt"
+  local plot_file="$LOCAL_DIR/$org/ldp-plot-urlid.txt"
+  local metric_file="$LOCAL_DIR/$org/ldp-metric-urlid.txt"
+  local base_url_flags=""
+  if [[ -f "$farm_file" && -f "$plot_file" && -f "$metric_file" ]]; then
+    local farm_urlid plot_urlid metric_urlid
+    farm_urlid=$(<"$farm_file")
+    plot_urlid=$(<"$plot_file")
+    metric_urlid=$(<"$metric_file")
+    base_url_flags="--env-var m1_asset_base_url=${farm_urlid} --env-var m1_research_asset_base_url=${plot_urlid} --env-var m1_researcher_only_asset_base_url=${metric_urlid}"
+    log "  Using LDP-backed baseUrls:"
+    log "    M1:                 $farm_urlid"
+    log "    research-summary:   $plot_urlid"
+    log "    researcher-only:    $metric_urlid"
+  else
+    log "  No complete set of LDP urlids in $LOCAL_DIR/$org/ — keeping Bruno defaults. Run \`$0 seed-ldp\` first for end-to-end LDP gating."
+  fi
+
   log "Seeding M1 fixtures on $org ($host) via Bruno [env=$bruno_env]"
   # shellcheck disable=SC2046
-  ( cd "$BRUNO_DIR" && bru run 10-provider-seeding --env "$bruno_env" $(bruno_env_flags) \
+  ( cd "$BRUNO_DIR" && bru run 10-provider-seeding --env "$bruno_env" $(bruno_env_flags) $base_url_flags \
       --env-var "caney_fork_host=${host}" \
       --env-var "caney_fork_api_key=${api_key}" \
       --env-var "org_display_name=${org_display}" \
@@ -891,6 +1001,182 @@ seed_one() {
       --env-var "m1_researcher_only_asset_id=urn:glcdi:asset:${org}:grazing-raw-observations-2024" \
       --env-var "m1_researcher_only_contract_definition_id=${org}-grazing-raw-observations-2024-cd" \
   ) || die "Bruno seeding folder failed for $org — see output above"
+}
+
+###############################################################################
+# Phase-2 LDP seeding
+#
+# Each participant's djangoldp-backend exposes Farm / Plot / Metric models
+# behind djangoldp_edc.EdcContractPermissionV3. The LDP fixture must exist
+# BEFORE the EDC asset is created, because the asset's dataAddress.baseUrl
+# must point at the Farm's urlid — and Bruno's `seed` then bakes that URL
+# into the asset + the downstream contract definition references it.
+#
+# Therefore `seed-ldp` runs strictly before `seed`:
+#   - up        → bring up the stack (including djangoldp-backend)
+#   - seed-ldp  → create Farm/Plot/Metric in each participant's LDP backend
+#                 and record the Farm urlid at .glcdi.local/<org>/ldp-farm-urlid.txt
+#   - seed      → Bruno reads each urlid and POSTs the M1 asset with that
+#                 baseUrl, so contract negotiation maps consumer → that URL
+#                 → djangoldp_edc V3 perm validates the agreement → 200.
+#
+# `cmd_all` enforces this order. Idempotent — Farm.get_or_create is keyed by
+# name. Use `glcdi.sh reset` to wipe everything.
+###############################################################################
+
+# Run docker compose against the per-org stack with the given subcommand
+# args. e.g. `compose_for caney-fork ps`, `compose_for caney-fork logs --tail 80 djangoldp-backend`.
+#
+# Earlier this helper echoed the command as a string and callers ran it
+# through `eval`; that re-parsed every subsequent arg as shell, which
+# wrecked multi-line `manage.py shell -c "$python"` calls (newlines became
+# statement separators, parens became subshells, etc.). Calling docker
+# compose directly keeps argv intact end-to-end.
+compose_for() {
+  local org="$1"
+  shift
+  local org_dir="$LOCAL_DIR/$org"
+  ( cd "$PARTICIPANT_DIR" \
+    && docker compose \
+         --env-file "$org_dir/.env" \
+         --profile dev \
+         -f docker-compose.yml \
+         -f "$org_dir/docker-compose.override.yml" \
+         "$@"
+  )
+}
+
+# Run a snippet through djangoldp-backend's manage.py shell with the right
+# org's compose stack. Stdout from the snippet goes to fd 1; stderr is left
+# on fd 2 so callers can see Django tracebacks.
+ldp_shell() {
+  local org="$1"
+  local snippet="$2"
+  compose_for "$org" exec -T djangoldp-backend ./manage.py shell -c "$snippet"
+}
+
+# Poll djangoldp-backend over HTTP until it answers anything (200, 302, 403
+# — all mean Django is serving). Earlier versions cold-started `manage.py
+# shell` per iteration, which takes 2-5s each, made the loop drift, and
+# failed silently when Django emitted a banner that pushed our sentinel
+# off `tail -n1`. HTTP polling via the participant nginx is fast and
+# definitive, and matches how `wait_for_participant` checks the connector.
+wait_for_ldp_backend() {
+  local org="$1"
+  local port="${ORG_PORTS[$org]}"
+  local url="http://localhost:${port}/ldp/"
+  local i status
+  log "Waiting for djangoldp-backend ($org) at $url"
+  for i in {1..180}; do
+    status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$url" || echo "000")
+    # Any non-zero HTTP code from nginx → upstream is responding. 502 / 504
+    # means nginx is up but Django isn't yet — keep waiting.
+    case "$status" in
+      000|502|503|504)
+        # not ready yet
+        ;;
+      *)
+        printf '\n'
+        ok "  djangoldp-backend ($org) ready after ${i}s (HTTP ${status} from $url)"
+        return 0
+        ;;
+    esac
+    if (( i % 10 == 0 )); then
+      printf ' (%ds, last=%s)\n' "$i" "$status"
+    else
+      printf '.'
+    fi
+    sleep 1
+  done
+  printf '\n'
+  warn "djangoldp-backend ($org) did not respond on $url in 180s (last status: ${status}). Recent logs:"
+  compose_for "$org" logs --tail 80 djangoldp-backend >&2 || true
+  die "djangoldp-backend ($org) never reached a usable state"
+}
+
+# Create one Farm + Plot + Metric in the participant's LDP backend, then
+# write the Farm urlid to .glcdi.local/<org>/ldp-farm-urlid.txt for the
+# downstream Bruno seed to pick up. No stdout return value — earlier
+# versions used `farm_urlid=$(seed_ldp_one "$org")` which swallowed every
+# log line into the captured subshell and made the script look frozen.
+seed_ldp_one() {
+  local org="$1"
+  local pkg="${ORG_LDP_PACKAGES[$org]}"
+  local org_display
+  org_display=$(org_display_name "$org")
+
+  wait_for_ldp_backend "$org"
+
+  log "Seeding LDP fixtures on $org (package: $pkg)"
+
+  # Idempotent get_or_create so re-running doesn't pile up rows. Three
+  # FARM_URLID / PLOT_URLID / METRIC_URLID prefixes keep Django banners
+  # out of the captured values and let each asset target a distinct
+  # protected resource — Farm (V3 directly), Plot (inherits from Farm),
+  # Metric (inherits from Plot).
+  local py
+  py=$(cat <<PY
+from ${pkg}.models import Farm, Plot, Metric
+farm, _ = Farm.objects.get_or_create(name="${org_display} demo farm")
+plot, _ = Plot.objects.get_or_create(name="${org_display} demo plot", farm=farm, defaults={"latitude": 0.0, "longitude": 0.0})
+metric, _ = Metric.objects.get_or_create(plot=plot, metric_type="soc-stock", year=2024, defaults={"value": 42.0})
+print("FARM_URLID:" + farm.urlid)
+print("PLOT_URLID:" + plot.urlid)
+print("METRIC_URLID:" + metric.urlid)
+PY
+)
+  local out
+  out=$(ldp_shell "$org" "$py" 2>&1) || {
+    err "  shell -c failed for $org. Container output:"
+    printf '%s\n' "$out" >&2
+    die "seed-ldp: could not exec into djangoldp-backend ($org)"
+  }
+
+  local farm_urlid plot_urlid metric_urlid
+  farm_urlid=$(printf '%s\n' "$out" | grep '^FARM_URLID:'   | tail -n1 | sed 's/^FARM_URLID://'   | tr -d '\r')
+  plot_urlid=$(printf '%s\n' "$out" | grep '^PLOT_URLID:'   | tail -n1 | sed 's/^PLOT_URLID://'   | tr -d '\r')
+  metric_urlid=$(printf '%s\n' "$out" | grep '^METRIC_URLID:' | tail -n1 | sed 's/^METRIC_URLID://' | tr -d '\r')
+  if [[ -z "$farm_urlid" || -z "$plot_urlid" || -z "$metric_urlid" ]]; then
+    err "  Missing one or more URLID lines in container output for $org. Full output:"
+    printf '%s\n' "$out" >&2
+    die "seed-ldp: could not read Farm/Plot/Metric urlids back from $org"
+  fi
+
+  # The LDP server mints urlids from BASE_URL=http://localhost:<host-port>/ldp,
+  # which is the URL a browser on the host uses. The EDC connector container
+  # cannot reach that URL — inside the container "localhost" is the connector
+  # itself, not the participant nginx. Rewrite the host-facing prefix to a
+  # container-internal one that ALSO matches what django sees via
+  # request.build_absolute_uri(). Going via nginx (http://nginx:8080/ldp/...)
+  # makes the asset baseUrl carry the /ldp prefix; nginx then strips that prefix
+  # before forwarding to djangoldp, so django sees /farms/... and the V3
+  # permission's coverage check (requested_url vs asset.baseUrl) never matches.
+  # Bypass nginx entirely and target djangoldp-backend directly: the EDC
+  # public-api proxy and django then see the SAME URL.
+  local host_port="${ORG_PORTS[$org]}"
+  local host_prefix="http://localhost:${host_port}/ldp"
+  local container_prefix="http://djangoldp-backend:8083"
+  farm_urlid="${farm_urlid//${host_prefix}/${container_prefix}}"
+  plot_urlid="${plot_urlid//${host_prefix}/${container_prefix}}"
+  metric_urlid="${metric_urlid//${host_prefix}/${container_prefix}}"
+
+  ok "  $org Farm:   $farm_urlid"
+  ok "  $org Plot:   $plot_urlid"
+  ok "  $org Metric: $metric_urlid"
+
+  mkdir -p "$LOCAL_DIR/$org"
+  printf '%s\n' "$farm_urlid"   > "$LOCAL_DIR/$org/ldp-farm-urlid.txt"
+  printf '%s\n' "$plot_urlid"   > "$LOCAL_DIR/$org/ldp-plot-urlid.txt"
+  printf '%s\n' "$metric_urlid" > "$LOCAL_DIR/$org/ldp-metric-urlid.txt"
+}
+
+cmd_seed_ldp() {
+  cmd_secrets
+  for org in "${ORGS[@]}"; do
+    seed_ldp_one "$org"
+  done
+  ok "LDP seeded on all orgs (${ORGS[*]}). Per-org Farm urlid in .glcdi.local/<org>/ldp-farm-urlid.txt"
+  log "Next: $0 seed   (Bruno will pick up the urlid via m1_asset_base_url)"
 }
 
 cmd_seed() {
@@ -1261,6 +1547,9 @@ cmd_all() {
   cmd_preflight
   cmd_build
   cmd_up
+  # Seed the LDP Farm first so its urlid is on disk before Bruno builds the
+  # M1 asset that points at it. Order is load-bearing — see seed-ldp header.
+  cmd_seed_ldp
   cmd_seed
   cmd_test "$TIER"
 }
@@ -1287,6 +1576,7 @@ main() {
     build)     cmd_build ;;
     up)        cmd_up ;;
     seed)      cmd_seed "$@" ;;
+    seed-ldp)  cmd_seed_ldp ;;
     wipe)      cmd_wipe "$@" ;;
     test)      cmd_test "${1:-$TIER}" ;;
     status)    cmd_status ;;
