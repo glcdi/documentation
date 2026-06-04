@@ -506,10 +506,7 @@ DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
 LDP_DB_PASSWORD=ldp-${org}
 LDP_DB_BOOTSTRAP_PASSWORD=postgres
 
-# EDC permissions V3: validate every LDP read against the local connector's
-# contract agreements. EDC_URL is the connector's base URL (NO trailing
-# `/management` — djangoldp_edc's utils.py appends `/management/v3/...`
-# itself, so including `/management` here results in a 404 from double-pathing).
+# EDC base URL — no trailing /management; djangoldp_edc appends it itself.
 EDC_URL=http://edc-connector:9193
 EDC_PARTICIPANT_ID=glcdi-connector-$org
 EDC_ASSET_ID_STRATEGY=full_url
@@ -525,14 +522,7 @@ USE_LOCAL_PACKAGES=${GLCDI_USE_LOCAL_PACKAGES:-false}
 SIB_CORE_PATH=${GLCDI_SIB_CORE_PATH:-}
 SOLID_TEMS_UI_PATH=${GLCDI_SOLID_TEMS_UI_PATH:-}
 SOLID_TEMS_PATH=${GLCDI_SOLID_TEMS_PATH:-}
-# Default to a pinned `@startinblox/glcdi` version rather than `@latest` —
-# jsdelivr's `@latest` alias is aggressively cached by the participant-ui's
-# Workbox service worker and by the browser HTTP cache, so it can serve a
-# bundle that's months stale even after a new publish. Pinning the version
-# breaks that cache key. Bump this when a newer @startinblox/glcdi release
-# is verified to work end-to-end against this version of the connector +
-# extensions. Override with GLCDI_PKG_PATH=... to point at the Vite dev
-# server during local iteration.
+# Pin the version — @latest is cached forever by the participant-ui SW. Bump when a release is verified.
 GLCDI_PATH=${GLCDI_PKG_PATH:-https://cdn.jsdelivr.net/npm/@startinblox/glcdi@1.0.4/+esm}
 
 APP_TITLE=$(echo "$org" | sed 's/.*/\u&/' | tr - ' ') - GLCDI
@@ -644,11 +634,7 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
-    # Participant DjangoLDP backend (domain-data API gated by djangoldp_edc
-    # EdcContractPermissionV3). Strip the /ldp prefix before forwarding so
-    # the LDP container paths (/farms/, /plots/, ...) match Django's
-    # ROOT_URLCONF, and propagate the DSP-* headers so the permission class
-    # can validate the contract agreement on each request.
+    # Participant DjangoLDP backend — strip /ldp prefix; permission class is djangoldp_edc V3.
     location /ldp/ {
         proxy_pass http://djangoldp-backend:8083/;
         proxy_set_header Host \$host;
