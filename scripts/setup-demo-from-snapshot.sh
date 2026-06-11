@@ -308,6 +308,10 @@ write_properties() {
   fi
 
   log "Rewriting $cfg"
+  # The JDBC datasource user/url use ${PARTICIPANT_NAME} as the postgres role and
+  # database name. On the snapshot they were already substituted with the source
+  # slug (e.g. white-buffalo); rewrite to demo. Also handle the .example state
+  # where it's still the literal "participant" placeholder.
   local sed_script=(
     -e "s|glcdi-connector-PARTICIPANT_NAME|${DEMO_PARTICIPANT_ID}|g"
     -e "s|glcdi-connector-${OLD_PARTICIPANT_NAME}|${DEMO_PARTICIPANT_ID}|g"
@@ -316,6 +320,10 @@ write_properties() {
     -e "s|^web.http.management.auth.key=.*|web.http.management.auth.key=${NEW_API_KEY}|"
     -e "s|^edc.api.auth.key=.*|edc.api.auth.key=${NEW_API_KEY}|"
     -e "s|^edc.api.control.auth.apikey.value=.*|edc.api.control.auth.apikey.value=${NEW_API_KEY}|"
+    -e "s|^edc.datasource.default.url=jdbc:postgresql://db-connector:5432/${OLD_PARTICIPANT_NAME}|edc.datasource.default.url=jdbc:postgresql://db-connector:5432/${DEMO_SLUG}|"
+    -e "s|^edc.datasource.default.url=jdbc:postgresql://db-connector:5432/participant|edc.datasource.default.url=jdbc:postgresql://db-connector:5432/${DEMO_SLUG}|"
+    -e "s|^edc.datasource.default.user=${OLD_PARTICIPANT_NAME}|edc.datasource.default.user=${DEMO_SLUG}|"
+    -e "s|^edc.datasource.default.user=participant|edc.datasource.default.user=${DEMO_SLUG}|"
     -e "s|^edc.datasource.default.password=.*|edc.datasource.default.password=${NEW_DB_PWD}|"
     -e "s|^edc.participant.id=.*|edc.participant.id=${DEMO_PARTICIPANT_ID}|"
     -e "s|^glcdi.iam.kc.client.id=.*|glcdi.iam.kc.client.id=${DEMO_PARTICIPANT_ID}|"
