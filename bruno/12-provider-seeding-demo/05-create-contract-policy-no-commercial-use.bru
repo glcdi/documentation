@@ -1,0 +1,52 @@
+meta {
+  name: Create contract policy (no-commercial-use)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{demo_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Atomic prohibition: no commercial use, no redistribution to third
+  parties, no use by buyers / food companies / supply-chain actors.
+  System-enforceable at agreement time via odrl:prohibition.
+
+  Used by Stone Barns only.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "no-commercial-use-policy",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@type": "odrl:Set",
+      "odrl:permission": [
+        { "odrl:action": { "@id": "odrl:use" } }
+      ],
+      "odrl:prohibition": [
+        { "odrl:action": { "@id": "odrl:commercialise" } },
+        { "odrl:action": { "@id": "odrl:distribute" } }
+      ]
+    }
+  }
+}
+
+tests {
+  test("no-commercial policy created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

@@ -1,0 +1,46 @@
+meta {
+  name: Create contract policy (internal-use-only — baseline)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{demo_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Baseline contract policy. All demo CDs inherit from this through their
+  composite — it's the lowest-restriction contract terms ("internal use
+  only by the contracting participant, no redistribution"). 409 means M1
+  seeding already created it on this VM — idempotent.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/"
+    },
+    "@id": "internal-use-only-policy",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@type": "odrl:Set",
+      "odrl:permission": [
+        { "odrl:action": { "@id": "odrl:use" } }
+      ]
+    }
+  }
+}
+
+tests {
+  test("contract policy created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

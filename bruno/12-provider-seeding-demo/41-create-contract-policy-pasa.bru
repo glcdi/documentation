@@ -1,0 +1,57 @@
+meta {
+  name: Create composite contract policy (Pasa)
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{demo_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Pasa stack: internal-use + pre-publication review.
+  No attribution / no share-back / no commercial restriction at Laura's
+  workshop input — payment uncertainty noted in ASSETS_EXAMPLES.md is
+  NOT modelled as a duty (would be premature).
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "pasa-soil-health-cp",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@type": "odrl:Set",
+      "odrl:permission": [
+        {
+          "odrl:action": { "@id": "odrl:use" },
+          "odrl:duty": [
+            {
+              "odrl:action": { "@id": "odrl:reviewBefore" },
+              "odrl:constraint": [
+                { "odrl:leftOperand": { "@id": "glcdi:reviewArtifact" }, "odrl:operator": { "@id": "odrl:eq" }, "odrl:rightOperand": "publication" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+tests {
+  test("composite contract policy created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

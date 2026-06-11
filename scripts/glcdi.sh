@@ -73,32 +73,40 @@ EDC_EXTENSION_DIR="$WORKSPACE_ROOT/edc-glcdi-extension"
 PARTICIPANT_UI_DIR="$WORKSPACE_ROOT/participant-ui"
 BRUNO_DIR="$WORKSPACE_ROOT/management/bruno"
 
-# Participants (M1 trio).
-ORGS=(caney-fork point-blue white-buffalo)
+# Participants. M1 trio runs locally + staging; demo is staging-only
+# (a workshop showcase VM colocating Stone Barns / Sonoma / UFL / Pasa
+# fixtures — see OTHER_PARTICIPANTS.md).
+ORGS=(caney-fork point-blue white-buffalo demo)
+LOCAL_ORGS=(caney-fork point-blue white-buffalo)
 declare -A ORG_PORTS=(
   [caney-fork]=8080
   [point-blue]=8081
   [white-buffalo]=8082
+  [demo]=8083
 )
 declare -A ORG_COLORS=(
   [caney-fork]="#2E7D32"
   [point-blue]="#1565C0"
   [white-buffalo]="#C0392B"
+  [demo]="#7B1FA2"
 )
 declare -A ORG_TYPES=(
   [caney-fork]=regenerative-producer
   [point-blue]=researcher
   [white-buffalo]=regenerative-producer
+  [demo]=other
 )
 
 # Each participant exposes one djangoldp-glcdi subpackage under its /ldp/
 # prefix. Caney-fork is the generic baseline; the other two carry their
 # own domain models (BiomassPlot / FieldLevel for Point Blue, CattleRotation
-# for White Buffalo). Used by write_participant_configs + seed_ldp_one.
+# for White Buffalo). Demo reuses the baseline (its M1 assets are static
+# JSON stubs, no LDP). Used by write_participant_configs + seed_ldp_one.
 declare -A ORG_LDP_PACKAGES=(
   [caney-fork]=djangoldp_glcdi
   [point-blue]=djangoldp_glcdi_pointblue
   [white-buffalo]=djangoldp_glcdi_whitebuffalo
+  [demo]=djangoldp_glcdi
 )
 
 AUTHORITY_KC_PORT=8090
@@ -200,7 +208,7 @@ cmd_secrets() {
       echo "GOVERNANCE_CLIENT_SECRET=$(openssl rand -hex 32)"
       echo "GLCDI_UI_CLIENT_SECRET=$(openssl rand -hex 32)"
       echo
-      for org in "${ORGS[@]}"; do
+      for org in "${LOCAL_ORGS[@]}"; do
         local upper
         upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
         echo "${upper}_API_KEY=$(openssl rand -hex 32)"
@@ -459,7 +467,7 @@ wait_for_onboarding() {
 write_participant_configs() {
   cmd_secrets
   local org
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     local org_upper
     org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
     local nginx_port="${ORG_PORTS[$org]}"
@@ -523,7 +531,7 @@ SIB_CORE_PATH=${GLCDI_SIB_CORE_PATH:-}
 SOLID_TEMS_UI_PATH=${GLCDI_SOLID_TEMS_UI_PATH:-}
 SOLID_TEMS_PATH=${GLCDI_SOLID_TEMS_PATH:-}
 # Pin the version — @latest is cached forever by the participant-ui SW. Bump when a release is verified.
-GLCDI_PATH=${GLCDI_PKG_PATH:-https://cdn.jsdelivr.net/npm/@startinblox/glcdi@1.0.4/+esm}
+GLCDI_PATH=${GLCDI_PKG_PATH:-https://cdn.jsdelivr.net/npm/@startinblox/glcdi@1.0.5/+esm}
 
 APP_TITLE=$(echo "$org" | sed 's/.*/\u&/' | tr - ' ') - GLCDI
 PRIMARY_COLOR=#2E7D32
@@ -706,7 +714,7 @@ other_dsp_providers_json() {
   local me="$1"
   local out="["
   local first=1
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     [[ "$org" == "$me" ]] && continue
     [[ $first -eq 1 ]] || out+=","
     first=0
@@ -731,7 +739,7 @@ other_dsp_providers_json() {
 up_participants() {
   write_participant_configs
 
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     local org_dir="$LOCAL_DIR/$org"
     log "Bringing up participant: $org"
     ( cd "$PARTICIPANT_DIR" \
@@ -744,7 +752,7 @@ up_participants() {
     ) || die "docker compose up failed for $org"
   done
 
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     wait_for_participant "$org"
   done
 }
@@ -784,7 +792,7 @@ cmd_up() {
   hr
   ok "Stack up. Endpoints:"
   printf '  Authority KC: http://localhost:%s/auth/admin (admin / from secrets)\n' "$AUTHORITY_KC_PORT"
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     printf '  %-15s http://localhost:%s/  (UI)  +  /management/* with X-Api-Key\n' "$org" "${ORG_PORTS[$org]}"
   done
   hr
@@ -858,11 +866,13 @@ declare -A SSH_USER_VAR=(
   [caney-fork]=SSH_USER_CANEY
   [point-blue]=SSH_USER_POINTBLUE
   [white-buffalo]=SSH_USER_WB
+  [demo]=SSH_USER_DEMO
 )
 declare -A SSH_HOST_VAR=(
   [caney-fork]=SSH_HOST_CANEY
   [point-blue]=SSH_HOST_POINTBLUE
   [white-buffalo]=SSH_HOST_WB
+  [demo]=SSH_HOST_DEMO
 )
 
 # Expand a --target value to one or more concrete targets. all-staging fans
@@ -870,13 +880,14 @@ declare -A SSH_HOST_VAR=(
 expand_target() {
   local target="$1"
   case "$target" in
-    local|caney-fork|point-blue|white-buffalo) printf '%s\n' "$target" ;;
+    local|caney-fork|point-blue|white-buffalo|demo) printf '%s\n' "$target" ;;
     all-staging)
       printf 'caney-fork\n'
       printf 'point-blue\n'
       printf 'white-buffalo\n'
+      printf 'demo\n'
       ;;
-    *) die "Unknown --target: $target (expected local|caney-fork|point-blue|white-buffalo|all-staging)" ;;
+    *) die "Unknown --target: $target (expected local|caney-fork|point-blue|white-buffalo|demo|all-staging)" ;;
   esac
 }
 
@@ -888,6 +899,9 @@ target_host() {
     caney-fork|point-blue|white-buffalo)
       printf 'https://%s.glcdi.startinblox.com' "$target"
       ;;
+    demo)
+      printf 'https://demo.glcdi.startinblox.com'
+      ;;
     *) die "target_host: unknown target $target" ;;
   esac
 }
@@ -896,7 +910,7 @@ target_host() {
 target_bruno_env() {
   case "$1" in
     local) printf 'local' ;;
-    caney-fork|point-blue|white-buffalo) printf 'staging' ;;
+    caney-fork|point-blue|white-buffalo|demo) printf 'staging' ;;
     *) die "target_bruno_env: unknown target $1" ;;
   esac
 }
@@ -938,11 +952,19 @@ org_display_name() {
 # Run the bruno 10-provider-seeding folder against one org-host pair. The
 # bruno files use {{caney_fork_host}} / {{caney_fork_api_key}} placeholders
 # regardless of which org is being seeded — overrides rebind them per call.
+#
+# Demo dispatches to 12-provider-seeding-demo instead: 4 contributor-specific
+# assets + atomic obligation policies, not the M1 3-asset triple.
 seed_one() {
   local org="$1"
   local host="$2"
   local api_key="$3"
   local bruno_env="$4"
+
+  if [[ "$org" == "demo" ]]; then
+    seed_demo "$host" "$api_key" "$bruno_env"
+    return $?
+  fi
 
   local org_display
   org_display=$(org_display_name "$org")
@@ -960,7 +982,52 @@ seed_one() {
   local plot_file="$LOCAL_DIR/$org/ldp-plot-urlid.txt"
   local metric_file="$LOCAL_DIR/$org/ldp-metric-urlid.txt"
   local base_url_flags=""
-  if [[ -f "$farm_file" && -f "$plot_file" && -f "$metric_file" ]]; then
+  local description_flags=""
+
+  # Staging: each participant owns an external djangoldp instance at
+  # api.stg.<org>.glcdi.startinblox.com. Asset baseUrls point at the LDP
+  # containers exposed by that org's djangoldp package — caney-fork uses the
+  # baseline (farms/plots/metrics); point-blue adds biomass + soil-sample;
+  # white-buffalo adds cattle-rotation.
+  if [[ "$bruno_env" == "staging" || "$bruno_env" == "caney-fork" || "$bruno_env" == "point-blue" || "$bruno_env" == "white-buffalo" ]]; then
+    local m1_url m1_research_url m1_researcher_url m1_desc m1_research_desc m1_researcher_desc
+    case "$org" in
+      caney-fork)
+        m1_url="https://api.stg.caneyfork.glcdi.startinblox.com/metrics/"
+        m1_research_url="https://api.stg.caneyfork.glcdi.startinblox.com/plots/"
+        m1_researcher_url="https://api.stg.caneyfork.glcdi.startinblox.com/farms/"
+        m1_desc="Soil organic carbon Metric records from Caney Fork's /metrics/ container (djangoldp_glcdi baseline), 2024 season — restricted to producers (M1 fixture)."
+        m1_research_desc="Plot-level grazing summary from Caney Fork's /plots/ container (djangoldp_glcdi baseline), aggregated 2024 — open to any active dataspace member (M1 fixture)."
+        m1_researcher_desc="Farm-level raw observations from Caney Fork's /farms/ container (djangoldp_glcdi baseline), 2024 — restricted to researcher participants (M1 fixture)."
+        ;;
+      point-blue)
+        m1_url="https://api.stg.pointblue.glcdi.startinblox.com/soil-samples/"
+        m1_research_url="https://api.stg.pointblue.glcdi.startinblox.com/biomass-plots/"
+        m1_researcher_url="https://api.stg.pointblue.glcdi.startinblox.com/biomass-points/"
+        m1_desc="SoilSample records from Point Blue's /soil-samples/ container (djangoldp_glcdi_pointblue), 2024 season — restricted to producers (M1 fixture)."
+        m1_research_desc="BiomassPlot aggregates from Point Blue's /biomass-plots/ container (djangoldp_glcdi_pointblue), 2024 — open to any active dataspace member (M1 fixture)."
+        m1_researcher_desc="Raw BiomassPoint observations from Point Blue's /biomass-points/ container (djangoldp_glcdi_pointblue), 2024 — restricted to researcher participants (M1 fixture)."
+        ;;
+      white-buffalo)
+        m1_url="https://api.stg.whitebuffalo.glcdi.startinblox.com/metrics/"
+        m1_research_url="https://api.stg.whitebuffalo.glcdi.startinblox.com/plots/"
+        m1_researcher_url="https://api.stg.whitebuffalo.glcdi.startinblox.com/cattle-rotations/"
+        m1_desc="Soil organic carbon Metric records from White Buffalo's /metrics/ container (djangoldp_glcdi_whitebuffalo), 2024 season — restricted to producers (M1 fixture)."
+        m1_research_desc="Plot-level grazing summary from White Buffalo's /plots/ container (djangoldp_glcdi_whitebuffalo), aggregated 2024 — open to any active dataspace member (M1 fixture)."
+        m1_researcher_desc="CattleRotation rotation log from White Buffalo's /cattle-rotations/ container (djangoldp_glcdi_whitebuffalo), 2024 — restricted to researcher participants (M1 fixture)."
+        ;;
+      *)
+        die "seed_one: unknown org '$org' for staging URL mapping"
+        ;;
+    esac
+    base_url_flags="--env-var m1_asset_base_url=${m1_url} --env-var m1_research_asset_base_url=${m1_research_url} --env-var m1_researcher_only_asset_base_url=${m1_researcher_url}"
+    description_flags=(--env-var "m1_asset_description=${m1_desc}" --env-var "m1_research_asset_description=${m1_research_desc}" --env-var "m1_researcher_only_asset_description=${m1_researcher_desc}")
+    log "  Using external LDP baseUrls for $org:"
+    log "    M1 (producers):     $m1_url"
+    log "    research-summary:   $m1_research_url"
+    log "    researcher-only:    $m1_researcher_url"
+  elif [[ -f "$farm_file" && -f "$plot_file" && -f "$metric_file" ]]; then
+    # Local: seed-ldp produced LDP urlids from the dev djangoldp sibling.
     local farm_urlid plot_urlid metric_urlid
     farm_urlid=$(<"$farm_file")
     plot_urlid=$(<"$plot_file")
@@ -976,7 +1043,7 @@ seed_one() {
 
   log "Seeding M1 fixtures on $org ($host) via Bruno [env=$bruno_env]"
   # shellcheck disable=SC2046
-  ( cd "$BRUNO_DIR" && bru run 10-provider-seeding --env "$bruno_env" $(bruno_env_flags) $base_url_flags \
+  ( cd "$BRUNO_DIR" && bru run 10-provider-seeding --env "$bruno_env" $(bruno_env_flags) $base_url_flags "${description_flags[@]}" \
       --env-var "caney_fork_host=${host}" \
       --env-var "caney_fork_api_key=${api_key}" \
       --env-var "org_display_name=${org_display}" \
@@ -987,6 +1054,26 @@ seed_one() {
       --env-var "m1_researcher_only_asset_id=urn:glcdi:asset:${org}:grazing-raw-observations-2024" \
       --env-var "m1_researcher_only_contract_definition_id=${org}-grazing-raw-observations-2024-cd" \
   ) || die "Bruno seeding folder failed for $org — see output above"
+}
+
+# Seed the demo VM via the 12-provider-seeding-demo bruno folder. 4
+# contributor-specific assets backed by static JSON stubs at /data/<slug>.json
+# on the demo VM. Atomic obligation policies + per-asset CD policies that
+# merge the relevant atoms (Shape B per OTHER_PARTICIPANTS.md §4.1).
+seed_demo() {
+  local host="$1"
+  local api_key="$2"
+  local bruno_env="$3"
+
+  local data_root="${host}/data"
+  log "Seeding demo fixtures on $host via Bruno [env=$bruno_env]"
+  log "  Asset baseUrls under: $data_root"
+
+  ( cd "$BRUNO_DIR" && bru run 12-provider-seeding-demo --env "$bruno_env" $(bruno_env_flags) \
+      --env-var "demo_host=${host}" \
+      --env-var "demo_api_key=${api_key}" \
+      --env-var "demo_data_root=${data_root}" \
+  ) || die "Bruno seeding folder failed for demo — see output above"
 }
 
 ###############################################################################
@@ -1158,10 +1245,10 @@ PY
 
 cmd_seed_ldp() {
   cmd_secrets
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     seed_ldp_one "$org"
   done
-  ok "LDP seeded on all orgs (${ORGS[*]}). Per-org Farm urlid in .glcdi.local/<org>/ldp-farm-urlid.txt"
+  ok "LDP seeded on all orgs (${LOCAL_ORGS[*]}). Per-org Farm urlid in .glcdi.local/<org>/ldp-farm-urlid.txt"
   log "Next: $0 seed   (Bruno will pick up the urlid via m1_asset_base_url)"
 }
 
@@ -1189,14 +1276,14 @@ EOF
 
   if [[ "$target" == "local" ]]; then
     cmd_secrets
-    for org in "${ORGS[@]}"; do
+    for org in "${LOCAL_ORGS[@]}"; do
       local port="${ORG_PORTS[$org]}"
       local org_upper
       org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
       local api_key_var="${org_upper}_API_KEY"
       seed_one "$org" "http://localhost:${port}" "${!api_key_var}" "local"
     done
-    ok "M1 fixtures seeded on all local orgs (${ORGS[*]})"
+    ok "M1 fixtures seeded on all local orgs (${LOCAL_ORGS[*]})"
     return 0
   fi
 
@@ -1313,7 +1400,7 @@ EOF
 
   if [[ "$target" == "local" ]]; then
     cmd_secrets
-    for org in "${ORGS[@]}"; do
+    for org in "${LOCAL_ORGS[@]}"; do
       local port="${ORG_PORTS[$org]}"
       local org_upper
       org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
@@ -1323,7 +1410,7 @@ EOF
     if [[ "$dry_run" == "true" ]]; then
       warn "Dry-run only — re-run with --no-dry-run to actually delete."
     else
-      ok "Wipe complete on local orgs (${ORGS[*]})"
+      ok "Wipe complete on local orgs (${LOCAL_ORGS[*]})"
     fi
     return 0
   fi
@@ -1409,7 +1496,7 @@ cmd_status() {
     warn "  governance client_credentials → $gov_token_code (expected 200)"
   fi
 
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     local port="${ORG_PORTS[$org]}"
     local org_upper
     org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
@@ -1457,7 +1544,7 @@ cmd_logs() {
 
 cmd_down() {
   log "Bringing down stacks (preserving volumes)"
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     local org_dir="$LOCAL_DIR/$org"
     if [[ -f "$org_dir/.env" ]]; then
       ( cd "$PARTICIPANT_DIR" \
@@ -1484,7 +1571,7 @@ cmd_down() {
 
 cmd_reset() {
   log "RESET — bringing down + removing volumes + deleting $LOCAL_DIR"
-  for org in "${ORGS[@]}"; do
+  for org in "${LOCAL_ORGS[@]}"; do
     local org_dir="$LOCAL_DIR/$org"
     if [[ -f "$org_dir/.env" ]]; then
       ( cd "$PARTICIPANT_DIR" \

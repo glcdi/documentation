@@ -1,0 +1,47 @@
+meta {
+  name: Create contract definition (Pasa)
+  type: http
+  seq: 42
+}
+
+post {
+  url: {{demo_host}}/management/v3/contractdefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Wires the Pasa soil-health-benchmark asset (40) to public-policy
+  (anonymous access) and the composite contract policy (41).
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@id": "pasa-soil-health-cd",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "public-policy",
+    "contractPolicyId": "pasa-soil-health-cp",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "urn:glcdi:asset:pasa:soil-health-benchmark-2016-2024"
+      }
+    ]
+  }
+}
+
+tests {
+  test("contract definition created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

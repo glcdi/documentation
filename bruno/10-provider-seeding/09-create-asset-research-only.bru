@@ -16,7 +16,7 @@ docs {
   in their own catalog (the access policy denies them).
 
   Lives alongside the producer-only `grazing-soc-2024` (01) and the
-  research-accessible `grazing-summary-2024` (06) assets. The three
+  members-accessible `grazing-summary-2024` (06) assets. The three
   together exercise the full access-tier matrix in the M1 fixtures.
 }
 
@@ -35,7 +35,7 @@ body:json {
     "@type": "Asset",
     "properties": {
       "name": "{{org_display_name}} grazing field raw observations 2024 (researchers only)",
-      "description": "Raw sampling timeseries and field-trial inputs from {{org_display_name}}, 2024 season — restricted to researcher participants (M1 fixture).",
+      "description": "{{m1_researcher_only_asset_description}}",
       "contenttype": "application/json",
       "glcdi:assetClass": "field-observations-raw"
     },

@@ -1,0 +1,54 @@
+meta {
+  name: Create asset (Stone Barns — soil health 2020-2025)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{demo_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+docs {
+  Stone Barns Center contribution — Elijah Goodwin.
+  16 rotationally grazed pastures, annual sampling to 30cm (spade
+  method), 2020-2025. Access: members only (not public). Use:
+  internal-use + attribution + share-back + no-commercial.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "urn:glcdi:asset:stone-barns:soil-health-2020-2025",
+    "@type": "Asset",
+    "properties": {
+      "name": "Stone Barns SBC Grazing Soil Health Measurements 2020-2025",
+      "description": "Soil sampled annually in late July / early August to 30cm using the spade method from 16 rotationally grazed pastures at Stone Barns Center. Restricted to GLCDI members; attribution + share-back + no-commercial-use required.",
+      "contenttype": "application/json",
+      "glcdi:assetClass": "soil-health-sampling",
+      "glcdi:contributor": "Stone Barns Center",
+      "glcdi:contact": "Elijah Goodwin"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "stone-barns-soil-health-2020-2025",
+      "baseUrl": "{{demo_data_root}}/stone-barns-soil-health.json",
+      "proxyPath": "false"
+    }
+  }
+}
+
+tests {
+  test("asset created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

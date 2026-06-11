@@ -1,0 +1,47 @@
+meta {
+  name: Create contract definition (Sonoma Mountain)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{demo_host}}/management/v3/contractdefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Wires the Sonoma Mountain pasture-map asset (20) to public-policy
+  (anonymous access) and the composite contract policy (21).
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@id": "sonoma-mountain-pasture-map-cd",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "public-policy",
+    "contractPolicyId": "sonoma-mountain-pasture-map-cp",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "urn:glcdi:asset:sonoma-mountain:pasture-map-export"
+      }
+    ]
+  }
+}
+
+tests {
+  test("contract definition created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

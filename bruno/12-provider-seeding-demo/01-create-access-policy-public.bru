@@ -1,0 +1,51 @@
+meta {
+  name: Create access policy (public — anonymous)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{demo_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  The truly-anonymous public-policy used by Sonoma / Florida / Pasa
+  assets. Permission with no constraint — any catalog query (even
+  unauthenticated) matches.
+
+  M1 enforcement note: this works on demo because the catalog UI
+  doesn't require a token to render. Hitting the EDC mgmt API still
+  needs X-Api-Key; this is about catalog visibility, not mgmt access.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/"
+    },
+    "@id": "public-policy",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@type": "odrl:Set",
+      "odrl:permission": [
+        {
+          "odrl:action": { "@id": "odrl:use" }
+        }
+      ]
+    }
+  }
+}
+
+tests {
+  test("access policy created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

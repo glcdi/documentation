@@ -3,22 +3,29 @@ vars {
   caney_fork_host: https://caney-fork.glcdi.startinblox.com
   point_blue_host: https://point-blue.glcdi.startinblox.com
   white_buffalo_host: https://white-buffalo.glcdi.startinblox.com
+  demo_host: https://demo.glcdi.startinblox.com
   caney_fork_dsp: https://caney-fork.glcdi.startinblox.com/protocol
   point_blue_dsp: https://point-blue.glcdi.startinblox.com/protocol
   white_buffalo_dsp: https://white-buffalo.glcdi.startinblox.com/protocol
+  demo_dsp: https://demo.glcdi.startinblox.com/protocol
   authority_host: https://authority.glcdi.startinblox.com/auth/realms/glcdi
   caney_fork_participant_id: glcdi-connector-caney-fork
   point_blue_participant_id: glcdi-connector-point-blue
   white_buffalo_participant_id: glcdi-connector-white-buffalo
+  demo_participant_id: glcdi-connector-demo
+  demo_data_root: https://demo.glcdi.startinblox.com/data
   m1_asset_id: urn:glcdi:asset:caney-fork:grazing-soc-2024
-  m1_asset_base_url: http://provider-data-source/grazing-soc-2024.json
-  m1_research_asset_base_url: http://provider-data-source/grazing-summary-2024.json
-  m1_researcher_only_asset_base_url: http://provider-data-source/grazing-raw-observations-2024.json
-  m1_access_policy_id: regenerative-producers-policy
+  m1_asset_base_url: https://api.stg.caneyfork.glcdi.startinblox.com/metrics/
+  m1_research_asset_base_url: https://api.stg.caneyfork.glcdi.startinblox.com/plots/
+  m1_researcher_only_asset_base_url: https://api.stg.caneyfork.glcdi.startinblox.com/farms/
+  m1_asset_description: Soil organic carbon Metric records from Caney Fork's /metrics/ container (djangoldp_glcdi baseline), 2024 season — restricted to producers (M1 fixture).
+  m1_research_asset_description: Plot-level grazing summary from Caney Fork's /plots/ container (djangoldp_glcdi baseline), aggregated 2024 — open to any active dataspace member (M1 fixture).
+  m1_researcher_only_asset_description: Farm-level raw observations from Caney Fork's /farms/ container (djangoldp_glcdi baseline), 2024 — restricted to researcher participants (M1 fixture).
+  m1_access_policy_id: producer-only-policy
   m1_contract_policy_id: internal-use-only-policy
   m1_contract_definition_id: caney-fork-grazing-soc-2024-cd
   m1_research_asset_id: urn:glcdi:asset:caney-fork:grazing-summary-2024
-  m1_research_access_policy_id: research-accessible-policy
+  m1_research_access_policy_id: members-policy
   m1_research_contract_definition_id: caney-fork-grazing-summary-2024-cd
   m1_researcher_only_asset_id: urn:glcdi:asset:caney-fork:grazing-raw-observations-2024
   m1_researcher_only_access_policy_id: researcher-only-policy
@@ -29,12 +36,15 @@ vars:secret [
   caney_fork_api_key,
   point_blue_api_key,
   white_buffalo_api_key,
+  demo_api_key,
   caney_fork_client_secret,
   point_blue_client_secret,
   white_buffalo_client_secret,
+  demo_client_secret,
   caney_fork_token,
   point_blue_token,
   white_buffalo_token,
+  demo_token,
   m1_negotiation_id,
   m1_contract_agreement_id,
   m1_transfer_process_id

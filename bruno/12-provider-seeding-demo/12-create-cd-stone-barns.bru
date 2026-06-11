@@ -1,0 +1,49 @@
+meta {
+  name: Create contract definition (Stone Barns)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{demo_host}}/management/v3/contractdefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Wires the Stone Barns asset (10) to its access policy (members-policy
+  — created by M1 seeding, expected to already exist) and the composite
+  contract policy (11). Asset selector targets exactly the soil-health
+  asset by @id.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@id": "stone-barns-soil-health-cd",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "members-policy",
+    "contractPolicyId": "stone-barns-soil-health-cp",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "urn:glcdi:asset:stone-barns:soil-health-2020-2025"
+      }
+    ]
+  }
+}
+
+tests {
+  test("contract definition created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

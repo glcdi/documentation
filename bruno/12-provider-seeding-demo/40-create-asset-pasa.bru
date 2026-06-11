@@ -1,0 +1,55 @@
+meta {
+  name: Create asset (Pasa — soil health benchmark 2016-2024)
+  type: http
+  seq: 40
+}
+
+post {
+  url: {{demo_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+docs {
+  Pasa Sustainable Agriculture contribution — Laura Kaminsky.
+  250+ pasture / hay fields in the Mid-Atlantic and Northeast US.
+  Soil health indicators (LOI, SOC) + soil-management indicators (days
+  of living cover, grazing events, stocking density, inputs).
+  Access: public. Use: internal-use + pre-publication review.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "urn:glcdi:asset:pasa:soil-health-benchmark-2016-2024",
+    "@type": "Asset",
+    "properties": {
+      "name": "Pasa Soil Health Benchmark Study Data 2016-2024",
+      "description": "Soil-health indicators (LOI, SOC) + soil-management indicators (days of living cover, grazing events, stocking density, inputs) across 250+ pasture / hay fields in the Mid-Atlantic and Northeast US. Publicly visible; results must not be published without Laura's review.",
+      "contenttype": "application/json",
+      "glcdi:assetClass": "soil-health-benchmark",
+      "glcdi:contributor": "Pasa Sustainable Agriculture",
+      "glcdi:contact": "Laura Kaminsky"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "pasa-soil-health-2016-2024",
+      "baseUrl": "{{demo_data_root}}/pasa-soil-health.json",
+      "proxyPath": "false"
+    }
+  }
+}
+
+tests {
+  test("asset created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

@@ -1,0 +1,54 @@
+meta {
+  name: Create asset (University of Florida — grazing SOC 2022-2024)
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{demo_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+docs {
+  University of Florida contribution — Chang Zhao.
+  Soil organic carbon measurements across 22 dairy + 14 beef cattle
+  farms. Depths 0-15cm, 15-30cm, 30-90cm via random transects.
+  Access: public. Use: internal-use + attribution + pre-publication-review.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "urn:glcdi:asset:florida:grazing-soc-2022-2024",
+    "@type": "Asset",
+    "properties": {
+      "name": "University of Florida grazing-land SOC measurements 2022-2024",
+      "description": "Soil organic carbon measurements across 22 dairy + 14 beef cattle farms in Florida, depths 0-15cm / 15-30cm / 30-90cm via random transects. Publicly visible; attribution + pre-publication review required.",
+      "contenttype": "application/json",
+      "glcdi:assetClass": "soc-measurements",
+      "glcdi:contributor": "University of Florida",
+      "glcdi:contact": "Chang Zhao"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "florida-grazing-soc-2022-2024",
+      "baseUrl": "{{demo_data_root}}/florida-grazing-soc.json",
+      "proxyPath": "false"
+    }
+  }
+}
+
+tests {
+  test("asset created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

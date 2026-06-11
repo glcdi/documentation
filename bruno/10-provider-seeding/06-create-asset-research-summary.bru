@@ -15,7 +15,7 @@ docs {
   provider's data — typically an aggregated / anonymised summary, suitable
   for any dataspace member (producer or researcher).
 
-  Lives alongside the strict regenerative-only `grazing-soc-2024` asset
+  Lives alongside the producer-only `grazing-soc-2024` asset
   (01-create-asset.bru). They share the contract policy
   (`internal-use-only`) but have different access policies so the catalog
   filters them by viewer.
@@ -36,7 +36,7 @@ body:json {
     "@type": "Asset",
     "properties": {
       "name": "{{org_display_name}} grazing summary 2024 (all members)",
-      "description": "Aggregated soil organic carbon summary from {{org_display_name}}, 2024 season — open to any active dataspace member (M1 fixture).",
+      "description": "{{m1_research_asset_description}}",
       "contenttype": "application/json",
       "glcdi:assetClass": "soc-summary"
     },

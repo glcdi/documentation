@@ -1,0 +1,62 @@
+meta {
+  name: Create contract policy (attribution-required)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{demo_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Atomic obligation: anyone using this data must credit the provider in
+  any publication or report. Agreement-backed, validated visually at
+  audit time (not technically enforced by EDC).
+
+  Used by Stone Barns and University of Florida.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "attribution-required-policy",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@type": "odrl:Set",
+      "odrl:permission": [
+        {
+          "odrl:action": { "@id": "odrl:use" },
+          "odrl:duty": [
+            {
+              "odrl:action": { "@id": "odrl:attribute" },
+              "odrl:constraint": [
+                {
+                  "odrl:leftOperand": { "@id": "glcdi:attributionTarget" },
+                  "odrl:operator": { "@id": "odrl:eq" },
+                  "odrl:rightOperand": "provider-and-glcdi"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+tests {
+  test("attribution policy created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

@@ -1,5 +1,5 @@
 meta {
-  name: Create access policy (research-accessible)
+  name: Create access policy (members)
   type: http
   seq: 5
 }
@@ -11,19 +11,18 @@ post {
 }
 
 docs {
-  Second access policy for the M1 fixtures — looser than
-  `regenerative-producers` (02-create-access-policy-...). Allows any active
-  dataspace member whose participant-type is `producer` OR `researcher` to
-  see the linked asset in the catalog.
+  Loosest access policy for the M1 fixtures — single constraint
+  `glcdi:membership=active`. Any active dataspace member (producer or
+  researcher) can see the linked asset in the catalog.
 
-  Purpose: lets researcher participants (e.g. point-blue, glcdi_researcher
+  Use case: lets researcher participants (e.g. point-blue, glcdi_researcher
   realm role) discover and contract for aggregated / non-sensitive
-  research-accessible datasets, while the strict regenerative-only policy
-  continues to gate the raw producer datasets.
+  datasets, while the stricter `producer-only-policy` continues to gate
+  the producer-restricted datasets.
 
   Pairs with `06-create-asset-research-summary.bru` via
-  `07-create-contract-definition-research.bru`. Same contract policy
-  (`internal-use-only`) applies at negotiation time.
+  `07-create-contract-definition-research.bru`. Contract policy at
+  negotiation time stays `internal-use-only`.
 }
 
 headers {

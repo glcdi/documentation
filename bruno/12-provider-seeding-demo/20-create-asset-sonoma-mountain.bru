@@ -1,0 +1,55 @@
+meta {
+  name: Create asset (Sonoma Mountain — pasture map export)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{demo_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+docs {
+  Sonoma Mountain Institute contribution — Byron Palmer.
+  2,480 records documenting grazing activities Dec 2016 – Apr 2026.
+  Livestock-management metrics including Date Time In / Out.
+  Access: public-policy (visible to all incl. corporates + supply
+  chain). Use: internal-use + share-back + payment ($500).
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "urn:glcdi:asset:sonoma-mountain:pasture-map-export",
+    "@type": "Asset",
+    "properties": {
+      "name": "Sonoma Mountain Pasture Map Export",
+      "description": "2,480 grazing-activity records from Sonoma Mountain Institute (Dec 2016 – Apr 2026), with livestock-management metrics (Date Time In, Date Time Out). Publicly visible; share-back + payment ($500 USD) required at agreement time.",
+      "contenttype": "application/json",
+      "glcdi:assetClass": "grazing-activity-records",
+      "glcdi:contributor": "Sonoma Mountain Institute",
+      "glcdi:contact": "Byron Palmer"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "sonoma-mountain-pasture-map",
+      "baseUrl": "{{demo_data_root}}/sonoma-mountain-pasture-map.json",
+      "proxyPath": "false"
+    }
+  }
+}
+
+tests {
+  test("asset created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}
