@@ -1,0 +1,87 @@
+meta {
+  name: Create asset (caney-fork — farmOS animals, OAuth2-fetched)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/assets
+  body: json
+  auth: none
+}
+
+docs {
+  Demonstrates an asset whose dataAddress is fetched from farmOS using
+  OAuth2 client_credentials. The activation seam is the
+  glcdi-dataplane-oauth2-inline extension (in this connector's
+  controlplane shadow JAR): when the asset's privateProperties carries
+  `oauth2:clientSecret`, the extension performs the token exchange at
+  request time against `oauth2:tokenUrl` and injects
+  `Authorization: Bearer <token>` into the outbound fetch — no
+  vault.properties edit needed.
+
+  Where each field lives, and why:
+
+    properties               — catalog-exposed metadata (peers see this).
+                               Carries name, description, content-type,
+                               glcdi:assetClass. NEVER carries secrets.
+
+    privateProperties        — server-side-only metadata (never in the
+                               catalog response, never wired to a peer).
+                               Carries `oauth2:clientSecret`. Mutating
+                               this is a pure Management API call — no
+                               vault edit, no connector restart.
+
+    dataAddress              — server-side-only fetch metadata (also
+                               never in the catalog). Carries the
+                               operational, non-secret OAuth2 params:
+                               tokenUrl, clientId, scope. Plus the
+                               HttpData baseUrl + proxy flags.
+
+  The downstream verification at 03-verify-secret-not-in-catalog.bru
+  proves the catalog request from a peer (point-blue) does not contain
+  the secret string anywhere in the response body.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "{{farmos_animal_asset_id}}",
+    "@type": "Asset",
+    "properties": {
+      "name": "{{org_display_name}} — live animal census (farmOS)",
+      "description": "JSON:API feed of farmOS asset/animal records on caney-fork's farmOS instance, fetched at transfer time via OAuth2 client_credentials.",
+      "contenttype": "application/vnd.api+json",
+      "glcdi:assetClass": "livestock-census",
+      "glcdi:source": "farmos"
+    },
+    "privateProperties": {
+      "oauth2:clientSecret": "{{farmos_animal_client_secret}}"
+    },
+    "dataAddress": {
+      "type": "HttpData",
+      "name": "farmos-animals",
+      "baseUrl": "{{farmos_animal_base_url}}",
+      "proxyPath": "false",
+      "proxyQueryParams": "true",
+      "oauth2:tokenUrl": "{{farmos_token_url}}",
+      "oauth2:clientId": "{{farmos_animal_client_id}}",
+      "oauth2:scope": "{{farmos_animal_scope}}"
+    }
+  }
+}
+
+tests {
+  // EDC POST returns 200 on create; 409 when the asset already exists (idempotent re-seed).
+  test("asset created or already present", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 204, 409]);
+  });
+}

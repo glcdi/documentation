@@ -229,7 +229,7 @@ Each participant's identity token carries three GLCDI-specific claims:
 | Role | Assigned to | What it unlocks |
 |------|------------|-----------------|
 | `glcdi_member` | All onboarded participants | Access to `members-only` offers |
-| `glcdi_regenerative_producer` | Ranches / farming organisations with regenerative certification | Access to `regenerative-producers-only` offers, peer-to-peer benchmarking. Combined with `glcdi_certification_status = regenerative-verified` for full record. |
+| `glcdi_producer` | Ranches / farming organisations with regenerative certification | Access to `regenerative-producers-only` offers, peer-to-peer benchmarking. Combined with `glcdi_certification_status = regenerative-verified` for full record. |
 | `glcdi_producer` | Ranches / farming organisations not (yet) regenerative-certified | Generic producer access (broader than `regenerative-producers-only`); used when a policy admits all producers regardless of certification |
 | `glcdi_researcher` | Universities, research NGOs | Access to `researchers-only` offers (e.g., raw SOC data for model training) |
 | `glcdi_data_steward` | Monitoring alliances | Access to `researchers-only` offers, data stewardship role |
@@ -246,7 +246,7 @@ Specific participant-to-role assignments are left to onboarding time and are pro
 
 | Participant type | Proposed roles | Proposed certification |
 |------------------|---------------|-----------------------|
-| Regenerative producer | `glcdi_member` + `glcdi_regenerative_producer` | `regenerative-verified` |
+| Regenerative producer | `glcdi_member` + `glcdi_producer` | `regenerative-verified` |
 | Non-regenerative producer | `glcdi_member` + `glcdi_producer` | `organic-certified`, `transitioning-organic`, `conventional`, or `not-applicable` |
 | Research institution | `glcdi_member` + `glcdi_researcher` | `not-applicable` |
 | Data steward / monitoring alliance | `glcdi_member` + `glcdi_data_steward` | `not-applicable` |

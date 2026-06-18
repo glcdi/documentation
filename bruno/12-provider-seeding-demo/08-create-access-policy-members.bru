@@ -1,0 +1,60 @@
+meta {
+  name: Create access policy (members — glcdi:membership=active)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{demo_host}}/management/v3/policydefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Members-tier access policy — single constraint `glcdi:membership=active`.
+  Used by Stone Barns CD so any active dataspace member (CF/PB/WB
+  service accounts all carry membership=active) can see it in their
+  federated catalog view.
+
+  Mirrors the M1 trio's members-policy verbatim. Demo's connector keeps
+  its own isolated policy store, so we have to seed it here even though
+  the M1 trio already has the same policy on their side.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{demo_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
+      "odrl": "http://www.w3.org/ns/odrl/2/",
+      "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
+    },
+    "@id": "members-policy",
+    "@type": "PolicyDefinition",
+    "policy": {
+      "@type": "odrl:Set",
+      "odrl:permission": [
+        {
+          "odrl:action": { "@id": "odrl:use" },
+          "odrl:constraint": [
+            {
+              "odrl:leftOperand": { "@id": "glcdi:membership" },
+              "odrl:operator": { "@id": "odrl:eq" },
+              "odrl:rightOperand": "active"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+tests {
+  test("members-policy created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

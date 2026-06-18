@@ -63,7 +63,7 @@ tests {
     expect(payload.glcdi_roles).to.be.an("array");
     // caney-fork is a regenerative producer in the M1 fixture (provider).
     expect(payload.glcdi_roles).to.include("glcdi_member");
-    expect(payload.glcdi_roles).to.include("glcdi_regenerative_producer");
+    expect(payload.glcdi_roles).to.include("glcdi_producer");
     expect(payload).to.have.property("glcdi_certification_status", "regenerative-verified");
   });
 }

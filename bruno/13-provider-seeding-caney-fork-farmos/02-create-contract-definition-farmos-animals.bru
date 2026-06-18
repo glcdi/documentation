@@ -1,0 +1,58 @@
+meta {
+  name: Create contract definition (caney-fork — farmOS animals)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{caney_fork_host}}/management/v3/contractdefinitions
+  body: json
+  auth: none
+}
+
+docs {
+  Wires the farmOS animals asset (01) to the access policy `members-policy`
+  (so any active dataspace member can see + negotiate it) and the contract
+  policy `internal-use-only-policy` (the agreement terms). Both policies
+  are seeded by 10-provider-seeding/ — running this folder requires that
+  one first.
+
+  Once this CD lands, a peer (e.g. point-blue) querying caney-fork's
+  catalog will see the asset listed, can negotiate, and the eventual
+  transfer's source-side fetch is the place where
+  glcdi-dataplane-oauth2-inline fires: it reads the asset's
+  privateProperties.oauth2:clientSecret + the DataAddress's
+  oauth2:tokenUrl/clientId/scope and exchanges for a Bearer token before
+  proxying farmOS's JSON:API response back to the consumer.
+}
+
+headers {
+  Content-Type: application/json
+  X-Api-Key: {{caney_fork_api_key}}
+}
+
+body:json {
+  {
+    "@context": {
+      "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    },
+    "@id": "{{farmos_animal_cd_id}}",
+    "@type": "ContractDefinition",
+    "accessPolicyId": "members-policy",
+    "contractPolicyId": "internal-use-only-policy",
+    "assetsSelector": [
+      {
+        "@type": "Criterion",
+        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/id",
+        "operator": "=",
+        "operandRight": "{{farmos_animal_asset_id}}"
+      }
+    ]
+  }
+}
+
+tests {
+  test("contract definition created or already exists", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 201, 409]);
+  });
+}

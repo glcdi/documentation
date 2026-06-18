@@ -151,8 +151,8 @@ In the Authority KC's `glcdi` realm (declarative — already in `governance-serv
 
 | Client | Service-account user | Realm roles | `glcdi_membership` | `glcdi_organisation` | `glcdi_certification_status` | `glcdi_contribution_status` |
 |--------|----------------------|-------------|---------------------|----------------------|------------------------------|-----------------------------|
-| `glcdi-connector-caney-fork` | `service-account-glcdi-connector-caney-fork` | `glcdi_member`, `glcdi_regenerative_producer` | `active` | `caney-fork` | `regenerative-verified` | `contributing` (after first asset publish) |
-| `glcdi-connector-white-buffalo` | `service-account-glcdi-connector-white-buffalo` | `glcdi_member`, `glcdi_regenerative_producer` | `active` | `white-buffalo` | `regenerative-verified` | `contributing` (after first asset publish) |
+| `glcdi-connector-caney-fork` | `service-account-glcdi-connector-caney-fork` | `glcdi_member`, `glcdi_producer` | `active` | `caney-fork` | `regenerative-verified` | `contributing` (after first asset publish) |
+| `glcdi-connector-white-buffalo` | `service-account-glcdi-connector-white-buffalo` | `glcdi_member`, `glcdi_producer` | `active` | `white-buffalo` | `regenerative-verified` | `contributing` (after first asset publish) |
 | `glcdi-connector-point-blue` | `service-account-glcdi-connector-point-blue` | `glcdi_member`, `glcdi_researcher` | `active` | `point-blue` | `not-applicable` | `observer` |
 
 - Each client has `serviceAccountsEnabled: true`, `directAccessGrantsEnabled: false`, `standardFlowEnabled: false` — strict client_credentials only.
@@ -162,7 +162,7 @@ In the Authority KC's `glcdi` realm (declarative — already in `governance-serv
 **Casing convention** (referenced by §§ 2, 3.4):
 
 - Attribute *values* (certification statuses, contribution statuses, participant types): lowercase / kebab-case — e.g. `regenerative-verified`, `not-applicable`, `contributing`, `observer`. Matches the policy JSON in `policies/` and the JSON-LD context in [`context.jsonld`](context.jsonld).
-- Realm role names: snake_case with `glcdi_` prefix (Keycloak / OAuth convention) — e.g. `glcdi_regenerative_producer`. The participant-type policy function (§ 3.3) maps `kebab-case` → `glcdi_<snake_case>` transparently.
+- Realm role names: snake_case with `glcdi_` prefix (Keycloak / OAuth convention) — e.g. `glcdi_producer`. The participant-type policy function (§ 3.3) maps `kebab-case` → `glcdi_<snake_case>` transparently.
 - Purpose taxonomy values: PascalCase per § 1.3 — `InternalAnalysis`, `ScientificResearch`, ….
 
 **Adding a new participant** at Tier 1 = Authority operator creates a new `glcdi-connector-<org>` client + SA in the realm JSON (or via admin console), assigns the right roles + attributes, sends `client_id` / `client_secret` to the new participant out-of-band; the participant operator drops them into `participant/configuration.properties` (`edc.oauth.client.id` / `edc.oauth.client.secret.alias`) per § 3.5.
@@ -337,7 +337,7 @@ Two Keycloak surfaces can carry participant attributes into a token. At Tier 1 e
 
 | Surface | How it works at Tier 1 | When to use |
 |---------|------------------------|-------------|
-| **Realm roles** assigned to the SA user | Roles like `glcdi_member`, `glcdi_regenerative_producer`. Inherited automatically into the token's `realm_access.roles`; surfaced as a clean `glcdi_roles` array via § 2.3 mapper 1. | Participant-type membership: which type buckets does this org belong to? Multi-valued, naturally fits a role list. |
+| **Realm roles** assigned to the SA user | Roles like `glcdi_member`, `glcdi_producer`. Inherited automatically into the token's `realm_access.roles`; surfaced as a clean `glcdi_roles` array via § 2.3 mapper 1. | Participant-type membership: which type buckets does this org belong to? Multi-valued, naturally fits a role list. |
 | **User attributes** on the SA user | Key/value pairs on the SA user record (`glcdi_certification_status=regenerative-verified`). Surfaced via `oidc-usermodel-attribute-mapper` entries — § 2.3 mappers 2–2b. | Structured single-valued state: certification status, contribution status, organisation slug. |
 
 **Why SA users, not client attributes:** stock Keycloak's standard mappers read user-level fields
@@ -354,7 +354,7 @@ policy functions only see claim *names*, not the issuer.
 | Item | Detail |
 |------|--------|
 | **Task** | Add realm roles to the `glcdi` realm in Authority Keycloak |
-| **Roles to create** | `glcdi_member` (active membership), `glcdi_regenerative_producer`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
+| **Roles to create** | `glcdi_member` (active membership), `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
 | **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` — in the `roles.realm[]` array |
 | **Status** | [x] Declared in realm JSON (13 roles total: 2 inherited + 11 GLCDI) · [x] Imported into live Authority KC (verified after each `glcdi.sh reset && up`) |
 
@@ -515,21 +515,21 @@ hardcoded claim mapper on the client scope that applies to all authenticated use
 | Item | Detail |
 |------|--------|
 | **Task** | Each `service-account-glcdi-connector-<org>` user in the realm JSON carries that org's realm roles directly and the `glcdi_membership` / `glcdi_organisation` / `glcdi_certification_status` / `glcdi_contribution_status` attributes. The realm JSON is the source of truth; live edits go through the admin console. |
-| **Status** | [x] Declared in realm JSON: 3 connector clients + 3 SA users with role + attribute assignments · [x] Imported into live Authority KC (caney-fork → `glcdi_producer` + `glcdi_regenerative_producer`; point-blue → `glcdi_researcher`; white-buffalo same as caney-fork) |
+| **Status** | [x] Declared in realm JSON: 3 connector clients + 3 SA users with role + attribute assignments · [x] Imported into live Authority KC (caney-fork → `glcdi_producer`; point-blue → `glcdi_researcher`; white-buffalo same as caney-fork) |
 
 The Tier-1 assignment for the M1 prototype cluster (already encoded in `governance-services/resources/keycloak/realms/glcdi-realm.json`):
 
 | SA user | Realm roles | `glcdi_organisation` | `glcdi_certification_status` | `glcdi_contribution_status` |
 |---------|-------------|----------------------|------------------------------|-----------------------------|
-| `service-account-glcdi-connector-caney-fork` | `glcdi_member`, `glcdi_regenerative_producer` | `caney-fork` | `regenerative-verified` | `contributing` |
-| `service-account-glcdi-connector-white-buffalo` | `glcdi_member`, `glcdi_regenerative_producer` | `white-buffalo` | `regenerative-verified` | `contributing` |
+| `service-account-glcdi-connector-caney-fork` | `glcdi_member`, `glcdi_producer` | `caney-fork` | `regenerative-verified` | `contributing` |
+| `service-account-glcdi-connector-white-buffalo` | `glcdi_member`, `glcdi_producer` | `white-buffalo` | `regenerative-verified` | `contributing` |
 | `service-account-glcdi-connector-point-blue` | `glcdi_member`, `glcdi_researcher` | `point-blue` | `not-applicable` | `observer` |
 
 The proposed assignment *pattern* by participant type (for new onboardings beyond the M1 trio):
 
 | Participant type | Realm roles | Cert status | Contribution status |
 |------------------|-------------|-------------|---------------------|
-| Regenerative producer | `glcdi_member`, `glcdi_regenerative_producer` | `regenerative-verified` | `contributing` (after seeding) |
+| Regenerative producer | `glcdi_member`, `glcdi_producer` | `regenerative-verified` | `contributing` (after seeding) |
 | Producer (non-regen) | `glcdi_member`, `glcdi_producer` | per declared status | `contributing` (after seeding) |
 | Research institution | `glcdi_member`, `glcdi_researcher` | `not-applicable` | `contributing` (after seeding) |
 | Data steward / monitoring alliance | `glcdi_member`, `glcdi_data_steward` | `not-applicable` | `observer` (until data published) |
@@ -565,7 +565,7 @@ curl -s -X PUT -H "Authorization: Bearer $TOKEN" \
 | Item | Detail |
 |------|--------|
 | **Task** | Confirm that tokens issued by Authority Keycloak contain the expected GLCDI claims |
-| **Status** | [x] Done — for white-buffalo's SA token the decoded JWT showed `glcdi_membership=active`, `glcdi_roles=[glcdi_regenerative_producer, glcdi_member, glcdi_producer]`, `glcdi_certification_status=regenerative-verified`, `glcdi_organisation=white-buffalo`, `glcdi_contribution_status=contributing` |
+| **Status** | [x] Done — for white-buffalo's SA token the decoded JWT showed `glcdi_membership=active`, `glcdi_roles=[glcdi_producer, glcdi_member]`, `glcdi_certification_status=regenerative-verified`, `glcdi_organisation=white-buffalo`, `glcdi_contribution_status=contributing` |
 
 **Manual verification** (mint a token for a connector SA via `client_credentials` and decode):
 
@@ -591,11 +591,11 @@ echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
   "azp": "glcdi-connector-caney-fork",
   "glcdi_membership": "active",
   "glcdi_organisation": "caney-fork",
-  "glcdi_roles": ["glcdi_member", "glcdi_regenerative_producer"],
+  "glcdi_roles": ["glcdi_member", "glcdi_producer"],
   "glcdi_certification_status": "regenerative-verified",
   "glcdi_contribution_status": "contributing",
   "realm_access": {
-    "roles": ["glcdi_member", "glcdi_regenerative_producer", "user", "default-roles-glcdi"]
+    "roles": ["glcdi_member", "glcdi_producer", "user", "default-roles-glcdi"]
   }
 }
 ```
@@ -726,7 +726,7 @@ edc.oauth.provider.audience=glcdi-connector-<this-org>  # token audience this co
 edc.iam.token.scope=openid profile glcdi_claims
 ```
 
-**Claim extraction:** EDC's `iam-oauth2` extension extracts standard claims by default. To surface our custom claims (`glcdi_member`, `glcdi_researcher`, `glcdi_regenerative_producer`, `glcdi_certification_status`, `glcdi_contribution_status`), configure the claim mapper to copy them from the JWT into the `ClaimToken`. The policy functions in §§ 3.2–3.4 then read from `ClaimToken.getClaim("glcdi_member")` etc.
+**Claim extraction:** EDC's `iam-oauth2` extension extracts standard claims by default. To surface our custom claims (`glcdi_member`, `glcdi_researcher`, `glcdi_producer`, `glcdi_certification_status`, `glcdi_contribution_status`), configure the claim mapper to copy them from the JWT into the `ClaimToken`. The policy functions in §§ 3.2–3.4 then read from `ClaimToken.getClaim("glcdi_member")` etc.
 
 **To verify during implementation:** the exact claim-mapping config keys for the `iam-oauth2` version pinned in this fork. The principle is consistent across versions; the property names occasionally drift. A small pre-flight read of the EDC source at the pinned version (`./gradlew :runtimes:controlplane:dependencies | grep iam-oauth2`) will confirm.
 
@@ -976,7 +976,7 @@ Specific gaps the fork has to close (acceptance criteria for the modal's M1 cut)
 M1 is demonstrable when, against a deployed three-participant cluster — **`caney-fork`** (regenerative producer, provider), **`white-buffalo`** (regenerative producer, positive consumer), **`point-blue`** (researcher, negative-test consumer) — the following all pass:
 
 - [ ] Authority Keycloak has 3 connector clients + service-account users (per § 1.5.4):
-  - `glcdi-connector-caney-fork` and `glcdi-connector-white-buffalo`: SAs carry `glcdi_member`, `glcdi_regenerative_producer` realm roles and `glcdi_certification_status = regenerative-verified`.
+  - `glcdi-connector-caney-fork` and `glcdi-connector-white-buffalo`: SAs carry `glcdi_member`, `glcdi_producer` realm roles and `glcdi_certification_status = regenerative-verified`.
   - `glcdi-connector-point-blue`: SA carries `glcdi_member`, `glcdi_researcher` realm roles and `glcdi_certification_status = not-applicable`.
   - All 3 clients have `serviceAccountsEnabled: true`, `directAccessGrantsEnabled: false`, `standardFlowEnabled: false` and the `glcdi-claims` default scope.
 - [ ] `iam-oauth2` is wired in each participant's connector (§ 3.5) against Authority KC. A `client_credentials` token mint at startup decodes to a JWT carrying the org's `glcdi_*` claims (verified per § 2.5).
@@ -1068,8 +1068,8 @@ Add the per-org groups + starter users (the content originally drafted as part o
 
 | Group | Realm roles | `glcdi_organisation` | `glcdi_certification_status` | `glcdi_contribution_status` |
 |-------|-------------|----------------------|------------------------------|-----------------------------|
-| `caney-fork-team` | `glcdi_member`, `glcdi_regenerative_producer` | `caney-fork` | `regenerative-verified` | `contributing` |
-| `white-buffalo-team` | `glcdi_member`, `glcdi_regenerative_producer` | `white-buffalo` | `regenerative-verified` | `contributing` |
+| `caney-fork-team` | `glcdi_member`, `glcdi_producer` | `caney-fork` | `regenerative-verified` | `contributing` |
+| `white-buffalo-team` | `glcdi_member`, `glcdi_producer` | `white-buffalo` | `regenerative-verified` | `contributing` |
 | `point-blue-team` | `glcdi_member`, `glcdi_researcher` | `point-blue` | `not-applicable` | `observer` |
 
 - Realm roles inherit from the group. User attributes are set on the user record (stock Keycloak's `oidc-usermodel-attribute-mapper` reads user-level fields, not group attributes).

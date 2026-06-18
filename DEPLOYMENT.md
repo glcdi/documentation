@@ -52,7 +52,7 @@ Before any destructive change:
 The in-repo `authority-services/resources/keycloak/realms/glcdi-realm.json` declares the realm content used by **both Tier 1 (load-bearing for M1)** and **Tier 2 (inert at Tier 1, becomes load-bearing in [`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui))**:
 
 **Tier 1 — load-bearing for M1:**
-- 13 realm roles (`user`, `admin`, plus `glcdi_member`, `glcdi_regenerative_producer`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, and 6 future participant types).
+- 12 realm roles (`user`, `admin`, plus `glcdi_member`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, and 6 future participant types).
 - 1 client scope `glcdi-claims` carrying the 5 protocol mappers (realm-roles → `glcdi_roles`; user-attribute → `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`).
 - **3 `glcdi-connector-<org>` service-account clients** (`caney-fork`, `point-blue`, `white-buffalo`) with `serviceAccountsEnabled: true`, `glcdi-claims` in default scopes.
 - **3 service-account users** (one per connector client, auto-created from each client) with `glcdi_*` realm roles + per-user attributes set per [`IMPLEM_PLAN § 1.5.4`](IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
@@ -254,7 +254,7 @@ curl -fsSL http://localhost:8090/auth/realms/glcdi/.well-known/openid-configurat
 Verify (Tier 1):
 - Admin console at `http://localhost:8090/auth/admin` (admin/admin from `.env`).
 - Realm `glcdi` shows clients `glcdi-connector-caney-fork`, `glcdi-connector-point-blue`, `glcdi-connector-white-buffalo` (Tier 1 load-bearing) plus `glcdi-ui` (Tier 2 carryover, inert at Tier 1).
-- Mint a token for `glcdi-connector-caney-fork` via `client_credentials` and decode it (per [`IMPLEM_PLAN § 2.5`](IMPLEM_PLAN.md#25-verify-token-contents)). Expected claims: `glcdi_organisation=caney-fork`, `glcdi_roles=["glcdi_member","glcdi_regenerative_producer"]`, `glcdi_certification_status=regenerative-verified`.
+- Mint a token for `glcdi-connector-caney-fork` via `client_credentials` and decode it (per [`IMPLEM_PLAN § 2.5`](IMPLEM_PLAN.md#25-verify-token-contents)). Expected claims: `glcdi_organisation=caney-fork`, `glcdi_roles=["glcdi_member","glcdi_producer"]`, `glcdi_certification_status=regenerative-verified`.
 
 ### 3.3 Spin up two participant stacks (caney-fork as provider, white-buffalo as consumer)
 
@@ -296,7 +296,7 @@ Verify both stacks:
 Until Phase 4's seeding scripts land, seed manually via Bruno's `10-provider-seeding/` folder, or via `curl` directly:
 
 - Asset `urn:glcdi:asset:caney-fork:grazing-soc-2024` with HttpData source.
-- Access policy `regenerative-producers-only` referencing `glcdi:certificationStatus eq "regenerative-verified"` (and/or the `glcdi_regenerative_producer` role check, depending on Phase 4's resolution).
+- Access policy `regenerative-producers-only` referencing `glcdi:certificationStatus eq "regenerative-verified"` (and/or the `glcdi_producer` role check, depending on Phase 4's resolution).
 - Contract policy `internal-use-only` with `odrl:purpose eq glcdi:InternalAnalysis`.
 - Contract definition binding the asset to both policies.
 

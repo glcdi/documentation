@@ -31,6 +31,13 @@
 #   reset                           — bring down + remove volumes + delete .glcdi.local/
 #   all                             — preflight + build + up + seed + test (the happy path)
 #   bruno-cmd                       — print the `bru run` command line (with secrets baked in)
+#   farmos-install                  — one-shot composer+drush install inside caney-fork's
+#                                     farmos container (requires GLCDI_FARMOS=1)
+#   test-farmos [--target T]        — end-to-end OAuth2 transfer test: drives point-blue
+#                                     through catalog → negotiate → transfer → EDR fetch
+#                                     against caney-fork's farmOS asset. Proves that
+#                                     glcdi-dataplane-oauth2-inline performs the token
+#                                     exchange at transfer-time.
 #   help                            — show this list
 #
 # --target values: local | caney-fork | point-blue | white-buffalo | all-staging
@@ -41,7 +48,12 @@
 #     point-blue    → SSH_USER_POINTBLUE / SSH_HOST_POINTBLUE
 #     white-buffalo → SSH_USER_WB        / SSH_HOST_WB
 #
-# Config: GLCDI_TIER (default tier1) — switches Bruno test mode.
+# Config:
+#   GLCDI_TIER   (default tier1) — switches Bruno test mode.
+#   GLCDI_FARMOS (default 0)     — when =1, caney-fork additionally brings up
+#                                  the optional farmOS site (port 8091).
+#                                  Run `glcdi.sh farmos-install` once after the
+#                                  first `up` to seed the Drupal site.
 # Working dir: ./.glcdi.local/ (gitignored) holds rotated secrets + per-org configs.
 
 set -euo pipefail
@@ -90,6 +102,19 @@ declare -A ORG_COLORS=(
   [white-buffalo]="#C0392B"
   [demo]="#7B1FA2"
 )
+# Secondary/accent shades — mirror configurations/<org>.env so local dev matches staging.
+declare -A ORG_SECONDARY_COLORS=(
+  [caney-fork]="#1B5E20"
+  [point-blue]="#0D47A1"
+  [white-buffalo]="#8E2A1F"
+  [demo]="#4A148C"
+)
+declare -A ORG_ACCENT_COLORS=(
+  [caney-fork]="#66BB6A"
+  [point-blue]="#42A5F5"
+  [white-buffalo]="#E67E22"
+  [demo]="#BA68C8"
+)
 declare -A ORG_TYPES=(
   [caney-fork]=regenerative-producer
   [point-blue]=researcher
@@ -112,6 +137,19 @@ declare -A ORG_LDP_PACKAGES=(
 AUTHORITY_KC_PORT=8090
 AUTHORITY_ONBOARDING_PORT=8083
 TIER="${GLCDI_TIER:-tier1}"
+FARMOS_ENABLED="${GLCDI_FARMOS:-0}"
+
+# Returns extra `docker compose` args (a flat space-separated string —
+# eval-safe and array-friendly) for the org's farmOS profile, when
+# applicable. Empty for non-caney-fork orgs or when GLCDI_FARMOS isn't 1.
+# Locally we don't stack docker-compose.farmos.yml — that override only
+# matters for nginx-prod, which the dev profile doesn't use.
+farmos_profile_args() {
+  local org="$1"
+  if [[ "$FARMOS_ENABLED" == "1" && "$org" == "caney-fork" ]]; then
+    printf -- '--profile farmos'
+  fi
+}
 
 # -----------------------------------------------------------------------------
 # Output helpers
@@ -215,6 +253,10 @@ cmd_secrets() {
         echo "${upper}_CONNECTOR_SECRET=$(openssl rand -hex 32)"
         echo "${upper}_DB_PASSWORD=$(openssl rand -hex 16)"
       done
+      echo
+      # farmOS M2M consumer creds — provisioned by install.sh, read by bruno_env_flags + test-farmos-transfer.sh.
+      echo "FARMOS_ANIMAL_CLIENT_ID=farm_m2m_$(openssl rand -hex 8)"
+      echo "FARMOS_ANIMAL_CLIENT_SECRET=$(openssl rand -hex 32)"
     } > "$SECRETS_FILE"
     chmod 600 "$SECRETS_FILE"
     ok "Generated $SECRETS_FILE (mode 600)"
@@ -534,9 +576,9 @@ SOLID_TEMS_PATH=${GLCDI_SOLID_TEMS_PATH:-}
 GLCDI_PATH=${GLCDI_PKG_PATH:-https://cdn.jsdelivr.net/npm/@startinblox/glcdi@1.0.5/+esm}
 
 APP_TITLE=$(echo "$org" | sed 's/.*/\u&/' | tr - ' ') - GLCDI
-PRIMARY_COLOR=#2E7D32
-SECONDARY_COLOR=#1B5E20
-ACCENT_COLOR=#66BB6A
+PRIMARY_COLOR=${ORG_COLORS[$org]:-#2E7D32}
+SECONDARY_COLOR=${ORG_SECONDARY_COLORS[$org]:-#1B5E20}
+ACCENT_COLOR=${ORG_ACCENT_COLORS[$org]:-#66BB6A}
 
 DSP_PROVIDERS=$(other_dsp_providers_json "$org")
 EOF
@@ -591,6 +633,11 @@ map \$request_method \$cors_method {
 server {
     listen 8080;
     server_name _;
+
+    # Keep Location headers relative — the container listens on 8080 but the host
+    # maps each org to its own port (8080/8081/8082), so absolute redirects would
+    # collapse every participant onto caney-fork's port.
+    absolute_redirect off;
 
     # Apply CORS on every response from this server.
     add_header 'Access-Control-Allow-Origin' '*' always;
@@ -746,6 +793,7 @@ up_participants() {
       && docker compose \
            --env-file "$org_dir/.env" \
            --profile dev \
+           $(farmos_profile_args "$org") \
            -f docker-compose.yml \
            -f "$org_dir/docker-compose.override.yml" \
            up -d \
@@ -795,8 +843,15 @@ cmd_up() {
   for org in "${LOCAL_ORGS[@]}"; do
     printf '  %-15s http://localhost:%s/  (UI)  +  /management/* with X-Api-Key\n' "$org" "${ORG_PORTS[$org]}"
   done
+  if [[ "$FARMOS_ENABLED" == "1" ]]; then
+    printf '  %-15s http://localhost:8091/  (Drupal — run \`%s farmos-install\` first time)\n' "farmos" "$0"
+  fi
   hr
-  log "Next: $0 seed   then   $0 test"
+  if [[ "$FARMOS_ENABLED" == "1" ]]; then
+    log "Next: $0 farmos-install   then   $0 seed   then   $0 test"
+  else
+    log "Next: $0 seed   then   $0 test"
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -1056,6 +1111,71 @@ seed_one() {
   ) || die "Bruno seeding folder failed for $org — see output above"
 }
 
+# Caney-fork-only extension: drops the farmOS-backed asset + its CD onto the
+# connector and runs the consumer-side catalog leak check. Pre-req: 10-... must
+# have run first (members-policy + internal-use-only-policy already exist).
+#
+# Gated on FARMOS_ENABLED — without GLCDI_FARMOS=1 the locally-running
+# connector has no farmOS service to fetch from, and on staging this implies
+# the operator hasn't set up the farmOS consumer either, so seeding the asset
+# would be a half-broken contract definition. cmd_seed calls this only when
+# the flag is set AND $org == caney-fork.
+#
+# Args: same as seed_one — org host api_key bruno_env.
+seed_farmos_one() {
+  local org="$1"
+  local host="$2"
+  local api_key="$3"
+
+  # Enable farmOS asset bundles + populate dummy animals/lands/plants.
+  # Idempotent; only runs on local (the farmOS container is local-only).
+  if [[ "${4:-}" == "local" ]] && [[ "$org" == "caney-fork" ]]; then
+    local container
+    container=$(compose_for caney-fork ps -q farmos 2>/dev/null || true)
+    if [[ -n "$container" ]]; then
+      log "Seeding farmOS dummy data (animals/lands/plants) on $org"
+      compose_for caney-fork exec -T --user root \
+        -e FARMOS_OAUTH_CLIENT_ID="${FARMOS_ANIMAL_CLIENT_ID:-}" \
+        farmos bash /opt/drupal/seed-dummy-data.sh >/dev/null \
+        || warn "seed-dummy-data.sh exited non-zero (consumer-repair errors are non-fatal — install.sh already provisions)"
+    else
+      warn "farmos container not running — skipping dummy-data seed"
+    fi
+  fi
+
+  local bruno_env="$4"
+  # Peer host used by 13-.../03-verify-secret-not-in-catalog.bru to query
+  # caney-fork's catalog from outside. Local always uses point-blue;
+  # staging uses point-blue's public URL.
+  local peer_host peer_api_key peer_dsp peer_id
+  case "$bruno_env" in
+    local)
+      peer_host="http://localhost:${ORG_PORTS[point-blue]}"
+      peer_api_key="${POINT_BLUE_API_KEY:-}"
+      peer_dsp="http://host.docker.internal:${ORG_PORTS[caney-fork]}/protocol"
+      peer_id="glcdi-connector-caney-fork"
+      ;;
+    *)
+      peer_host="https://point-blue.glcdi.startinblox.com"
+      peer_api_key="$(fetch_staging_api_key point-blue 2>/dev/null || true)"
+      peer_dsp="https://caney-fork.glcdi.startinblox.com/protocol"
+      peer_id="glcdi-connector-caney-fork"
+      ;;
+  esac
+
+  log "Seeding farmOS asset + CD on $org ($host) via Bruno [env=$bruno_env]"
+  # shellcheck disable=SC2046
+  ( cd "$BRUNO_DIR" && bru run 13-provider-seeding-caney-fork-farmos --env "$bruno_env" $(bruno_env_flags) \
+      --env-var "caney_fork_host=${host}" \
+      --env-var "caney_fork_api_key=${api_key}" \
+      --env-var "caney_fork_dsp=${peer_dsp}" \
+      --env-var "caney_fork_participant_id=${peer_id}" \
+      --env-var "point_blue_host=${peer_host}" \
+      --env-var "point_blue_api_key=${peer_api_key}" \
+      --env-var "org_display_name=$(org_display_name "$org")" \
+  ) || die "Bruno farmOS seeding folder failed for $org — see output above"
+}
+
 # Seed the demo VM via the 12-provider-seeding-demo bruno folder. 4
 # contributor-specific assets backed by static JSON stubs at /data/<slug>.json
 # on the demo VM. Atomic obligation policies + per-asset CD policies that
@@ -1113,6 +1233,7 @@ compose_for() {
     && docker compose \
          --env-file "$org_dir/.env" \
          --profile dev \
+         $(farmos_profile_args "$org") \
          -f docker-compose.yml \
          -f "$org_dir/docker-compose.override.yml" \
          "$@"
@@ -1282,6 +1403,12 @@ EOF
       org_upper=$(echo "$org" | tr 'a-z-' 'A-Z_')
       local api_key_var="${org_upper}_API_KEY"
       seed_one "$org" "http://localhost:${port}" "${!api_key_var}" "local"
+      # farmOS extension only attaches to caney-fork, only when explicitly
+      # enabled. Skipping for the other orgs keeps the seed unchanged for
+      # operators who never opt into farmOS.
+      if [[ "$FARMOS_ENABLED" == "1" && "$org" == "caney-fork" ]]; then
+        seed_farmos_one "$org" "http://localhost:${port}" "${!api_key_var}" "local"
+      fi
     done
     ok "M1 fixtures seeded on all local orgs (${LOCAL_ORGS[*]})"
     return 0
@@ -1295,6 +1422,9 @@ EOF
     local key
     key=$(fetch_staging_api_key "$t")
     seed_one "$t" "$host" "$key" "$(target_bruno_env "$t")"
+    if [[ "$FARMOS_ENABLED" == "1" && "$t" == "caney-fork" ]]; then
+      seed_farmos_one "$t" "$host" "$key" "$(target_bruno_env "$t")"
+    fi
   done
   ok "M1 fixtures seeded on staging targets: ${targets[*]}"
 }
@@ -1312,6 +1442,13 @@ bruno_env_flags() {
   printf -- '--env-var caney_fork_client_secret=%s ' "${CANEY_FORK_CONNECTOR_SECRET:-}"
   printf -- '--env-var point_blue_client_secret=%s ' "${POINT_BLUE_CONNECTOR_SECRET:-}"
   printf -- '--env-var white_buffalo_client_secret=%s ' "${WHITE_BUFFALO_CONNECTOR_SECRET:-}"
+  # farmOS OAuth2 client used by 13-provider-seeding-caney-fork-farmos/.
+  # Values come from .glcdi.local/secrets.env (see cmd_secrets). Empty unless
+  # the operator filled them in; the seed step that needs them will simply
+  # post an asset whose oauth2:clientSecret is blank, and the decorator's
+  # null-guard turns it into a no-op rather than a hard failure.
+  printf -- '--env-var farmos_animal_client_id=%s ' "${FARMOS_ANIMAL_CLIENT_ID:-}"
+  printf -- '--env-var farmos_animal_client_secret=%s ' "${FARMOS_ANIMAL_CLIENT_SECRET:-}"
 }
 
 # -----------------------------------------------------------------------------
@@ -1442,13 +1579,102 @@ cmd_test() {
   fi
   cmd_secrets
 
-  log "Running Bruno collection (tier=$tier)"
+  # Verification folders only — exclude seeders (10/12/13) and the destructive 09-wipe.
+  local pre_folders=(00-auth 20-catalog-discovery 30-negotiation)
+  local post_folders=(99-negative-auth)
+
+  log "Running Bruno tests (tier=$tier)"
+  for folder in "${pre_folders[@]}"; do
+    # shellcheck disable=SC2046
+    ( cd "$BRUNO_DIR" \
+      && bru run "$folder" --env local --env-var "tier=$tier" $(bruno_env_flags) \
+    ) || die "Bruno folder $folder failed — see output above"
+  done
+
+  # 30→40 bridge: Bruno bru-files can't carry env vars across `bru run` processes,
+  # and 30-negotiation/01 sends a synthetic offer @id that EDC rejects. Do a real
+  # catalog→negotiate→finalize roundtrip here and inject the agreement id into 40-transfer.
+  local agreement_id
+  agreement_id=$(m1_negotiate_bridge) || die "M1 negotiation bridge failed — see logs above"
+  ok "M1 contract agreement: $agreement_id"
+
   # shellcheck disable=SC2046
   ( cd "$BRUNO_DIR" \
-    && bru run --env local --env-var "tier=$tier" $(bruno_env_flags) \
-  ) \
-    && ok "Bruno run green at $tier" \
-    || die "Bruno run failed — see output above"
+    && bru run 40-transfer --env local --env-var "tier=$tier" \
+       --env-var "m1_contract_agreement_id=$agreement_id" \
+       $(bruno_env_flags) \
+  ) || die "Bruno folder 40-transfer failed — see output above"
+
+  for folder in "${post_folders[@]}"; do
+    # shellcheck disable=SC2046
+    ( cd "$BRUNO_DIR" \
+      && bru run "$folder" --env local --env-var "tier=$tier" $(bruno_env_flags) \
+    ) || die "Bruno folder $folder failed — see output above"
+  done
+
+  ok "Bruno run green at $tier"
+}
+
+# Drive a real white-buffalo→caney-fork M1 negotiation (InternalAnalysis purpose) using the
+# catalog-discovered offer verbatim. Polls until FINALIZED; echoes contractAgreementId on stdout.
+m1_negotiate_bridge() {
+  local asset='urn:glcdi:asset:caney-fork:grazing-soc-2024'
+  local wb="http://localhost:${ORG_PORTS[white-buffalo]}"
+  local cf_dsp="http://host.docker.internal:${ORG_PORTS[caney-fork]}/protocol"
+  local cf_pid="glcdi-connector-caney-fork"
+  local api_key="${WHITE_BUFFALO_API_KEY:-}"
+  [[ -z "$api_key" ]] && { log "  WHITE_BUFFALO_API_KEY missing" >&2; return 1; }
+
+  log "  catalog query: white-buffalo → caney-fork" >&2
+  local cat_body
+  cat_body=$(jq -nc --arg dsp "$cf_dsp" --arg pid "$cf_pid" \
+    '{ "@context":{"@vocab":"https://w3id.org/edc/v0.0.1/ns/"},"@type":"CatalogRequest",
+       counterPartyAddress:$dsp, counterPartyId:$pid,
+       protocol:"dataspace-protocol-http", querySpec:{offset:0,limit:200} }')
+  local cat
+  cat=$(curl -fsS -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $api_key" \
+    "$wb/management/v3/catalog/request" -d "$cat_body") \
+    || { log "  catalog query failed" >&2; return 1; }
+
+  local offer
+  offer=$(printf '%s' "$cat" | jq --arg a "$asset" '
+    (."dcat:dataset" | (if type=="array" then . else [.] end))
+    | map(select(."@id" == $a)) | first | ."odrl:hasPolicy"
+    | (if type=="array" then . else [.] end)
+    | map(select(
+        (."odrl:permission" | (if type=="array" then . else [.] end))
+        | map(."odrl:constraint" | (if type=="array" then . else [.] end))
+        | flatten | map(."odrl:rightOperand") | any(. == "glcdi:InternalAnalysis")
+      )) | first')
+  [[ -z "$offer" || "$offer" == "null" ]] && { log "  no InternalAnalysis offer for $asset in catalog" >&2; return 1; }
+
+  log "  POST negotiation" >&2
+  local cr_body neg_id
+  cr_body=$(jq -nc --arg dsp "$cf_dsp" --arg pid "$cf_pid" --arg a "$asset" --argjson o "$offer" \
+    '{ "@context": {"@vocab":"https://w3id.org/edc/v0.0.1/ns/","odrl":"http://www.w3.org/ns/odrl/2/","glcdi":"https://w3id.org/glcdi/v0.1.0/ns/"},
+       "@type":"ContractRequest", counterPartyAddress:$dsp, protocol:"dataspace-protocol-http",
+       policy: ($o + { "@type":"odrl:Offer", "odrl:assigner": {"@id":$pid}, "odrl:target": {"@id":$a} }) }')
+  neg_id=$(curl -fsS -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $api_key" \
+    "$wb/management/v3/contractnegotiations" -d "$cr_body" | jq -r '."@id" // empty')
+  [[ -z "$neg_id" ]] && { log "  negotiation POST returned no id" >&2; return 1; }
+  log "  negotiation $neg_id — polling for FINALIZED" >&2
+
+  local state agreement_id body
+  for _ in $(seq 1 30); do
+    body=$(curl -fsS -H "X-Api-Key: $api_key" "$wb/management/v3/contractnegotiations/$neg_id" 2>/dev/null) || { sleep 2; continue; }
+    state=$(printf '%s' "$body" | jq -r '.state // empty')
+    if [[ "$state" == "FINALIZED" ]]; then
+      agreement_id=$(printf '%s' "$body" | jq -r '.contractAgreementId // empty')
+      break
+    fi
+    if [[ "$state" == "TERMINATED" ]]; then
+      log "  negotiation TERMINATED: $(printf '%s' "$body" | jq -r '.errorDetail // "(no detail)"')" >&2
+      return 1
+    fi
+    sleep 2
+  done
+  [[ -z "$agreement_id" ]] && { log "  negotiation did not FINALIZE within 60s (last state: $state)" >&2; return 1; }
+  printf '%s' "$agreement_id"
 }
 
 # Print the exact `bru run` invocation a user would need to run by hand.
@@ -1461,6 +1687,47 @@ cmd_print_bruno_cmd() {
   printf 'bru run --env local --env-var %q %s [folder|file]\n' \
     "tier=$tier" \
     "$(bruno_env_flags)"
+}
+
+# -----------------------------------------------------------------------------
+# farmOS — one-shot site install inside caney-fork's farmos container
+# -----------------------------------------------------------------------------
+#
+# Runs participant-agent-services/farmos/install.sh inside the caney-fork
+# farmos container. Idempotent (re-running after a successful install just
+# re-syncs the module list + clears caches), so safe to invoke whenever
+# the farmos image or module repo has changed.
+cmd_farmos_install() {
+  [[ "$FARMOS_ENABLED" == "1" ]] \
+    || die "GLCDI_FARMOS=1 not set — farmOS isn't enabled, so there's no container to install into."
+  local org_dir="$LOCAL_DIR/caney-fork"
+  [[ -f "$org_dir/.env" ]] \
+    || die "caney-fork not started yet — run \`$0 up\` first (with GLCDI_FARMOS=1)."
+  local container
+  container=$(compose_for caney-fork ps -q farmos 2>/dev/null || true)
+  [[ -n "$container" ]] \
+    || die "farmos container not running. Run \`GLCDI_FARMOS=1 $0 up\` first."
+  log "Running farmOS install.sh inside caney-fork's farmos container"
+  # --user root: install.sh needs to write composer.json + run drush
+  # site:install + chown sites/default/files. The farmos image's default
+  # exec UID can't do any of that on the bind-mounted root.
+  compose_for caney-fork exec -T --user root \
+    -e FARMOS_OAUTH_CLIENT_ID="${FARMOS_ANIMAL_CLIENT_ID:-}" \
+    -e FARMOS_OAUTH_CLIENT_SECRET="${FARMOS_ANIMAL_CLIENT_SECRET:-}" \
+    farmos bash /opt/drupal/install.sh \
+    || die "farmOS install failed — check the container logs: $0 logs caney-fork"
+  ok "farmOS ready at http://localhost:8091/admin/api-urls"
+}
+
+# -----------------------------------------------------------------------------
+# farmOS — end-to-end OAuth2 transfer test
+# -----------------------------------------------------------------------------
+#
+# Thin wrapper around scripts/test-farmos-transfer.sh — passes the same
+# secrets.env env vars in scope and forwards any --target etc. arg.
+cmd_test_farmos() {
+  cmd_secrets
+  "$SCRIPT_DIR/test-farmos-transfer.sh" "$@"
 }
 
 # -----------------------------------------------------------------------------
@@ -1533,6 +1800,7 @@ cmd_logs() {
       && docker compose \
            --env-file "$org_dir/.env" \
            --profile dev \
+           $(farmos_profile_args "$svc") \
            -f docker-compose.yml \
            -f "$org_dir/docker-compose.override.yml" \
            logs -f --tail=200 \
@@ -1551,6 +1819,7 @@ cmd_down() {
         && docker compose \
              --env-file "$org_dir/.env" \
              --profile dev \
+             $(farmos_profile_args "$org") \
              -f docker-compose.yml \
              -f "$org_dir/docker-compose.override.yml" \
              down \
@@ -1578,6 +1847,7 @@ cmd_reset() {
         && docker compose \
              --env-file "$org_dir/.env" \
              --profile dev \
+             $(farmos_profile_args "$org") \
              -f docker-compose.yml \
              -f "$org_dir/docker-compose.override.yml" \
              down -v \
@@ -1623,6 +1893,9 @@ cmd_all() {
   # Seed the LDP Farm first so its urlid is on disk before Bruno builds the
   # M1 asset that points at it. Order is load-bearing — see seed-ldp header.
   cmd_seed_ldp
+  # Bootstrap farmOS (site install + OAuth2 keys/scope/consumer) before seed,
+  # so the asset PUT and the dataplane OAuth2 exchange both find what they need.
+  [[ "$FARMOS_ENABLED" == "1" ]] && cmd_farmos_install
   cmd_seed
   cmd_test "$TIER"
 }
@@ -1658,6 +1931,8 @@ main() {
     reset)     cmd_reset ;;
     all)       cmd_all ;;
     bruno-cmd) cmd_print_bruno_cmd "${1:-$TIER}" ;;
+    farmos-install) cmd_farmos_install ;;
+    test-farmos) cmd_test_farmos "$@" ;;
     help|-h|--help) cmd_help ;;
     *)         err "Unknown subcommand: $cmd"; cmd_help; exit 2 ;;
   esac

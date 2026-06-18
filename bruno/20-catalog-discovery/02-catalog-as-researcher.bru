@@ -12,9 +12,9 @@ post {
 
 docs {
   Identity-driven negative case. point-blue's connector carries `glcdi_member`
-  + `glcdi_researcher` but no `glcdi_regenerative_producer` role. The
+  + `glcdi_researcher` but no `glcdi_producer` role. The
   provider's `regenerative-producers-only` access policy explicitly requires
-  `glcdi_regenerative_producer`, so this consumer must NOT see the M1
+  `glcdi_producer`, so this consumer must NOT see the M1
   fixture asset in the returned catalog.
 
   Expected behaviour: HTTP 200 (catalog query itself succeeds), but the
