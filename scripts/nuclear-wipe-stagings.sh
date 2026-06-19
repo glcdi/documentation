@@ -226,7 +226,8 @@ fetch_api_key() {
 }
 
 # Identify the connector pg volume name on the VM. Compose v2 prefixes
-# the project name, which can differ — match by suffix.
+# the project name, which can differ — match by suffix. Empty on absent
+# (idempotent re-runs after a prior wipe that already removed it).
 identify_connector_volume() {
   local target="$1"
   local vol
@@ -234,7 +235,6 @@ identify_connector_volume() {
     || die "[$target] failed to query docker volumes"
   vol="${vol//$'\r'/}"
   vol="${vol%$'\n'}"
-  [[ -n "$vol" ]] || die "[$target] no connector pg volume found matching /connector-pg-data|connector_pg/"
   printf '%s' "$vol"
 }
 
@@ -361,6 +361,14 @@ wipe_target() {
 
   preflight_ssh "$target"
 
+  # caney-fork stacks the farmos override so the recreated nginx-prod
+  # keeps the farmos.<domain> vhost template mount; other targets stay
+  # on the base compose only.
+  local compose_args="--profile prod"
+  if [[ "$target" == "caney-fork" ]]; then
+    compose_args="-f docker-compose.yml -f docker-compose.farmos.yml --profile prod --profile farmos"
+  fi
+
   local vol
   if $DRY_RUN; then
     log "[$target] [dry-run] would identify connector pg volume:"
@@ -368,24 +376,28 @@ wipe_target() {
     vol="<connector-pg-volume>"
   else
     vol="$(identify_connector_volume "$target")"
-    log "[$target] connector pg volume: $vol"
+    if [[ -n "$vol" ]]; then
+      log "[$target] connector pg volume: $vol"
+    else
+      log "[$target] connector pg volume already absent — skipping volume rm"
+    fi
   fi
 
   if $TOTAL_WIPE; then
     warn "[$target] --total-wipe: will drop ALL volumes (KC + identity-hub + connector)"
-    ssh_do "$target" "cd ${VM_REPO_PATH} && docker compose --profile prod down -v --remove-orphans"
+    ssh_do "$target" "cd ${VM_REPO_PATH} && docker compose ${compose_args} down -v --remove-orphans"
   else
-    ssh_do "$target" "cd ${VM_REPO_PATH} && docker compose --profile prod down --remove-orphans"
+    ssh_do "$target" "cd ${VM_REPO_PATH} && docker compose ${compose_args} down --remove-orphans"
     if $DRY_RUN; then
       log "[$target] [dry-run] would: ssh ... docker volume rm <connector-pg-volume>"
-    else
+    elif [[ -n "$vol" ]]; then
       log "[$target] removing connector pg volume: $vol"
       ssh_run "$target" "docker volume rm '$vol'" \
         || die "[$target] docker volume rm failed — likely still in use; investigate before retrying"
     fi
   fi
 
-  ssh_do "$target" "cd ${VM_REPO_PATH} && docker compose --profile prod up -d"
+  ssh_do "$target" "cd ${VM_REPO_PATH} && docker compose ${compose_args} up -d"
 
   if $DRY_RUN; then
     log "[$target] [dry-run] would wait for mgmt API + verify empty + reseed + verify seeded"

@@ -973,25 +973,31 @@ target_bruno_env() {
 # Fetch the EDC_API_KEY for a staging target by SSH-ing to its VM.
 # Defaults to root@<target>.glcdi.startinblox.com; override via SSH_USER_* / SSH_HOST_* env vars.
 fetch_staging_api_key() {
-  local target="$1"
+  fetch_staging_env_value "$1" EDC_API_KEY
+}
+
+# Fetch any .env variable from a staging target's ~/participant-agent-services/.env over SSH.
+# Returns empty string (not fatal) if the var isn't set — callers decide whether absence is OK.
+fetch_staging_env_value() {
+  local target="$1" key="$2"
   local user_var="${SSH_USER_VAR[$target]:-}"
   local host_var="${SSH_HOST_VAR[$target]:-}"
   if [[ -z "$user_var" || -z "$host_var" ]]; then
-    die "fetch_staging_api_key: no SSH var mapping for $target"
+    die "fetch_staging_env_value: no SSH var mapping for $target"
   fi
-
   local user="${!user_var:-root}"
   local host="${!host_var:-${target}.glcdi.startinblox.com}"
-  local key
-  key=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "${user}@${host}" \
-          "grep '^EDC_API_KEY=' ~/participant-agent-services/.env | cut -d= -f2-" \
+  local val
+  val=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "${user}@${host}" \
+          "grep '^${key}=' ~/participant-agent-services/.env | cut -d= -f2-" \
         2>/dev/null) || die "SSH to ${user}@${host} failed for $target — check connectivity and ~/participant-agent-services/.env on the VM."
-  key="${key//$'\r'/}"
-  key="${key%$'\n'}"
-  if [[ -z "$key" ]]; then
-    die "Empty EDC_API_KEY fetched from ${user}@${host} for $target — does ~/participant-agent-services/.env exist on the VM?"
+  val="${val//$'\r'/}"
+  val="${val%$'\n'}"
+  # Critical-var sentinel — EDC_API_KEY's absence is fatal; everything else returns "".
+  if [[ -z "$val" && "$key" == "EDC_API_KEY" ]]; then
+    die "Empty $key fetched from ${user}@${host} for $target — does ~/participant-agent-services/.env exist on the VM?"
   fi
-  printf '%s' "$key"
+  printf '%s' "$val"
 }
 
 # -----------------------------------------------------------------------------
@@ -1121,11 +1127,16 @@ seed_one() {
 # would be a half-broken contract definition. cmd_seed calls this only when
 # the flag is set AND $org == caney-fork.
 #
-# Args: same as seed_one — org host api_key bruno_env.
+# Args: org host api_key bruno_env [cli_cid cli_secret].
+# cli_cid/cli_secret are the --farmos-client-id/--farmos-client-secret overrides
+# from cmd_seed; when set, they replace both the local secrets.env value and the
+# staging VM .env fetch.
 seed_farmos_one() {
   local org="$1"
   local host="$2"
   local api_key="$3"
+  local cli_farmos_cid="${5:-}"
+  local cli_farmos_secret="${6:-}"
 
   # Enable farmOS asset bundles + populate dummy animals/lands/plants.
   # Idempotent; only runs on local (the farmOS container is local-only).
@@ -1163,6 +1174,34 @@ seed_farmos_one() {
       ;;
   esac
 
+  # Cred resolution priority: CLI override > local secrets.env > staging VM .env.
+  local farmos_cid="${FARMOS_ANIMAL_CLIENT_ID:-}"
+  local farmos_secret="${FARMOS_ANIMAL_CLIENT_SECRET:-}"
+  if [[ -n "$cli_farmos_cid" && -n "$cli_farmos_secret" ]]; then
+    farmos_cid="$cli_farmos_cid"
+    farmos_secret="$cli_farmos_secret"
+    log "  using --farmos-client-id/--farmos-client-secret overrides"
+  elif [[ "$bruno_env" != "local" ]]; then
+    farmos_cid=$(fetch_staging_env_value "$org" FARMOS_ANIMAL_CLIENT_ID)
+    farmos_secret=$(fetch_staging_env_value "$org" FARMOS_ANIMAL_CLIENT_SECRET)
+    if [[ -z "$farmos_cid" || -z "$farmos_secret" ]]; then
+      die "FARMOS_ANIMAL_CLIENT_ID/SECRET missing from ${org}'s VM .env — set them, pass --farmos-client-id/--farmos-client-secret, or see README §farmOS staging step 4."
+    fi
+  fi
+
+  # URLs the PUT-update step needs; mirrors environments/<bruno_env>.bru.
+  local farmos_base_url farmos_token_url
+  case "$bruno_env" in
+    local)
+      farmos_base_url="http://farmos:80/api/asset/animal"
+      farmos_token_url="http://farmos:80/oauth/token"
+      ;;
+    *)
+      farmos_base_url="https://farmos.caney-fork.glcdi.startinblox.com/api/asset/animal"
+      farmos_token_url="https://farmos.caney-fork.glcdi.startinblox.com/oauth/token"
+      ;;
+  esac
+
   log "Seeding farmOS asset + CD on $org ($host) via Bruno [env=$bruno_env]"
   # shellcheck disable=SC2046
   ( cd "$BRUNO_DIR" && bru run 13-provider-seeding-caney-fork-farmos --env "$bruno_env" $(bruno_env_flags) \
@@ -1173,7 +1212,56 @@ seed_farmos_one() {
       --env-var "point_blue_host=${peer_host}" \
       --env-var "point_blue_api_key=${peer_api_key}" \
       --env-var "org_display_name=$(org_display_name "$org")" \
+      --env-var "farmos_animal_client_id=${farmos_cid}" \
+      --env-var "farmos_animal_client_secret=${farmos_secret}" \
   ) || die "Bruno farmOS seeding folder failed for $org — see output above"
+
+  # Bruno step 01 uses POST, which 409s if the asset already exists — so re-seeding
+  # an existing asset is otherwise a no-op for the dataAddress + privateProperties.
+  # PUT here ensures the on-disk creds (+ URLs + scope) always converge to the
+  # values resolved above. Safe wrt existing contract agreements: they reference
+  # the asset URN, not its content, so updates flow into in-flight + future transfers.
+  local org_display
+  org_display=$(org_display_name "$org")
+  local put_body
+  put_body=$(jq -nc \
+    --arg id "urn:glcdi:asset:caney-fork:farmos-animals-2024" \
+    --arg name "${org_display} — live animal census (farmOS)" \
+    --arg base "$farmos_base_url" \
+    --arg tok  "$farmos_token_url" \
+    --arg cid  "$farmos_cid" \
+    --arg sec  "$farmos_secret" \
+'{
+  "@context": {"@vocab":"https://w3id.org/edc/v0.0.1/ns/","glcdi":"https://w3id.org/glcdi/v0.1.0/ns/"},
+  "@id": $id, "@type": "Asset",
+  "properties": {
+    "name": $name,
+    "description": "JSON:API feed of farmOS asset/animal records, fetched at transfer time via OAuth2 client_credentials.",
+    "contenttype": "application/vnd.api+json",
+    "glcdi:assetClass": "livestock-census",
+    "glcdi:source": "farmos"
+  },
+  "privateProperties": {"oauth2:clientSecret": $sec},
+  "dataAddress": {
+    "type": "HttpData",
+    "name": "farmos-animals",
+    "baseUrl": $base,
+    "proxyPath": "false",
+    "proxyQueryParams": "true",
+    "oauth2:tokenUrl": $tok,
+    "oauth2:clientId": $cid,
+    "oauth2:scope": "farm_viewer"
+  }
+}')
+  local put_code
+  put_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT \
+    -H 'Content-Type: application/json' -H "X-Api-Key: $api_key" \
+    "$host/management/v3/assets" -d "$put_body" 2>/dev/null || echo "000")
+  case "$put_code" in
+    2*) ok "PUT-updated $org's farmos-animals asset (HTTP $put_code)" ;;
+    404) warn "PUT returned 404 — Bruno step 01 should have created the asset; check that output." ;;
+    *)  die "PUT-update of farmos-animals asset on $org failed (HTTP $put_code)" ;;
+  esac
 }
 
 # Seed the demo VM via the 12-provider-seeding-demo bruno folder. 4
@@ -1375,16 +1463,28 @@ cmd_seed_ldp() {
 
 cmd_seed() {
   local target="local"
+  # Optional CLI overrides — when set, bypass both secrets.env (local) and
+  # the staging VM .env fetch in seed_farmos_one. Useful when the operator
+  # has provisioned the farmOS consumer out-of-band and wants the seeded
+  # asset to carry those exact creds without touching either env file.
+  local cli_farmos_cid=""
+  local cli_farmos_secret=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --target) target="${2:-}"; shift 2 || die "--target requires a value" ;;
       --target=*) target="${1#--target=}"; shift ;;
+      --farmos-client-id) cli_farmos_cid="${2:-}"; shift 2 || die "--farmos-client-id requires a value" ;;
+      --farmos-client-id=*) cli_farmos_cid="${1#--farmos-client-id=}"; shift ;;
+      --farmos-client-secret) cli_farmos_secret="${2:-}"; shift 2 || die "--farmos-client-secret requires a value" ;;
+      --farmos-client-secret=*) cli_farmos_secret="${1#--farmos-client-secret=}"; shift ;;
       -h|--help)
         cat <<'EOF'
-Usage: glcdi.sh seed [--target T]
+Usage: glcdi.sh seed [--target T] [--farmos-client-id ID] [--farmos-client-secret SECRET]
 
-  --target T   One of: local (default) | caney-fork | point-blue | white-buffalo | all-staging
-               Staging defaults to root@<target>.glcdi.startinblox.com; override via SSH_USER_*/SSH_HOST_* env vars.
+  --target T              One of: local (default) | caney-fork | point-blue | white-buffalo | all-staging
+                          Staging defaults to root@<target>.glcdi.startinblox.com; override via SSH_USER_*/SSH_HOST_* env vars.
+  --farmos-client-id ID   Override the farmOS M2M consumer client_id (default: secrets.env locally, VM .env on staging).
+  --farmos-client-secret  Override the matching client_secret. Both must be passed together for the override to take effect.
 EOF
         return 0 ;;
       *) die "seed: unknown argument: $1" ;;
@@ -1393,6 +1493,10 @@ EOF
 
   if ! command -v bru >/dev/null 2>&1; then
     die "bru (Bruno CLI) is not installed. Install with: npm install -g @usebruno/cli"
+  fi
+
+  if [[ -n "$cli_farmos_cid" && -z "$cli_farmos_secret" ]] || [[ -z "$cli_farmos_cid" && -n "$cli_farmos_secret" ]]; then
+    die "--farmos-client-id and --farmos-client-secret must be passed together (got only one)."
   fi
 
   if [[ "$target" == "local" ]]; then
@@ -1407,7 +1511,7 @@ EOF
       # enabled. Skipping for the other orgs keeps the seed unchanged for
       # operators who never opt into farmOS.
       if [[ "$FARMOS_ENABLED" == "1" && "$org" == "caney-fork" ]]; then
-        seed_farmos_one "$org" "http://localhost:${port}" "${!api_key_var}" "local"
+        seed_farmos_one "$org" "http://localhost:${port}" "${!api_key_var}" "local" "$cli_farmos_cid" "$cli_farmos_secret"
       fi
     done
     ok "M1 fixtures seeded on all local orgs (${LOCAL_ORGS[*]})"
@@ -1423,7 +1527,7 @@ EOF
     key=$(fetch_staging_api_key "$t")
     seed_one "$t" "$host" "$key" "$(target_bruno_env "$t")"
     if [[ "$FARMOS_ENABLED" == "1" && "$t" == "caney-fork" ]]; then
-      seed_farmos_one "$t" "$host" "$key" "$(target_bruno_env "$t")"
+      seed_farmos_one "$t" "$host" "$key" "$(target_bruno_env "$t")" "$cli_farmos_cid" "$cli_farmos_secret"
     fi
   done
   ok "M1 fixtures seeded on staging targets: ${targets[*]}"
