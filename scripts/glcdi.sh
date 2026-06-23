@@ -151,6 +151,21 @@ farmos_profile_args() {
   fi
 }
 
+# Build the glcdi.dataplane.host.rewrite map for $org. Adds farmOS-specific
+# host:port→host:port entries (localhost:8091→farmos:80) on caney-fork so the
+# connector reaches farmOS via docker DNS instead of the unreachable host
+# loopback. Other orgs get the bare hostname swap (no current callers, but
+# kept as a no-op default so future backends behind localhost can be added
+# without breaking existing assets).
+host_rewrite_for() {
+  local org="$1" port="${FARMOS_PORT:-8091}"
+  if [[ "$FARMOS_ENABLED" == "1" && "$org" == "caney-fork" ]]; then
+    printf 'localhost:%s=farmos:80,127.0.0.1:%s=farmos:80,localhost=host.docker.internal,127.0.0.1=host.docker.internal' "$port" "$port"
+  else
+    printf 'localhost=host.docker.internal,127.0.0.1=host.docker.internal'
+  fi
+}
+
 # -----------------------------------------------------------------------------
 # Output helpers
 # -----------------------------------------------------------------------------
@@ -581,6 +596,11 @@ SECONDARY_COLOR=${ORG_SECONDARY_COLORS[$org]:-#1B5E20}
 ACCENT_COLOR=${ORG_ACCENT_COLORS[$org]:-#66BB6A}
 
 DSP_PROVIDERS=$(other_dsp_providers_json "$org")
+
+# OAuth2 token endpoint for the participant's bound farmOS instance
+# (caney-fork + GLCDI_FARMOS=1 only). Empty otherwise — the asset-create
+# form just shows a placeholder.
+FARMOS_TOKEN_URL=$([[ "$FARMOS_ENABLED" == "1" && "$org" == "caney-fork" ]] && echo "http://localhost:${FARMOS_PORT:-8091}/oauth/token" || echo "")
 EOF
 
     # Per-org configuration.properties — patched from the example.
@@ -595,6 +615,7 @@ EOF
         -e "s|edc.api.control.auth.apikey.value=.*|edc.api.control.auth.apikey.value=$api_key|" \
         -e "s|edc.dsp.callback.address=.*|edc.dsp.callback.address=http://host.docker.internal:${nginx_port}/protocol|" \
         -e "s|edc.dataplane.api.public.baseurl=.*|edc.dataplane.api.public.baseurl=http://host.docker.internal:${nginx_port}/public/|" \
+        -e "s|glcdi.dataplane.host.rewrite=.*|glcdi.dataplane.host.rewrite=$(host_rewrite_for "$org")|" \
         -e "s|edc.participant.id=.*|edc.participant.id=glcdi-connector-${org}|" \
         -e "s|glcdi.iam.kc.client.id=.*|glcdi.iam.kc.client.id=glcdi-connector-${org}|" \
         -e "s|glcdi.iam.kc.client.secret=.*|glcdi.iam.kc.client.secret=${connector_secret}|" \
