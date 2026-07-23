@@ -9,9 +9,9 @@ into the three deployable sub-projects of the GLCDI workspace:
 
 | Sub-project | What it deploys | What it takes from here |
 |-------------|----------------|------------------------|
-| [`edc-connector/`](../edc-connector/) | EDC connector runtime | Custom policy function extension (Phase 3) |
-| [`governance-services/`](../governance-services/) | Keycloak, onboarding app | Realm roles, protocol mappers, user attributes (Phase 2) |
-| [`participant-agent-services/`](../participant-agent-services/) | Per-participant stack | Policy-aware seeding scripts (Phase 4) |
+| `edc-connector/` | EDC connector runtime | Custom policy function extension (Phase 3) |
+| `governance-services/` | Keycloak, onboarding app | Realm roles, protocol mappers, user attributes (Phase 2) |
+| `participant-agent-services/` | Per-participant stack | Policy-aware seeding scripts (Phase 4) |
 
 ## Contents
 
@@ -88,14 +88,14 @@ flowchart TB
 
 | Block | Sub-project (repo) | What it runs |
 |-------|--------------------|--------------|
-| Authority Keycloak | [`governance-services/`](../governance-services/) | Realm `glcdi` — realm roles, claim mappers, one `glcdi-connector-«org»` service-account client per participant connector, plus the human onboarding clients |
-| Onboarding portal | [`governance-services/`](../governance-services/) | Public registration form + Django admin approval; provisions KC group / user / roles on approval (`djangoldp-glcdi-onboarding`) |
-| EDC control-plane + extensions | [`edc-connector/`](../edc-connector/) + [`edc-glcdi-extension/`](../edc-glcdi-extension/) | DSP endpoints, policy evaluation, contract negotiation. `edc-glcdi-extension/` sources are copy-merged into `edc-connector/extensions/` at CI build time |
-| EDC data-plane | [`edc-connector/`](../edc-connector/) | HTTP data-plane, EDR-gated dataset delivery |
-| Identity Hub | [`participant-agent-services/`](../participant-agent-services/) | VC/DCP-shaped subsystem — deployed but not on the M1 critical path; reserved for Tier 3 |
-| Catalogue UI | [`participant-ui/`](../participant-ui/) (also cloned as [`orbit/`](../orbit/)) | Single runtime-configurable image, themed per participant at container start |
+| Authority Keycloak | `governance-services/` | Realm `glcdi` — realm roles, claim mappers, one `glcdi-connector-«org»` service-account client per participant connector, plus the human onboarding clients |
+| Onboarding portal | `governance-services/` | Public registration form + Django admin approval; provisions KC group / user / roles on approval (`djangoldp-glcdi-onboarding`) |
+| EDC control-plane + extensions | `edc-connector/` + `edc-glcdi-extension/` | DSP endpoints, policy evaluation, contract negotiation. `edc-glcdi-extension/` sources are copy-merged into `edc-connector/extensions/` at CI build time |
+| EDC data-plane | `edc-connector/` | HTTP data-plane, EDR-gated dataset delivery |
+| Identity Hub | `participant-agent-services/` | VC/DCP-shaped subsystem — deployed but not on the M1 critical path; reserved for Tier 3 |
+| Catalogue UI | `participant-ui/` (also cloned as `orbit/`) | Single runtime-configurable image, themed per participant at container start |
 | djangoldp-glcdi | External per-participant deployment in staging/prod; sibling container in dev | LDP dataset side-channel used by the UI |
-| nginx | [`participant-agent-services/`](../participant-agent-services/) | TLS termination and reverse proxy — no oauth2-proxy at Tier 1 |
+| nginx | `participant-agent-services/` | TLS termination and reverse proxy — no oauth2-proxy at Tier 1 |
 
 ### How the flows connect (Tier 1)
 
