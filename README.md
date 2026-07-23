@@ -21,6 +21,8 @@ management/
 ├── AUTHORITY.md        # Proposed responsibilities & operating mode of the Dataspace Authority
 ├── AUTHORITY_MIGRATION.md # Operator checklist for renaming the live governance-* infrastructure
 ├── IDENTITY.md         # Identity, authentication & standards (OIDC, OID4VC, Keycloak)
+├── AUTHENTICATION.md   # Two-tier authentication design and migration phases
+├── DEPLOYMENT.md       # Deployment topology, staging URLs, per-VM layout
 ├── STANDARDS.md        # Trust & control mechanisms — specification mapping (ODRL, DSP, DCAT, JSON-LD)
 ├── PAYMENT_GATING.md   # Implementation design for the payment-required contract policy (proposal)
 ├── AGENTS.md           # Context file for AI agents
@@ -32,6 +34,93 @@ management/
     ├── combined/       # End-to-end scenario examples
     └── diagrams/       # PlantUML sequence diagrams
 ```
+
+---
+
+## Architecture at a glance
+
+GLCDI runs on a **one Authority + N participants** topology. The Authority publishes governance — identity, realm roles, membership — and hosts the onboarding portal. Each participant deploys the same Compose stack, exposes its datasets to peers via the Dataspace Protocol (DSP), and serves its Catalogue UI on a subdomain of `glcdi.startinblox.com`.
+
+Identity ships in **tiers**. The diagram below shows **Tier 1** — the M1 target — where the *only* auth at the UI edge is an `X-Api-Key`, and the *only* auth on the DSP edge is a JWT the connector mints for itself against the Authority Keycloak. Tier 2 (per-user OIDC at the UI) and Tier 3 (Verifiable Credentials via DCP) are deliberately deferred; see [`IMPLEM_PLAN.md` § Identity Tiering Strategy](IMPLEM_PLAN.md#identity-tiering-strategy).
+
+```mermaid
+flowchart TB
+    subgraph Auth["Dataspace Authority — governance.glcdi.startinblox.com"]
+        direction TB
+        AKC["Keycloak — realm glcdi<br/>3 service-account clients: glcdi-connector-«org»<br/>+ human onboarding clients"]
+        Onb["Onboarding portal<br/>(djangoldp-glcdi-onboarding)"]
+        APg[("Postgres")]
+        AKC -.- APg
+        Onb -.- APg
+    end
+
+    subgraph PA["Participant · one of N · «name».glcdi.startinblox.com"]
+        direction TB
+        NGX["nginx (TLS · reverse proxy)"]
+        UI["Catalogue UI<br/>(Hubl / Lit) · X-Api-Key only"]
+        CP["EDC control-plane<br/>+ glcdi-policy-functions"]
+        DP["EDC data-plane"]
+        IDH["Identity Hub<br/>(reserved for Tier 3 · DCP)"]
+        LDP["djangoldp-glcdi<br/>(external in prod, sibling in dev)"]
+        Pg[("Postgres")]
+        NGX --> UI
+        NGX --> CP
+        UI --> LDP
+        CP -.- Pg
+        CP --> DP
+        CP -.- IDH
+    end
+
+    subgraph PB["Peer participant"]
+        direction TB
+        CP2["EDC control-plane"]
+        DP2["EDC data-plane"]
+    end
+
+    UI -->|"X-Api-Key on /management"| CP
+    CP ---|"DSP · Authority-signed JWT (iam-oauth2)"| CP2
+    DP ---|"HTTP transfer · EDR-gated"| DP2
+    CP -->|"client_credentials → glcdi_* claims"| AKC
+    CP2 -->|"client_credentials → glcdi_* claims"| AKC
+```
+
+### What each block is
+
+| Block | Sub-project (repo) | What it runs |
+|-------|--------------------|--------------|
+| Authority Keycloak | [`governance-services/`](../governance-services/) | Realm `glcdi` — realm roles, claim mappers, one `glcdi-connector-«org»` service-account client per participant connector, plus the human onboarding clients |
+| Onboarding portal | [`governance-services/`](../governance-services/) | Public registration form + Django admin approval; provisions KC group / user / roles on approval (`djangoldp-glcdi-onboarding`) |
+| EDC control-plane + extensions | [`edc-connector/`](../edc-connector/) + [`edc-glcdi-extension/`](../edc-glcdi-extension/) | DSP endpoints, policy evaluation, contract negotiation. `edc-glcdi-extension/` sources are copy-merged into `edc-connector/extensions/` at CI build time |
+| EDC data-plane | [`edc-connector/`](../edc-connector/) | HTTP data-plane, EDR-gated dataset delivery |
+| Identity Hub | [`participant-agent-services/`](../participant-agent-services/) | VC/DCP-shaped subsystem — deployed but not on the M1 critical path; reserved for Tier 3 |
+| Catalogue UI | [`participant-ui/`](../participant-ui/) (also cloned as [`orbit/`](../orbit/)) | Single runtime-configurable image, themed per participant at container start |
+| djangoldp-glcdi | External per-participant deployment in staging/prod; sibling container in dev | LDP dataset side-channel used by the UI |
+| nginx | [`participant-agent-services/`](../participant-agent-services/) | TLS termination and reverse proxy — no oauth2-proxy at Tier 1 |
+
+### How the flows connect (Tier 1)
+
+- **UI ↔ local connector.** Every management-API call from the Catalogue UI carries an `X-Api-Key` header validated by the connector. There is no Bearer token, no OIDC redirect, no silent-callback iframe. The trust boundary is the per-participant network; operators are trusted at their own participant.
+- **Connector ↔ Authority (start-up).** On boot, each connector runs a `client_credentials` grant against the Authority realm using `glcdi-connector-«org»` and caches the resulting JWT, which carries `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`, and `glcdi_organisation` claims.
+- **Connector ↔ Connector (DSP).** The consumer connector attaches its cached JWT as `Authorization: Bearer …` on DSP requests. The provider's EDC (once `iam-mock` is swapped for `iam-oauth2` in Phase 3.5) verifies the signature against the Authority JWKS and surfaces the `glcdi_*` claims to the policy engine, which evaluates access and contract policies against them.
+- **Data transfer.** On `FINALIZED` the consumer obtains an EDR from the provider's data-plane and calls its EDR-gated endpoint for the bytes. Browser-side consumers require a per-origin CORS setup (echoed `Access-Control-Allow-Origin` + `Allow-Credentials`).
+- **Enforcement boundary.** Access filtering and contract-constraint evaluation happen inside the connector. Anonymisation, attribution, retention, and non-redistribution are governance-enforced via the Data Sharing Agreement — see the [Technical vs. Governance Enforcement](#technical-vs-governance-enforcement) table below.
+
+### How Tier 2 and Tier 3 would evolve this picture
+
+- **Tier 2 (Phase 7.2)** would add per-user OIDC at the UI. A single `glcdi-ui` client on the Authority realm; oauth2-proxy sits back in front of `/management` and validates a user Bearer token in addition to the `X-Api-Key`. Connector-to-connector trust is unchanged.
+- **Tier 3 (Phase 7.3)** would swap the Authority-issued JWT for a Verifiable Presentation minted by the Identity Hub via DCP / IATP. Claims come from issued VCs rather than the central Keycloak; the Authority KC's role as the connector-token issuer disappears.
+
+### Where to go for detail
+
+| Question | Doc |
+|----------|-----|
+| Identity model, realm roles, claim mappers, OIDC-vs-OID4VC rationale | [`IDENTITY.md`](IDENTITY.md) |
+| Two-tier authentication and its migration phases | [`AUTHENTICATION.md`](AUTHENTICATION.md) |
+| Deployment topology, staging URLs, per-VM layout | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| Policy catalogue, contract vs. access, scenario diagrams | [`policies/README.md`](policies/README.md) |
+| Standards mapping (ODRL / DSP / DCAT / JSON-LD) | [`STANDARDS.md`](STANDARDS.md) |
+| Payment-gating design (proposal) | [`PAYMENT_GATING.md`](PAYMENT_GATING.md) |
+| Implementation roadmap and current status | [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) |
 
 ---
 
@@ -78,9 +167,9 @@ Specific participant composition per cohort is under discussion and intentionall
 Identity management, authentication, the GLCDI claim model (realm roles, certification status, membership), the OIDC-vs-OID4VC rationale, the proposed onboarding flow, the identity standards mapping, and the migration path to Verifiable Credentials all live in a dedicated document: [`IDENTITY.md`](IDENTITY.md).
 
 At a glance:
-- **Federated OIDC** with Keycloak at two tiers (per-participant realm `edc` → governance realm `glcdi`).
-- Three GLCDI-specific token claims (`glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`) consumed by EDC policy functions.
-- OIDC for the prototype; Verifiable Credentials / OID4VC considered but deliberately deferred — see [`IDENTITY.md`](IDENTITY.md) for the full argument.
+- **Tiered rollout** — Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`IMPLEM_PLAN.md` § Identity Tiering Strategy](IMPLEM_PLAN.md#identity-tiering-strategy) for the full argument.
+- **GLCDI token claims** on connector service-account tokens: `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`, `glcdi_organisation` — consumed by EDC policy functions.
+- **OIDC for the prototype**; Verifiable Credentials / OID4VC considered but deliberately deferred to Tier 3 — see [`IDENTITY.md`](IDENTITY.md).
 
 ---
 

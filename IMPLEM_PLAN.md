@@ -65,6 +65,75 @@ The GLCDI prototype is sequenced so that the **simplest credible identity model 
 
 ---
 
+## Runtime architecture (Tier 1 — M1 target)
+
+The runtime the phases below build toward is a **one Authority + N participants** deployment. The Authority holds identity, realm roles, and onboarding. Each participant runs the same Compose stack; peers negotiate over DSP and fetch data over an EDR-gated data-plane. At Tier 1 there is exactly one credential at each edge: **`X-Api-Key` at the management-API edge, an Authority-signed JWT (minted via `client_credentials` on the connector's service-account client) at the DSP edge**. No user accounts in any Keycloak. No oauth2-proxy. No per-participant Keycloak.
+
+```mermaid
+flowchart TB
+    subgraph Auth["Dataspace Authority — governance.glcdi.startinblox.com"]
+        direction TB
+        AKC["Keycloak — realm glcdi<br/>N × glcdi-connector-«org» SA clients<br/>+ human onboarding clients"]
+        Onb["Onboarding portal<br/>(djangoldp-glcdi-onboarding)"]
+        APg[("Postgres")]
+        AKC -.- APg
+        Onb -.- APg
+    end
+
+    subgraph PA["Participant · one of N · «name».glcdi.startinblox.com"]
+        direction TB
+        NGX["nginx (TLS · reverse proxy)"]
+        UI["Catalogue UI · X-Api-Key only<br/>(Hubl / Lit)"]
+        CP["EDC control-plane<br/>+ glcdi-policy-functions (Phase 3)<br/>+ iam-oauth2 (Phase 3.5)"]
+        DP["EDC data-plane<br/>(embedded — Phase 3.8)"]
+        IDH["Identity Hub<br/>(reserved for Tier 3 · DCP)"]
+        LDP["djangoldp-glcdi<br/>(external in prod, sibling in dev)"]
+        Pg[("Postgres")]
+        NGX --> UI
+        NGX --> CP
+        UI --> LDP
+        CP -.- Pg
+        CP --> DP
+        CP -.- IDH
+    end
+
+    subgraph PB["Peer participant"]
+        direction TB
+        CP2["EDC control-plane"]
+        DP2["EDC data-plane"]
+    end
+
+    UI -->|"X-Api-Key on /management"| CP
+    CP ---|"DSP · Authority-signed JWT (iam-oauth2 post-§ 3.5)"| CP2
+    DP ---|"HTTP transfer · EDR-gated"| DP2
+    CP -->|"client_credentials → glcdi_* claims"| AKC
+    CP2 -->|"client_credentials → glcdi_* claims"| AKC
+```
+
+### Which phase builds which piece
+
+| Block | Delivered by |
+|-------|--------------|
+| Authority KC realm + `glcdi-connector-«org»` service-account clients | Phase 1.5.4 |
+| Authority KC claim mappers on the SA users (`glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`) | Phase 2.1 – 2.4 |
+| Onboarding portal (`djangoldp-glcdi-onboarding`) | Phase 1.6 |
+| Removal of per-participant Keycloak + oauth2-proxy from the participant stack | Phase 1.5.2 |
+| `X-Api-Key` as the primary management-API gate | Phase 1.5.3 |
+| `glcdi-policy-functions` EDC extension | Phase 3.1 – 3.4 |
+| Swap `iam-mock` → `iam-oauth2` (real DSP-edge auth) | Phase 3.5 — the load-bearing gate to "real auth" between connectors |
+| Embedded data-plane + `HttpData` endpoint generator | Phase 3.8 |
+| M1-scoped seeding scripts (regenerative-only access + internal-use-only contract) | Phase 4 |
+| Bruno test suite exercising the M1 scenario via management API | Phase 4.5.E |
+| Participant-UI in API-key-only mode for asset / policy / contract / history | Phase 4.5.F |
+| End-to-end M1 demonstration | 🚦 Milestone M1 |
+
+### What Tier 2 / Tier 3 change on this diagram
+
+- **Tier 2 (Phase 7.2)** — add a single `glcdi-ui` OIDC client on the Authority realm, add oauth2-proxy back in front of `/management`, add per-user OIDC + role-gated views to the UI. Connector-to-connector trust is unchanged.
+- **Tier 3 (Phase 7.3)** — the Authority KC stops being the connector-token issuer. Connectors present Verifiable Presentations minted by the Identity Hub via DCP / IATP; claims come from issued VCs rather than KC service accounts.
+
+---
+
 ## Phase 1: GLCDI Vocabulary & Namespace
 
 Before any policy can be evaluated, the custom terms used in constraints need to be formally

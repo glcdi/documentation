@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph Auth["Dataspace Authority — governance.glcdi.startinblox.com"]
+        direction TB
+        AKC["Keycloak — realm glcdi<br/>N × glcdi-connector-«org» SA clients<br/>+ human onboarding clients"]
+        Onb["Onboarding portal<br/>(djangoldp-glcdi-onboarding)"]
+        APg[("Postgres")]
+        AKC -.- APg
+        Onb -.- APg
+    end
+
+    subgraph PA["Participant · one of N · «name».glcdi.startinblox.com"]
+        direction TB
+        NGX["nginx (TLS · reverse proxy)"]
+        UI["Catalogue UI · X-Api-Key only<br/>(Hubl / Lit)"]
+        CP["EDC control-plane<br/>+ glcdi-policy-functions<br/>+ iam-oauth2"]
+        DP["EDC data-plane"]
+        IDH["Identity Hub<br/>(reserved for Tier 3 · DCP)"]
+        LDP["djangoldp-glcdi<br/>(external in prod, sibling in dev)"]
+        Pg[("Postgres")]
+        NGX --> UI
+        NGX --> CP
+        UI --> LDP
+        CP -.- Pg
+        CP --> DP
+        CP -.- IDH
+    end
+
+    subgraph PB["Peer participant"]
+        direction TB
+        CP2["EDC control-plane"]
+        DP2["EDC data-plane"]
+    end
+
+    UI -->|"X-Api-Key on /management"| CP
+    CP ---|"DSP · Authority-signed JWT (iam-oauth2)"| CP2
+    DP ---|"HTTP transfer · EDR-gated"| DP2
+    CP -->|"client_credentials → glcdi_* claims"| AKC
+    CP2 -->|"client_credentials → glcdi_* claims"| AKC
