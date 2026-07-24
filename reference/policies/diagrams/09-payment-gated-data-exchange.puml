@@ -27,7 +27,7 @@ note over P_EDC
   - Obligation: provider compensates if consumer paid
     but access was denied (refund clause)
   - Consequence: invalidate agreement on duty breach
-  See PAYMENT_GATING.md §1 for the full template.
+  See ../../../design/payment-gating.md §1 for the full template.
 end note
 
 == Catalog Discovery & Contract Negotiation (compressed) ==
@@ -50,7 +50,7 @@ note right of Finance
   Async send off the state-machine
   thread. SMTP host + recipient
   pulled from extension config
-  (PAYMENT_GATING.md §6.1).
+  (../../../design/payment-gating.md §6.1).
 end note
 
 == Premature Transfer Attempt - rejected by the gate ==
@@ -108,7 +108,7 @@ note over P_EDC
   Substrate for refund-claim adjudication and
   Trust Framework compliance reviews.
   An aggregating service + UI on the Authority side
-  is **proposed** (PAYMENT_GATING.md §3.3) - not built yet.
+  is **proposed** (../../../design/payment-gating.md §3.3) - not built yet.
 end note
 
 == If deadline passes without payment (v2) ==

@@ -3,8 +3,8 @@
 A proposal for which policies could go live in which cohort, and what technical + governance work each wave would unlock. Everything below is put forward for discussion with the Dataspace Authority and the wider project team; nothing here is a decided commitment.
 
 This document joins three pieces that live separately elsewhere:
-- the **cohort timeline** (participants and focus) - [`../README.md` §Cohort Timeline](../README.md#cohort-timeline)
-- the **technical implementation phases** (vocabulary → Keycloak → extension → seeding → testing → governance) - [`../IMPLEM_PLAN.md`](../IMPLEM_PLAN.md)
+- the **cohort timeline** (participants and focus) - [`../../README.md` §Cohort Timeline](../../README.md#cohort-timeline)
+- the **technical implementation phases** (vocabulary → Keycloak → extension → seeding → testing → governance) - [`../IMPLEM_PLAN.md`](../../IMPLEM_PLAN.md)
 - the **per-policy feasibility & priority** - [`README.md` §Implementation Feasibility](README.md#implementation-feasibility). Effort ratings in the cohort tables below mirror that authoritative source.
 
 For use-case → policy-stack mapping and end-to-end workflow illustrations, see [`README.md` §Relation to GLCDI Use Cases](README.md#relation-to-glcdi-use-cases) and [`README.md` §Sequence Diagrams](README.md#sequence-diagrams).

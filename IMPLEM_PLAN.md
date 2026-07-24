@@ -27,8 +27,8 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 6. **Phase 4.5 - Bruno test suite + Participant-UI configuration (parallel tracks).** (E) Bruno collection executing the M1 scenario non-interactively against the management API; (F) ship `participant-ui` in API-key-only mode for the asset/policy/contract/history components. Both run in parallel agents and feed Phase 5.
 7. **Phase 5 - Integration testing.** Anchored on the M1 scenario: regenerative-producers-only access policy + internal-use-only contract policy, full positive and negative paths.
 8. 🚦 **Milestone M1 - Regenerative-only access + internal-use-only contract, end-to-end demonstrable on Tier 1.** Gate before payment work starts.
-9. **Phase 6 - Governance-level enforcement (proposal).** DSA clause wording, audit mechanism, consent-revocation procedure. Runs in parallel with the technical phases; ratification by the Dataspace Authority (see [`AUTHORITY.md`](AUTHORITY.md)).
-10. **Phase 7.1 - Payment-required workflow.** v0/v1/v2 substages per [`PAYMENT_GATING.md`](PAYMENT_GATING.md). **Starts after M1 is signed off** - not before.
+9. **Phase 6 - Governance-level enforcement (proposal).** DSA clause wording, audit mechanism, consent-revocation procedure. Runs in parallel with the technical phases; ratification by the Dataspace Authority (see [`strategy/authority.md`](strategy/authority.md)).
+10. **Phase 7.1 - Payment-required workflow.** v0/v1/v2 substages per [`design/payment-gating.md`](design/payment-gating.md). **Starts after M1 is signed off** - not before.
 11. **Phase 7.2 - Identity (Tier 2): add user OIDC at the UI.** Optional MVP improvement: federated SSO via Authority KC, per-user audit, role-gated UI views. Schedulable in parallel with 7.1 once M1 ships.
 12. **Phase 7.3 - Identity (Tier 3): decentralised claims via VC/DCP.** Long-term migration to Verifiable Credentials and the Decentralised Claims Protocol. Aligns GLCDI with Gaia-X / DSBA direction.
 13. **Phase 7.4–7.5 - Other future enhancements.** Federated Catalogue policy metadata, participant-facing policy UI.
@@ -37,7 +37,7 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 
 **Parallelisation:** up to **3 concurrent agents** at peak - main implementation track (1.5 → 2 → 3 → 4 → 5 → M1 → 7.1), Bruno track (4.5 E), Participant-UI track (4.5 F). Phase 6 also runs in parallel with the technical phases.
 
-**Dependency highlights:** Phase 1.5 (Tier-1 identity) blocks Phase 2 (claims now live on connector SAs in the Authority KC). Phase 3 depends on Phase 1's vocabulary. Phase 4 depends on Phases 2–3. Phase 4.5's two parallel tracks feed Phase 5. M1 gates payment. **Tier 2 (Phase 7.2) does not block M1** - it sits as an optional enhancement after the Tier-1 path ships. For cohort-by-cohort sequencing of *which* policies land *when*, see [`policies/plan.md`](policies/plan.md).
+**Dependency highlights:** Phase 1.5 (Tier-1 identity) blocks Phase 2 (claims now live on connector SAs in the Authority KC). Phase 3 depends on Phase 1's vocabulary. Phase 4 depends on Phases 2–3. Phase 4.5's two parallel tracks feed Phase 5. M1 gates payment. **Tier 2 (Phase 7.2) does not block M1** - it sits as an optional enhancement after the Tier-1 path ships. For cohort-by-cohort sequencing of *which* policies land *when*, see [`reference/policies/plan.md`](reference/policies/plan.md).
 
 ---
 
@@ -190,7 +190,7 @@ The two-tier user-OIDC content is preserved verbatim in **[Phase 7.2: Identity (
 
 Per [`ops/authority-migration.md`](ops/authority-migration.md): finish the in-repo renames across `edc-connector/`, `governance-services/` (→ `authority-services/`), `participant-agent-services/`, `participant-ui/`, and the `management/` docs themselves. Operator checklist (DNS, TLS, live Keycloak path A vs. B, CI/CD variables, VM layout, cutover, post-cutover verification) is in that document.
 
-**Status:** [x] In-repo edits across the 4 sibling repos done (edc-connector clean; participant-ui, participant-agent-services, governance-services swept); top-level `governance-services/` → `authority-services/` directory rename is a separate workspace-level `mv` · [x] `management/` doc-level sweep done (IDENTITY.md, IMPLEM_PLAN.md, README.md, AUTHORITY.md, etc.) · [ ] Operator-side cutover in staging (per [`ops/deployment.md` § 2](ops/deployment.md))
+**Status:** [x] In-repo edits across the 4 sibling repos done (edc-connector clean; participant-ui, participant-agent-services, governance-services swept); top-level `governance-services/` → `authority-services/` directory rename is a separate workspace-level `mv` · [x] `management/` doc-level sweep done (reference/identity.md, IMPLEM_PLAN.md, README.md, strategy/authority.md, etc.) · [ ] Operator-side cutover in staging (per [`ops/deployment.md` § 2](ops/deployment.md))
 
 ### 1.5.2 Remove per-participant Keycloak (and oauth2-proxy) from the participant compose stack
 
@@ -230,7 +230,7 @@ In the Authority KC's `glcdi` realm (declarative - already in `governance-servic
 
 **Casing convention** (referenced by §§ 2, 3.4):
 
-- Attribute *values* (certification statuses, contribution statuses, participant types): lowercase / kebab-case - e.g. `regenerative-verified`, `not-applicable`, `contributing`, `observer`. Matches the policy JSON in `policies/` and the JSON-LD context in [`context.jsonld`](context.jsonld).
+- Attribute *values* (certification statuses, contribution statuses, participant types): lowercase / kebab-case - e.g. `regenerative-verified`, `not-applicable`, `contributing`, `observer`. Matches the policy JSON in `reference/policies/` and the JSON-LD context in [`context.jsonld`](context.jsonld).
 - Realm role names: snake_case with `glcdi_` prefix (Keycloak / OAuth convention) - e.g. `glcdi_producer`. The participant-type policy function (§ 3.3) maps `kebab-case` → `glcdi_<snake_case>` transparently.
 - Purpose taxonomy values: PascalCase per § 1.3 - `InternalAnalysis`, `ScientificResearch`, ….
 
@@ -387,7 +387,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 - **Blocks nothing else** - Phase 2 (Keycloak claims), Phase 3 (EDC policy functions), and Phase 4 (seeding) only read from the realm JSON, they don't write through the onboarding API. So Phase 1.6 can land or slip without dragging the M1 critical path.
 - **Couples tightly to Phase 1.5's Authority cutover.** Both touch the realm JSON, both prefer a single deploy window per environment. Land 1.6 in the same Path-A re-import as 1.5 to avoid two consecutive wipe-and-replays.
 - **Trust boundary on `/registration/` is the public internet.** The form is anonymous-POST by design (anyone can apply). Mitigations to consider before production: nginx `limit_req` on `POST /registration/`, a Cloudflare Turnstile / hCaptcha widget on the form, or an explicit allowlist of organisation email domains. None are required to test, but flag for the Dataspace Authority before opening the staging URL to the public.
-- **Realm import is one-shot.** Reset paths (`docker compose down -v`, `glcdi.sh reset`) are the only fully clean ways to re-apply the new realm. Post-bootstrap edits via the admin console diverge from the in-repo source-of-truth - flag any such edits in `IDENTITY.md` so they're not silently lost on the next reset.
+- **Realm import is one-shot.** Reset paths (`docker compose down -v`, `glcdi.sh reset`) are the only fully clean ways to re-apply the new realm. Post-bootstrap edits via the admin console diverge from the in-repo source-of-truth - flag any such edits in `reference/identity.md` so they're not silently lost on the next reset.
 
 ---
 
@@ -718,7 +718,7 @@ read from the token:
 |------|--------|
 | **Task** | Set up the GLCDI-owned extension repository as a sibling of `edc-connector/`, following the DS4GO pattern (separate repo, build-time symlinked or path-referenced from the connector's controlplane build). |
 | **Why a separate repo (not `edc-connector/extensions/`)** | Keeps GLCDI-owned Java code separate from the EDC fork (which tracks upstream). Independent versioning + git history. Mirrors `ds4go/edc-dsif-extension/` next to `ds4go/edc-connector/`. |
-| **Layout (proposed)** | `edc-glcdi-extension/extensions/glcdi-policy-functions/` (the membership / participantType / certificationStatus functions of §§ 3.2–3.4) - first occupant. Future siblings (e.g. `payment-status-extension/` from [`PAYMENT_GATING.md`](PAYMENT_GATING.md), if Phase 7.1 lands) live under the same `extensions/` folder. |
+| **Layout (proposed)** | `edc-glcdi-extension/extensions/glcdi-policy-functions/` (the membership / participantType / certificationStatus functions of §§ 3.2–3.4) - first occupant. Future siblings (e.g. `payment-status-extension/` from [`design/payment-gating.md`](design/payment-gating.md), if Phase 7.1 lands) live under the same `extensions/` folder. |
 | **Wire-up** | `edc-connector/runtimes/controlplane/build.gradle.kts` references the extension via relative path or via a CI symlink step that puts the extension into `edc-connector/extensions/`. Match whichever pattern this team's CI uses for DS4GO. |
 | **Status** | [x] Repo created · [x] First extension scaffolded (§ 3.1) - `glcdi-policy-functions/` with build files + SPI entry + package skeleton + the three constraint-function classes + `GlcdiClaims` constants + `GlcdiPolicyFunctionsExtension` registration class + a starter unit-test class · [x] Wired into the controlplane runtime (§ 3.6) · [x] Second extension scaffolded: `glcdi-iam-keycloak/` (custom OAuth2 IdentityService against Authority KC, replaces `iam-mock`) |
 
@@ -818,7 +818,7 @@ edc.iam.token.scope=openid profile glcdi_claims
 | **Root cause** | `PurposeConstraintFunction` (§ 3.x) at `transfer.process` scope reads a `"purpose"` claim from the consumer's `ParticipantAgent`. The consumer's KC client-credentials token uses scope `glcdi-claims`, whose protocol mappers emit `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` - **but not `purpose`**. No mapper produces it, no plumbing propagates the negotiation-time purpose into the transfer-time token. So the constraint denies, EDC surfaces a misleading "agreement not found or not valid" umbrella error, and the M1 transfer never reaches STARTED. The catalog branch returns `true` permissively, which is why catalog browsing isn't affected. |
 | **Quick fix (applied)** | In `PurposeConstraintFunction.evaluate()`, short-circuit `true` at `transfer.process` scope - negotiation already validated the purpose, transfer-time re-evaluation is defence-in-depth that breaks without the claim. One-line change, restores end-to-end M1 flow. Tier-1 simplification, matches the class doc's own admission that the negotiation gate is "provisional". |
 | **Proper fix (Tier-2, deferred)** | Two parts: (a) add a KC protocol mapper to the `glcdi-claims` client scope that emits a `purpose` claim - initially hardcoded per-participant, eventually driven by the negotiation request body once the consumer-side UI / sib-core can collect the consumer's intended purpose; (b) at the consumer's connector, propagate the negotiation-time purpose into the outbound transfer-request token (or onto the DSP message body and read it server-side from the message rather than the claim). The `PurposeConstraintFunction.evaluate()` transfer-scope branch then reverts to enforcing equality against the agreement's `rightOperand`. |
-| **Where to refine** | Lift this section into a proper Phase 3.x rework once Tier-2 lands. Cross-reference from `AUTHENTICATION.md § Tier-2` and from the memory file `reference_glcdi_edc_transfer_diag.md § 7` so the trap is documented in three places. |
+| **Where to refine** | Lift this section into a proper Phase 3.x rework once Tier-2 lands. Cross-reference from `reference/authentication.md § Tier-2` and from the memory file `reference_glcdi_edc_transfer_diag.md § 7` so the trap is documented in three places. |
 | **Status** | [x] Quick fix applied to `PurposeConstraintFunction.evaluate()` (transfer-scope short-circuit) · [ ] KC protocol mapper for `purpose` on the `glcdi-claims` scope · [ ] Consumer-side purpose collection in the negotiation/transfer UI flow · [ ] Restore strict transfer-scope evaluation in `PurposeConstraintFunction` once (a) + (b) are in place · [ ] Unit test that covers the transfer-scope branch (currently bypassed, deserves an explicit test once Tier-2 makes it active again) |
 
 ### 3.8 Embed the data plane in the controlplane runtime + register an EndpointGenerator for HttpData
@@ -1058,7 +1058,7 @@ M1 is demonstrable when, against a deployed three-participant cluster - **`caney
 - [ ] The participant UI (§ 4.5.F) surfaces asset / policy / contract / history / transfer-process components correctly under API-key login. **No OIDC envvars set anywhere.**
 - [ ] Per-participant Keycloak and oauth2-proxy are gone from the deployed compose stack (§ 1.5.2). The participant compose is `connector + identity-hub + UI + nginx + 2× postgres` only.
 
-Once M1 is signed off, three workstreams become candidates: **Phase 7.1** (payment-required workflow per [`PAYMENT_GATING.md`](PAYMENT_GATING.md)), **Phase 7.2** (Tier 2: add user OIDC to the UI), and **Phase 7.3** (Tier 3: VC/DCP migration). Sequencing among them is a stakeholder decision, not a technical one - they don't block each other. Phase 6 (governance-level enforcement) continues in parallel throughout.
+Once M1 is signed off, three workstreams become candidates: **Phase 7.1** (payment-required workflow per [`design/payment-gating.md`](design/payment-gating.md)), **Phase 7.2** (Tier 2: add user OIDC to the UI), and **Phase 7.3** (Tier 3: VC/DCP migration). Sequencing among them is a stakeholder decision, not a technical one - they don't block each other. Phase 6 (governance-level enforcement) continues in parallel throughout.
 
 ---
 
@@ -1106,10 +1106,10 @@ Items from `./policies/` that are relevant for later phases but not required for
 | Item | Detail |
 |------|--------|
 | **Task** | Implement the `payment-required` contract policy via a `payment-status` EDC extension |
-| **Design** | [`PAYMENT_GATING.md`](PAYMENT_GATING.md) - three-stage rollout: **v0** privateProperties storage + JAX-RS update endpoint + request filter on transfer initiation + email notification to provider's finance contact + audit/obligation read endpoints; **v1** ODRL constraint functions (`payAmount`, `paymentStatus`, `dateTime`) so the policy is machine-evaluated; **v2** scheduled `DutyDeadlineEnforcer` that terminates overdue agreements via DSP `ContractNegotiationTermination`. Sequence: [`policies/diagrams/09-payment-gated-data-exchange.puml`](policies/diagrams/09-payment-gated-data-exchange.puml). |
+| **Design** | [`design/payment-gating.md`](design/payment-gating.md) - three-stage rollout: **v0** privateProperties storage + JAX-RS update endpoint + request filter on transfer initiation + email notification to provider's finance contact + audit/obligation read endpoints; **v1** ODRL constraint functions (`payAmount`, `paymentStatus`, `dateTime`) so the policy is machine-evaluated; **v2** scheduled `DutyDeadlineEnforcer` that terminates overdue agreements via DSP `ContractNegotiationTermination`. Sequence: [`reference/policies/diagrams/09-payment-gated-data-exchange.puml`](reference/policies/diagrams/09-payment-gated-data-exchange.puml). |
 | **Requires** | External billing/payment system (issues invoices, processes payment, calls back into the connector's payment-update endpoint). SMTP for v0 notifications. No new EDC fork - the extension lives alongside the existing controlplane build. |
 | **When** | **After Milestone M1 is signed off** (regenerative-only + internal-use-only end-to-end). The M1 gate validates the auth, claims, policy-function, seeding, and UI infra that Phase 7.1 builds on; starting payment work earlier compounds risk. |
-| **Governance handoff** | Refund obligation: connector records (immutable agreement + audit endpoints), Dataspace Authority adjudicates, external billing system executes. See [`PAYMENT_GATING.md` § 3.3](PAYMENT_GATING.md) and the cross-reference proposed in [`AUTHORITY.md` § D](AUTHORITY.md). |
+| **Governance handoff** | Refund obligation: connector records (immutable agreement + audit endpoints), Dataspace Authority adjudicates, external billing system executes. See [`design/payment-gating.md` § 3.3](design/payment-gating.md) and the cross-reference proposed in [`strategy/authority.md` § D](strategy/authority.md). |
 | **Status** | [ ] v0 not started · [ ] v1 not started · [ ] v2 not started |
 
 ### 7.2 Identity (Tier 2) - Add User OIDC at the UI
@@ -1351,7 +1351,7 @@ Phase 1 (Vocabulary)
                                                                                   │
                                             ┌─────────────────────────────────────┤
                                             │                                     │
-                          Phase 7.1 (Payment, per PAYMENT_GATING.md)               │
+                          Phase 7.1 (Payment, per design/payment-gating.md)               │
                                             │                                     │
                           Phase 7.2 (Identity Tier 2: add user OIDC at the UI) ────┤  (additive; no block)
                                             │                                     │
@@ -1378,7 +1378,7 @@ Phase 6 (Governance / Legal) - runs in parallel with all technical phases,
 | Phase 5 | Extends Phase 5 (integration testing); anchored on the M1 scenario |
 | Milestone M1 | Demo gate; ships on Tier 1; signed off before any Phase 7 workstream starts |
 | Phase 6 | Parallel to all technical phases, aligned with Trust Framework v0→v1 |
-| Phase 7.1 | Begins **after M1**; substages v0/v1/v2 per [`PAYMENT_GATING.md`](PAYMENT_GATING.md) |
+| Phase 7.1 | Begins **after M1**; substages v0/v1/v2 per [`design/payment-gating.md`](design/payment-gating.md) |
 | Phase 7.2 | **Identity Tier 2** - user OIDC at the UI; optional MVP improvement; non-blocking |
 | Phase 7.3 | **Identity Tier 3** - VC / DCP migration; long-term, federation-aligned |
 | Phase 7.4–7.5 | Federated Catalogue policy metadata; participant-facing Policy UI |

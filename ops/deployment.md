@@ -425,7 +425,7 @@ Open `http://localhost:8080` (caney-fork) in a browser:
 - **Realm-import determinism.** The `glcdi-realm.json` is imported only on first boot. Operators applying changes through Path B (live admin console) must keep the in-repo JSON in sync manually. Future work: a CI check that fails if the in-repo JSON drifts from the live realm export.
 - **Per-participant deployment-config templates.** Today each participant copies `.env.example` and edits manually. A small generator script (one-shot per onboarding) would reduce config drift between participants.
 - **Tier-2 cutover runbook.** When [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) is approved, this doc gets a § 4 covering the additional cutover steps (oauth2-proxy reintroduction, UI OIDC restoration, per-org groups + human-user activation). The Tier-2 follow-up appendix in [`authority-migration.md`](authority-migration.md#appendix-tier-2-follow-up-checklist-post-m1-optional) is the placeholder.
-- **Phase 7.1 Payment workflow.** When [`PAYMENT_GATING.md`](../PAYMENT_GATING.md) v0 ships, this doc gets a sub-section under § 2 / § 3 covering the SMTP-recipient env var and the `payment-status-extension` deploy.
+- **Phase 7.1 Payment workflow.** When [`../design/payment-gating.md`](../design/payment-gating.md) v0 ships, this doc gets a sub-section under § 2 / § 3 covering the SMTP-recipient env var and the `payment-status-extension` deploy.
 
 ---
 
@@ -433,7 +433,7 @@ Open `http://localhost:8080` (caney-fork) in a browser:
 
 - [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) - phased plan, especially § 1.5 (Authority cleanup + identity simplification), § 4.5 (Bruno + UI tracks), § Milestone M1.
 - [`authority-migration.md`](authority-migration.md) - operator checklist focused on the rename (DNS, TLS, KC paths A/B, CI/CD vars, VM layout).
-- [`IDENTITY.md`](../IDENTITY.md) - post-Phase-1.5 identity architecture, claim model, OIDC vs OID4VC rationale.
-- [`PAYMENT_GATING.md`](../PAYMENT_GATING.md) - payment-required workflow design (post-M1).
+- [`../reference/identity.md`](../reference/identity.md) - post-Phase-1.5 identity architecture, claim model, OIDC vs OID4VC rationale.
+- [`../design/payment-gating.md`](../design/payment-gating.md) - payment-required workflow design (post-M1).
 - [`bruno/`](../bruno/) - Bruno HTTP-test collection for the M1 scenario (track 4.5.E).
-- [`policies/`](../policies/) - ODRL policy templates (the `regenerative-producers-only` access policy and `internal-use-only` contract policy used in M1 live in `policies/access/` and `policies/contract/`).
+- [`../reference/policies/`](../reference/policies/) - ODRL policy templates (the `regenerative-producers-only` access policy and `internal-use-only` contract policy used in M1 live in `../reference/policies/access/` and `../reference/policies/contract/`).

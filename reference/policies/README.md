@@ -16,7 +16,7 @@ A catalogue of 14 policies + 4 end-to-end scenarios that govern how data flows b
 - **Enforcement split.** Native EDC handles `odrl:dateTime` and `odrl:purpose` out of the box. Claim-based constraints need a custom policy-functions extension (~200 LOC Java). Duty-based clauses (`attribution`, `anonymisation`, `reciprocal-insights`) are governance-level only - enforced via the DSA, not the connector.
 - **Implementation feasibility.** Per-policy ratings (None / Low / Medium / High) are in §Implementation Feasibility below; effort for the prototype stack is almost entirely Low. `data-retention-limit` is Medium, `payment-required` is High and post-prototype.
 
-For implementation sequencing see [`../IMPLEM_PLAN.md`](../IMPLEM_PLAN.md); for cohort-level rollout see [`plan.md`](plan.md).
+For implementation sequencing see [`../IMPLEM_PLAN.md`](../../IMPLEM_PLAN.md); for cohort-level rollout see [`plan.md`](plan.md).
 
 ## How EDC Policies Work
 
@@ -60,7 +60,7 @@ This namespace is specific to GLCDI and would be defined in the dataspace's voca
 ## Directory Structure
 
 ```
-policies/
+./
 ├── access/                     # Access policies (catalog visibility)
 │   ├── members-only.json       # Any GLCDI participant
 │   ├── regenerative-producers.json # Regenerative producers only
@@ -207,7 +207,7 @@ docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml
 | **What it does** | Attaches a payment duty to the usage permission. The consumer must pay a minimum amount (default: $500 USD) per dataset access agreement. |
 | **ODRL mechanism** | Permission with `duty` containing `compensate` action and `odrl:payAmount gteq 500.00` constraint with USD unit. |
 | **GLCDI relevance** | The blueprint mentions that future phases will require "diversified resourcing tied to the value delivered for academic, producer, and corporate participants" and may involve "a data space membership model". Payment policies enable a transition from grant-funded to sustainable operations. For producer participants whose expected value includes "increase productivity and profitability", being compensated for sharing valuable SOC and grazing data is a tangible incentive. This is especially relevant for corporate/supply-chain consumers who derive significant value from the data (Scope 3 reporting, certification claims). Not expected in the prototype phase, but important to model now. |
-| **Implementation** | Custom EDC extension (`payment-status-extension`) that stores payment status as `privateProperties` on the contract negotiation, exposes a `POST /v3/contractnegotiations/{id}/payment` update endpoint for the external billing system to flip the flag, gates `POST /v3/transferprocesses` behind the flag, sends an email notification to the provider's finance contact at finalization, and exposes audit endpoints for the Dataspace Authority. v1 adds ODRL constraint functions (`payAmount`, `paymentStatus`, `dateTime`); v2 adds scheduled DSP termination of overdue agreements. Design: [`../PAYMENT_GATING.md`](../PAYMENT_GATING.md). Sequence: [`diagrams/09-payment-gated-data-exchange.puml`](diagrams/09-payment-gated-data-exchange.puml). |
+| **Implementation** | Custom EDC extension (`payment-status-extension`) that stores payment status as `privateProperties` on the contract negotiation, exposes a `POST /v3/contractnegotiations/{id}/payment` update endpoint for the external billing system to flip the flag, gates `POST /v3/transferprocesses` behind the flag, sends an email notification to the provider's finance contact at finalization, and exposes audit endpoints for the Dataspace Authority. v1 adds ODRL constraint functions (`payAmount`, `paymentStatus`, `dateTime`); v2 adds scheduled DSP termination of overdue agreements. Design: [`../../../design/payment-gating.md`](../../design/payment-gating.md). Sequence: [`diagrams/09-payment-gated-data-exchange.puml`](diagrams/09-payment-gated-data-exchange.puml). |
 
 ### `contract/attribution.json` - Citation / Attribution Required
 
@@ -362,7 +362,7 @@ Each policy is rated on three axes:
 | [`attribution`](contract/attribution.json) | Yes | **No** - governance only | **None** (no connector code needed). | ODRL `duty` with action `attribute`. The consumer agrees at negotiation; fulfillment is tracked by the governance team, not the connector. |
 | [`anonymisation`](contract/anonymisation.json) | Yes | **No** - governance only | **None** (no connector code needed). | Same as attribution: duty-based, legally enforceable, not technically enforceable. |
 | [`reciprocal-insights`](contract/reciprocal-insights.json) | Partially - `glcdi:shareBack` is a custom action not in the ODRL vocabulary | **No** - governance only | **None** (no connector code needed). | The share-back duty is a contractual obligation. The connector cannot verify whether the consumer has shared insights. Enforcement is proposed to rely on governance-body review and the DSA. The custom action `glcdi:shareBack` extends the ODRL vocabulary - this is valid per the ODRL specification (custom actions are allowed). |
-| [`payment-required`](contract/payment-required.json) | Yes | Yes via `payment-status-extension` | **High** - v0: privateProperties storage, JAX-RS update endpoint, transfer-initiation filter, finalization observer + email notifier, audit/obligation read endpoints. v1: ODRL constraint functions. v2: scheduled DSP termination of overdue agreements. | Not needed for the prototype. Target: post-prototype when corporate participants join. Design: [`../PAYMENT_GATING.md`](../PAYMENT_GATING.md). |
+| [`payment-required`](contract/payment-required.json) | Yes | Yes via `payment-status-extension` | **High** - v0: privateProperties storage, JAX-RS update endpoint, transfer-initiation filter, finalization observer + email notifier, audit/obligation read endpoints. v1: ODRL constraint functions. v2: scheduled DSP termination of overdue agreements. | Not needed for the prototype. Target: post-prototype when corporate participants join. Design: [`../../../design/payment-gating.md`](../../design/payment-gating.md). |
 | [`data-retention-limit`](contract/data-retention-limit.json) | Yes | Partially | **Medium** - `odrl:elapsedTime` needs a custom function that tracks the transfer timestamp (vanilla EDC supports `dateTime` but not duration-from-event). The `delete` and `inform` obligations are governance-level. | The custom function is non-trivial: it must persist the transfer timestamp and compare it against the policy duration at subsequent evaluation points. |
 
 #### Reciprocity Mechanisms
@@ -384,7 +384,7 @@ Each policy appears in exactly one row. Totals: 4 access policies + 9 contract p
 | **None** (governance-level only) | [`attribution`](contract/attribution.json), [`anonymisation`](contract/anonymisation.json), [`reciprocal-insights`](contract/reciprocal-insights.json) | ODRL duties. Consumer agrees at negotiation; compliance is proposed to be monitored by the governance body. No connector code. |
 | **Low** (one `AtomicConstraintFunction` each, ~50–100 lines of Java) | [`members-only`](access/members-only.json), [`researchers-only`](access/researchers-only.json), [`regenerative-producers`](access/regenerative-producers.json), [`contributing-members`](access/contributing-members.json) | Extract claim from JWT → compare to constraint. All share the same pattern; can use a common base class. **Total: ~200 lines of Java + tests.** |
 | **Medium** | [`data-retention-limit`](contract/data-retention-limit.json) | Custom function for `odrl:elapsedTime` that persists the transfer timestamp and re-evaluates at subsequent checkpoints. |
-| **High** | [`payment-required`](contract/payment-required.json) | `payment-status-extension`: privateProperties storage, JAX-RS controllers (payment update + audit), request filter on transfer initiation, finalization observer with email notifier; v1 adds ODRL constraint functions; v2 adds scheduled DSP termination of overdue agreements. Post-prototype. Design: [`../PAYMENT_GATING.md`](../PAYMENT_GATING.md). |
+| **High** | [`payment-required`](contract/payment-required.json) | `payment-status-extension`: privateProperties storage, JAX-RS controllers (payment update + audit), request filter on transfer initiation, finalization observer with email notifier; v1 adds ODRL constraint functions; v2 adds scheduled DSP termination of overdue agreements. Post-prototype. Design: [`../../../design/payment-gating.md`](../../design/payment-gating.md). |
 | **Not feasible** | Balanced exchange (bilateral negotiation) | Architectural limitation of DSP/EDC - negotiation is unilateral. Use contribute-to-access as the practical alternative. |
 
 ### Implementation Priority
@@ -400,7 +400,7 @@ Based on effort and value for the prototype:
 | **P2** | [`purpose-model-training`](contract/purpose-model-training.json), [`internal-use-only`](contract/internal-use-only.json) | Purpose constraints work natively if consumers declare purpose. |
 | **P2** | [`reciprocal-insights`](contract/reciprocal-insights.json), [`anonymisation`](contract/anonymisation.json) | Important governance obligations. No code - add to DSA. |
 | **P3** (post-prototype) | [`data-retention-limit`](contract/data-retention-limit.json) | Valuable but needs non-trivial custom function. |
-| **P3** | [`payment-required`](contract/payment-required.json) | Needs external billing/payment system + the `payment-status-extension` ([`../PAYMENT_GATING.md`](../PAYMENT_GATING.md)). Target: corporate onboarding phase. |
+| **P3** | [`payment-required`](contract/payment-required.json) | Needs external billing/payment system + the `payment-status-extension` ([`../../../design/payment-gating.md`](../../design/payment-gating.md)). Target: corporate onboarding phase. |
 | **N/A** | Balanced exchange | Not implementable. Use contribute-to-access instead. |
 
 ### Relation to GLCDI Use Cases

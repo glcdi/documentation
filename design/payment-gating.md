@@ -2,7 +2,7 @@
 
 A proposal for how a payment-required contract policy could be enforced end-to-end across the EDC connector and external payment infrastructure. Everything below is a working design for the project team and Dataspace Authority to validate; nothing here is a decided commitment.
 
-This document complements [`policies/contract/payment-required.json`](policies/contract/payment-required.json) (the policy template), [`policies/README.md`](policies/README.md) (the policy catalogue with feasibility ratings), and [`policies/diagrams/09-payment-gated-data-exchange.puml`](policies/diagrams/09-payment-gated-data-exchange.puml) (sequence diagram for the end-to-end flow). The focus here is **how EDC would enforce it** - the connector extension shape, the storage model, the gating mechanism, and the parts that fundamentally cannot be enforced by code and must live in the DSA.
+This document complements [`../reference/policies/contract/payment-required.json`](../reference/policies/contract/payment-required.json) (the policy template), [`../reference/policies/README.md`](../reference/policies/README.md) (the policy catalogue with feasibility ratings), and [`../reference/policies/diagrams/09-payment-gated-data-exchange.puml`](../reference/policies/diagrams/09-payment-gated-data-exchange.puml) (sequence diagram for the end-to-end flow). The focus here is **how EDC would enforce it** - the connector extension shape, the storage model, the gating mechanism, and the parts that fundamentally cannot be enforced by code and must live in the DSA.
 
 ---
 
@@ -72,7 +72,7 @@ In plain English:
 - **Prohibition:** use is forbidden if the amount paid is anything other than 100.00, or if the deadline has passed.
 - **Obligation:** the provider must compensate (refund) the consumer if the consumer paid but was denied access.
 
-It is meaningfully richer than the existing [`payment-required.json`](policies/contract/payment-required.json), which only encodes a `payAmount ≥ 500 USD` duty without deadline, prohibition, consequence, or refund clause.
+It is meaningfully richer than the existing [`payment-required.json`](../reference/policies/contract/payment-required.json), which only encodes a `payAmount ≥ 500 USD` duty without deadline, prohibition, consequence, or refund clause.
 
 ---
 
@@ -127,7 +127,7 @@ Distinguish three things that often get conflated:
 
 1. **Recording the obligation.** That the provider is *bound* to refund under specific conditions is part of the negotiated `Agreement`. EDC stores the agreement immutably on both sides as a normal outcome of contract negotiation - the obligation clause is preserved verbatim in that JSON. **This is exactly the connector's job, and it is one of the core values of using EDC + ODRL in the first place.** Without a connector-recorded agreement the refund clause would be a side-letter; with it, both parties have a non-repudiable copy of what they agreed to.
 
-2. **Adjudicating whether a refund is actually owed.** Did the consumer pay? Did access genuinely fail in a way that warrants a refund (vs. consumer-side error, vs. provider's reasonable refusal)? This is a **Dataspace Authority** concern - see [`AUTHORITY.md` § D Compliance, monitoring & incident response](AUTHORITY.md). The DSA and Trust Framework specify the dispute-resolution process; the connector contributes evidence (the agreement + the audit trail described below) but does not arbitrate.
+2. **Adjudicating whether a refund is actually owed.** Did the consumer pay? Did access genuinely fail in a way that warrants a refund (vs. consumer-side error, vs. provider's reasonable refusal)? This is a **Dataspace Authority** concern - see [`../strategy/authority.md` § D Compliance, monitoring & incident response](../strategy/authority.md). The DSA and Trust Framework specify the dispute-resolution process; the connector contributes evidence (the agreement + the audit trail described below) but does not arbitrate.
 
 3. **Executing the refund.** Moving the money happens through the same external payment system that processed the original payment, triggered by the adjudication outcome. The connector has no payment rails and should not acquire any.
 
@@ -137,11 +137,11 @@ Distinguish three things that often get conflated:
 - **Obligation discoverability.** A query/listing endpoint exposed by the extension so an auditor or the Dataspace Authority can ask "which agreements involving party X carry a refund obligation, and what's their payment + access history?" - see §6 for the proposed `GET /v3/contractnegotiations/{id}/obligations` endpoint and the audit query.
 - **Audit trail of payment + access events** keyed by negotiation ID: `payment.status` transitions, the negotiation's own `state` (including `TERMINATED` if the agreement was killed), `payment.terminationReason` if applicable, and transfer-process attempts (success/denial), with timestamps and `externalRef` values. All of this is captured by the storage schema in §5 (and by EDC's own negotiation-state history) - no additional design needed beyond exposing it on a read endpoint.
 
-**Cross-reference to the existing pattern:** the recording-vs-execution split applies the same shape that `attribution`, `anonymisation`, and `data-retention-limit` already use in [`policies/README.md` § Implementation Feasibility](policies/README.md#implementation-feasibility) - the connector binds the parties to the obligation through the agreement; governance handles compliance verification and consequences. The novelty here is that for refunds, "execution" eventually means a money transfer, which makes the boundary between connector and external system more visible.
+**Cross-reference to the existing pattern:** the recording-vs-execution split applies the same shape that `attribution`, `anonymisation`, and `data-retention-limit` already use in [`../reference/policies/README.md` § Implementation Feasibility](../reference/policies/README.md#implementation-feasibility) - the connector binds the parties to the obligation through the agreement; governance handles compliance verification and consequences. The novelty here is that for refunds, "execution" eventually means a money transfer, which makes the boundary between connector and external system more visible.
 
 **What this means for the Trust Framework:** the document needs to spell out (a) what evidence the Dataspace Authority would request from each party in a refund dispute (and what the connector exposes to satisfy that request), (b) the adjudication procedure, (c) the timeline expected for the provider to honour an upheld refund claim. The connector's audit endpoint is the substrate; the procedure is policy.
 
-**Proposed authority-side service & UI.** To make the audit substrate operational, an **auditing service** on the Dataspace Authority side is proposed: it consumes the per-participant connectors' obligation-listing and audit-log endpoints (§5.3), aggregates evidence across negotiations and parties, and exposes it through a UI the Dataspace Authority uses when handling refund claims, compliance reviews, and incident investigations. The connector-side endpoints are designed to be the data plane for exactly this kind of service. Scope, ownership, deployment topology, and access controls for that service are to be agreed by the Dataspace Authority alongside the Trust Framework - flagged as a proposal here so the connector-side endpoints in §5.3 are sized correctly for an aggregating consumer rather than only ad-hoc human queries. Cross-reference: [`AUTHORITY.md` § D Compliance, monitoring & incident response](AUTHORITY.md).
+**Proposed authority-side service & UI.** To make the audit substrate operational, an **auditing service** on the Dataspace Authority side is proposed: it consumes the per-participant connectors' obligation-listing and audit-log endpoints (§5.3), aggregates evidence across negotiations and parties, and exposes it through a UI the Dataspace Authority uses when handling refund claims, compliance reviews, and incident investigations. The connector-side endpoints are designed to be the data plane for exactly this kind of service. Scope, ownership, deployment topology, and access controls for that service are to be agreed by the Dataspace Authority alongside the Trust Framework - flagged as a proposal here so the connector-side endpoints in §5.3 are sized correctly for an aggregating consumer rather than only ad-hoc human queries. Cross-reference: [`../strategy/authority.md` § D Compliance, monitoring & incident response](../strategy/authority.md).
 
 ### 3.4 Custom constraint functions required
 
@@ -178,7 +178,7 @@ ODRL accepts any IRI for `assigner`/`assignee`, but EDC's policy engine compares
 | `urn:glcdi:agreement:<provider>:<agreement-id>` | `Agreement.uid`, `consequence.target` invalidating the agreement | `urn:glcdi:agreement:caney-fork:dataAccessPayment-12345` |
 | `urn:glcdi:invoice:<provider>:<invoice-id>` | `target` of `pay` duty / `compensate` obligation | `urn:glcdi:invoice:caney-fork:INV-2026-05-001` |
 
-**Forward path to DIDs.** [`IDENTITY.md`](IDENTITY.md) documents the planned migration from OIDC/JWT to DCP/DID/VC. When that lands, the participant URN evolves to its DID form (e.g. `did:web:caney-fork.glcdi.startinblox.com`). The policy templates do not need a structural rewrite at that point - only the participant-ID strings change. Asset/agreement/invoice URNs stay as-is (they are not identity-claim subjects).
+**Forward path to DIDs.** [`../reference/identity.md`](../reference/identity.md) documents the planned migration from OIDC/JWT to DCP/DID/VC. When that lands, the participant URN evolves to its DID form (e.g. `did:web:caney-fork.glcdi.startinblox.com`). The policy templates do not need a structural rewrite at that point - only the participant-ID strings change. Asset/agreement/invoice URNs stay as-is (they are not identity-claim subjects).
 
 **HTTPS URLs in incoming agreements.** The catalogue UI and onboarding flow may surface participants by HTTPS URL for human readability. Treat that as a presentation concern: the policy engine's source of truth is the URN, and any URL-to-URN mapping happens at the UI / onboarding layer, not in policy evaluation.
 
@@ -363,22 +363,22 @@ Wired in `runtimes/controlplane/build.gradle.kts` as `runtimeOnly(project(":exte
 ## 7. Documentation & cross-references to update
 
 When the v0 extension lands:
-- [`policies/README.md`](policies/README.md) - `payment-required` row in the Implementation Feasibility table moves from "post-prototype, requires custom function + external payment API" to reflect the v0 shape (filter + privateProperties + external payment system + audit endpoints for the refund-obligation substrate).
-- [`policies/contract/payment-required.json`](policies/contract/payment-required.json) - replace with the richer reference template once the Dataspace Authority approves it; remove the misused `systemDevice` term in favour of a `glcdi:`-namespaced equivalent (§3.5).
-- [`README.md`](README.md) "Technical vs. Governance Enforcement" table - `payment-required` row updated to reference this document; add a row (or footnote) clarifying the recording-vs-execution split for refund obligations (§3.3).
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) Phase 6 (governance-level enforcement) - link to this document; mark v0/v1/v2 as substages of the payment workstream.
-- [`STANDARDS.md`](STANDARDS.md) - ODRL Duty + Consequence + Obligation row gets a footnote pointing to this document for the GLCDI-specific implementation.
-- [`AUTHORITY.md` § D](AUTHORITY.md) - add a sub-bullet under "Compliance, monitoring & incident response" pointing to this document's audit endpoints (§5.3) as the evidence substrate the Authority would query when adjudicating a refund claim, and reflecting the proposal in §3.3 for an authority-side auditing service + UI that aggregates evidence across participant connectors.
+- [`../reference/policies/README.md`](../reference/policies/README.md) - `payment-required` row in the Implementation Feasibility table moves from "post-prototype, requires custom function + external payment API" to reflect the v0 shape (filter + privateProperties + external payment system + audit endpoints for the refund-obligation substrate).
+- [`../reference/policies/contract/payment-required.json`](../reference/policies/contract/payment-required.json) - replace with the richer reference template once the Dataspace Authority approves it; remove the misused `systemDevice` term in favour of a `glcdi:`-namespaced equivalent (§3.5).
+- [`README.md`](../README.md) "Technical vs. Governance Enforcement" table - `payment-required` row updated to reference this document; add a row (or footnote) clarifying the recording-vs-execution split for refund obligations (§3.3).
+- [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) Phase 6 (governance-level enforcement) - link to this document; mark v0/v1/v2 as substages of the payment workstream.
+- [`../strategy/standards.md`](../strategy/standards.md) - ODRL Duty + Consequence + Obligation row gets a footnote pointing to this document for the GLCDI-specific implementation.
+- [`../strategy/authority.md` § D](../strategy/authority.md) - add a sub-bullet under "Compliance, monitoring & incident response" pointing to this document's audit endpoints (§5.3) as the evidence substrate the Authority would query when adjudicating a refund claim, and reflecting the proposal in §3.3 for an authority-side auditing service + UI that aggregates evidence across participant connectors.
 - **Trust Framework v0/v1** (drafted by the Dataspace Authority, not in this repo yet) - needs sections covering: refund-claim intake procedure, evidence the Authority can request from each party, adjudication timeline, expected provider behaviour on an upheld claim. The connector's audit endpoints provide the substrate; the procedure itself is governance.
 
 ---
 
 ## References
 
-- [`policies/README.md`](policies/README.md) - policy catalogue & feasibility ratings
-- [`policies/contract/payment-required.json`](policies/contract/payment-required.json) - current policy template (simpler than the reference policy in §1)
-- [`README.md` § Technical vs. Governance Enforcement](README.md) - the bridging table this document elaborates one row of
-- [`IMPLEM_PLAN.md` § Phase 6](IMPLEM_PLAN.md) - governance-level enforcement phase
-- [`AUTHORITY.md` § D Compliance, monitoring & incident response](AUTHORITY.md) - the body that would adjudicate refund claims
-- [`STANDARDS.md`](STANDARDS.md) - ODRL Duty / Consequence / Obligation as standards
+- [`../reference/policies/README.md`](../reference/policies/README.md) - policy catalogue & feasibility ratings
+- [`../reference/policies/contract/payment-required.json`](../reference/policies/contract/payment-required.json) - current policy template (simpler than the reference policy in §1)
+- [`README.md` § Technical vs. Governance Enforcement](../README.md) - the bridging table this document elaborates one row of
+- [`IMPLEM_PLAN.md` § Phase 6](../IMPLEM_PLAN.md) - governance-level enforcement phase
+- [`../strategy/authority.md` § D Compliance, monitoring & incident response](../strategy/authority.md) - the body that would adjudicate refund claims
+- [`../strategy/standards.md`](../strategy/standards.md) - ODRL Duty / Consequence / Obligation as standards
 - [Eclipse EDC docs - Custom Policy Functions](https://eclipse-edc.github.io/docs/) - for the v1 constraint-function implementation

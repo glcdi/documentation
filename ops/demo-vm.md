@@ -4,7 +4,7 @@
 conversion + governance-KC steps pending.
 
 **Companion docs:**
-- `management/ASSETS_EXAMPLES.md` - workshop-phase contributor inputs
+- `management/../reference/assets/workshop-inputs-2026.md` - workshop-phase contributor inputs
   (Stone Barns / Sonoma Mountain / UFL / Pasa / White Buffalo)
 - `management/IMPLEM_PLAN.md` - M1 trio + roadmap
 - `management/ops/staging-wipe.md` - wipe + reseed flow,
@@ -12,7 +12,7 @@ conversion + governance-KC steps pending.
 
 ## 1. Scope
 
-Workshop participants 1–4 in `ASSETS_EXAMPLES.md` co-locate on a single
+Workshop participants 1–4 in `../reference/assets/workshop-inputs-2026.md` co-locate on a single
 new staging VM. Participant 5 (White Buffalo) keeps its existing
 `white-buffalo` VM and is out of scope here.
 
@@ -76,7 +76,7 @@ reference the per-asset composite.
 | `share-back-required-policy` | `odrl:duty` - `inform` w/ `glcdi:shareBackArtifact` | yes (recorded) | **NEW** (04) |
 | `no-commercial-use-policy` | `odrl:prohibition` - `commercialise` + `distribute` | yes (rejection at agreement time) | **NEW** (05) |
 | `pre-publication-review-policy` | `odrl:duty` - `reviewBefore` | **no** - recorded only | **NEW** (06) |
-| `payment-required-policy` | `odrl:duty` - `compensate` w/ amount + currency | **no** in M1 - system enforcement is M2 (`PAYMENT_GATING.md`) | **NEW** (07) |
+| `payment-required-policy` | `odrl:duty` - `compensate` w/ amount + currency | **no** in M1 - system enforcement is M2 (`../design/payment-gating.md`) | **NEW** (07) |
 
 Per-asset composites (11/21/31/41) inline the merged ODRL set
 referencing the relevant atoms' duties / prohibitions.
@@ -265,11 +265,11 @@ Manual catalog visibility checks:
   decide whether that's desirable or whether demo stays one-way
   (sees the trio, isn't seen by them).
 - **Pre-publication-review / payment** - recorded only in M1.
-  System-enforcement is in `PAYMENT_GATING.md` scope (M2).
+  System-enforcement is in `../design/payment-gating.md` scope (M2).
 
 ## 13. References
 
-- `management/ASSETS_EXAMPLES.md` - workshop dataset inputs
+- `management/../reference/assets/workshop-inputs-2026.md` - workshop dataset inputs
 - `management/IMPLEM_PLAN.md` - M1 trio + roadmap
 - `management/ops/staging-wipe.md` - wipe + reseed flow
 - `management/scripts/setup-demo-from-snapshot.sh` - VM-side conversion

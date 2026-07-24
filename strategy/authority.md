@@ -2,7 +2,7 @@
 
 A proposal for the responsibilities, composition, and operating mode of the governance body provisionally named the **Dataspace Authority**. Everything below is put forward for discussion with the body itself once seated; nothing here is a decided commitment.
 
-This document answers: *what would the Dataspace Authority be accountable for, how would it decide, and where does its remit end?* It is intentionally separate from [`README.md`](README.md) so the body can review, edit, and ratify its own terms of reference without sprawling across the rest of the documentation.
+This document answers: *what would the Dataspace Authority be accountable for, how would it decide, and where does its remit end?* It is intentionally separate from [`README.md`](../README.md) so the body can review, edit, and ratify its own terms of reference without sprawling across the rest of the documentation.
 
 ## Naming caveat
 
@@ -37,47 +37,47 @@ Grouped by theme. "Proposed" means the project team is putting this forward as a
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Review participant applications | Confirm stated organisation, participant type, certification evidence; approve or reject onboarding | [`README.md` § Onboarding Flow](README.md) (replaced - see below), [`IDENTITY.md` § Onboarding Flow (Proposed)](IDENTITY.md#onboarding-flow-proposed) |
-| Approve role assignment | Assign realm roles (`glcdi_member` + participant-type role) and initial certification status on approval | [`IDENTITY.md` § Proposed Participant Role Assignments](IDENTITY.md#proposed-participant-role-assignments) |
+| Review participant applications | Confirm stated organisation, participant type, certification evidence; approve or reject onboarding | [`README.md` § Onboarding Flow](../README.md) (replaced - see below), [`../reference/identity.md` § Onboarding Flow (Proposed)](../reference/identity.md#onboarding-flow-proposed) |
+| Approve role assignment | Assign realm roles (`glcdi_member` + participant-type role) and initial certification status on approval | [`../reference/identity.md` § Proposed Participant Role Assignments](../reference/identity.md#proposed-participant-role-assignments) |
 | Suspend or offboard | Revoke membership on serious or repeated Trust Framework breach; define what "serious" means | §C below |
-| Maintain the participant-type taxonomy | Own the canonical list of participant types (`producer`, `researcher`, `data-steward`, …) | [`IMPLEM_PLAN.md` § 1.2](IMPLEM_PLAN.md) |
+| Maintain the participant-type taxonomy | Own the canonical list of participant types (`producer`, `researcher`, `data-steward`, …) | [`IMPLEM_PLAN.md` § 1.2](../IMPLEM_PLAN.md) |
 
 ### B. Identity & certification (prototype-era manual steward)
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Self-certify producer regenerative status | For C1–C2 the Authority informally attests producer `glcdi_certification_status` values; post-prototype transitions to a formal cert-evidence workflow | [`policies/plan.md` § Cohort 1](policies/plan.md), [`IDENTITY.md` § Onboarding Flow](IDENTITY.md) |
-| Maintain `glcdi_certification_status` | Set and update the per-user Keycloak attribute; define allowed values | [`IMPLEM_PLAN.md` § 2.2](IMPLEM_PLAN.md) |
-| Maintain `glcdi_contribution_status` | Flip to `contributing` once a participant has published their first asset (manual for prototype; automated crawler later) | [`IMPLEM_PLAN.md` § 2.2](IMPLEM_PLAN.md), [`policies/README.md` § contributing-members](policies/README.md) |
-| Formalise cert evidence post-prototype | Define what third-party proof (USDA Organic, Regenerative Organic Certified, self-declaration rules) counts once institutional participants onboard | [`policies/plan.md` § Post-prototype](policies/plan.md) |
+| Self-certify producer regenerative status | For C1–C2 the Authority informally attests producer `glcdi_certification_status` values; post-prototype transitions to a formal cert-evidence workflow | [`../reference/policies/plan.md` § Cohort 1](../reference/policies/plan.md), [`../reference/identity.md` § Onboarding Flow](../reference/identity.md) |
+| Maintain `glcdi_certification_status` | Set and update the per-user Keycloak attribute; define allowed values | [`IMPLEM_PLAN.md` § 2.2](../IMPLEM_PLAN.md) |
+| Maintain `glcdi_contribution_status` | Flip to `contributing` once a participant has published their first asset (manual for prototype; automated crawler later) | [`IMPLEM_PLAN.md` § 2.2](../IMPLEM_PLAN.md), [`../reference/policies/README.md` § contributing-members](../reference/policies/README.md) |
+| Formalise cert evidence post-prototype | Define what third-party proof (USDA Organic, Regenerative Organic Certified, self-declaration rules) counts once institutional participants onboard | [`../reference/policies/plan.md` § Post-prototype](../reference/policies/plan.md) |
 
 ### C. Trust Framework, DSAs & policy curation
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Author and publish the Trust Framework | Draft, review, and release v0 / v1 / v2 of the living document codifying governance norms, templates, and compliance expectations | [`README.md` § Trust Framework](README.md#trust-framework) |
-| Approve DSA template wording | Sign off on Data Sharing Agreement clauses (alongside legal counsel) for each ODRL duty and prohibition that the connector cannot technically enforce | [`IMPLEM_PLAN.md` § 6.1](IMPLEM_PLAN.md) |
-| Approve the ODRL purpose taxonomy | Own the canonical set of `odrl:purpose` values (`InternalAnalysis`, `AgronomicModelTraining`, `Scope3Reporting`, …) | [`IMPLEM_PLAN.md` § 1.3](IMPLEM_PLAN.md) |
-| Curate the participant-facing policy template library | Decide which policies are selectable in the UI vs. project-team-seeded at each phase | [`policies/plan.md` § Participant-facing template library per cohort](policies/plan.md) |
-| Approve hardcoded-vs-per-user membership mapper | Decide prototype-era membership representation | [`IMPLEM_PLAN.md` § 2.3](IMPLEM_PLAN.md) |
+| Author and publish the Trust Framework | Draft, review, and release v0 / v1 / v2 of the living document codifying governance norms, templates, and compliance expectations | [`README.md` § Trust Framework](../README.md#trust-framework) |
+| Approve DSA template wording | Sign off on Data Sharing Agreement clauses (alongside legal counsel) for each ODRL duty and prohibition that the connector cannot technically enforce | [`IMPLEM_PLAN.md` § 6.1](../IMPLEM_PLAN.md) |
+| Approve the ODRL purpose taxonomy | Own the canonical set of `odrl:purpose` values (`InternalAnalysis`, `AgronomicModelTraining`, `Scope3Reporting`, …) | [`IMPLEM_PLAN.md` § 1.3](../IMPLEM_PLAN.md) |
+| Curate the participant-facing policy template library | Decide which policies are selectable in the UI vs. project-team-seeded at each phase | [`../reference/policies/plan.md` § Participant-facing template library per cohort](../reference/policies/plan.md) |
+| Approve hardcoded-vs-per-user membership mapper | Decide prototype-era membership representation | [`IMPLEM_PLAN.md` § 2.3](../IMPLEM_PLAN.md) |
 
 ### D. Compliance, monitoring & incident response
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Monitor duty-based obligations | Oversee compliance with `attribution`, `anonymisation`, `reciprocal-insights` - obligations the connector cannot technically enforce | [`policies/README.md` § Implementation Feasibility](policies/README.md#implementation-feasibility) |
-| Define audit mechanism | Choose between self-attestation, periodic review, and automated checks; document the chosen mix in Trust Framework v1 | [`IMPLEM_PLAN.md` § 6.2](IMPLEM_PLAN.md) |
+| Monitor duty-based obligations | Oversee compliance with `attribution`, `anonymisation`, `reciprocal-insights` - obligations the connector cannot technically enforce | [`../reference/policies/README.md` § Implementation Feasibility](../reference/policies/README.md#implementation-feasibility) |
+| Define audit mechanism | Choose between self-attestation, periodic review, and automated checks; document the chosen mix in Trust Framework v1 | [`IMPLEM_PLAN.md` § 6.2](../IMPLEM_PLAN.md) |
 | Handle incident and breach reports | Receive complaints, investigate, propose remediation; escalate to legal counsel only where the DSA warrants it | *to be documented in Trust Framework* |
-| Approve consent revocation procedures | Document how a producer revokes consent for a previously shared dataset (contracts, deletion notification, audit trail) | [`IMPLEM_PLAN.md` § 6.3](IMPLEM_PLAN.md) |
-| Adjudicate refund claims & monitor `payment-required` obligations (post-prototype) | Receive consumer claims that payment was completed but access was denied; review the per-connector audit endpoints (`/v3/contractnegotiations/{id}/obligations` and `/audit`); rule on whether refund is owed. The connector records the refund obligation as part of the immutable agreement; the Authority adjudicates; the external billing/payment system executes the refund. An aggregating audit service + UI on the Authority side is **proposed** as the operational consumer of these endpoints | [`PAYMENT_GATING.md` § 3.3](PAYMENT_GATING.md), [`IMPLEM_PLAN.md` § 7.1](IMPLEM_PLAN.md) |
+| Approve consent revocation procedures | Document how a producer revokes consent for a previously shared dataset (contracts, deletion notification, audit trail) | [`IMPLEM_PLAN.md` § 6.3](../IMPLEM_PLAN.md) |
+| Adjudicate refund claims & monitor `payment-required` obligations (post-prototype) | Receive consumer claims that payment was completed but access was denied; review the per-connector audit endpoints (`/v3/contractnegotiations/{id}/obligations` and `/audit`); rule on whether refund is owed. The connector records the refund obligation as part of the immutable agreement; the Authority adjudicates; the external billing/payment system executes the refund. An aggregating audit service + UI on the Authority side is **proposed** as the operational consumer of these endpoints | [`../design/payment-gating.md` § 3.3](../design/payment-gating.md), [`IMPLEM_PLAN.md` § 7.1](../IMPLEM_PLAN.md) |
 
 ### E. Cohort & phase decisions
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Declare cohort close-out | Decide when a cohort's close-out criteria are met (technical demos, DSA clauses, governance pipeline health) | [`policies/plan.md` § Cohort 1 close-out](policies/plan.md) |
-| Approve the rollout plan | Accept, amend, or reject the cohort-sequencing proposal in `policies/plan.md` | [`policies/plan.md`](policies/plan.md) |
-| Sign off cross-cohort scope changes | Promote or defer policies between cohorts when circumstances change | [`policies/plan.md`](policies/plan.md) |
+| Declare cohort close-out | Decide when a cohort's close-out criteria are met (technical demos, DSA clauses, governance pipeline health) | [`../reference/policies/plan.md` § Cohort 1 close-out](../reference/policies/plan.md) |
+| Approve the rollout plan | Accept, amend, or reject the cohort-sequencing proposal in `../reference/policies/plan.md` | [`../reference/policies/plan.md`](../reference/policies/plan.md) |
+| Sign off cross-cohort scope changes | Promote or defer policies between cohorts when circumstances change | [`../reference/policies/plan.md`](../reference/policies/plan.md) |
 
 ---
 
@@ -161,9 +161,9 @@ Listed explicitly to prevent scope creep and to make the body's remit auditable.
 
 ## References
 
-- [`README.md`](README.md) - governance overview (high-level)
-- [`IDENTITY.md`](IDENTITY.md) - identity, onboarding flow, role assignments
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - phased implementation plan; Phase 2 (Keycloak claims), Phase 6 (governance-level enforcement)
-- [`ops/authority-migration.md`](ops/authority-migration.md) - operator checklist for renaming the live `governance-*` infrastructure once this proposal is ratified
-- [`policies/plan.md`](policies/plan.md) - cohort-level policy rollout proposal, including Authority-owned decision points
-- [`policies/README.md`](policies/README.md) - per-policy implementation feasibility and governance-vs-technical enforcement
+- [`README.md`](../README.md) - governance overview (high-level)
+- [`../reference/identity.md`](../reference/identity.md) - identity, onboarding flow, role assignments
+- [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) - phased implementation plan; Phase 2 (Keycloak claims), Phase 6 (governance-level enforcement)
+- [`ops/authority-migration.md`](../ops/authority-migration.md) - operator checklist for renaming the live `governance-*` infrastructure once this proposal is ratified
+- [`../reference/policies/plan.md`](../reference/policies/plan.md) - cohort-level policy rollout proposal, including Authority-owned decision points
+- [`../reference/policies/README.md`](../reference/policies/README.md) - per-policy implementation feasibility and governance-vs-technical enforcement

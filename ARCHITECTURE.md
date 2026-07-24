@@ -2,7 +2,7 @@
 
 Technical architecture of the **Grazing Lands Carbon Data Initiative (GLCDI)** dataspace - the federated, decentralised infrastructure that lets participants share soil-organic-carbon and grazing-management data under enforceable consent, and the interoperability standards that make that sharing portable across implementations.
 
-This document is the entry point for the "Data Space Architecture Design" deliverable. It describes the topology, the components each participant runs, how data flows between them under the Dataspace Protocol (DSP), and where the technical enforcement boundary lies. For per-mechanism specification traceability see [`STANDARDS.md`](STANDARDS.md); for the identity model in detail see [`IDENTITY.md`](IDENTITY.md); for the phased implementation plan see [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md).
+This document is the entry point for the "Data Space Architecture Design" deliverable. It describes the topology, the components each participant runs, how data flows between them under the Dataspace Protocol (DSP), and where the technical enforcement boundary lies. For per-mechanism specification traceability see [`strategy/standards.md`](strategy/standards.md); for the identity model in detail see [`reference/identity.md`](reference/identity.md); for the phased implementation plan see [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md).
 
 ---
 
@@ -21,10 +21,10 @@ GLCDI's architecture is shaped by four commitments:
 
 GLCDI is a **one Authority + N participants** system:
 
-- **The Dataspace Authority** - one instance (`authority.glcdi.startinblox.com`) hosting a Keycloak realm (the source of truth for participant identity, roles, and claims) plus the onboarding portal. See [`AUTHORITY.md`](AUTHORITY.md) for the proposed governance body behind the deployment.
+- **The Dataspace Authority** - one instance (`authority.glcdi.startinblox.com`) hosting a Keycloak realm (the source of truth for participant identity, roles, and claims) plus the onboarding portal. See [`strategy/authority.md`](strategy/authority.md) for the proposed governance body behind the deployment.
 - **N participants** - each participant deploys the same self-contained Compose stack, gets its own subdomain (`«name».glcdi.startinblox.com`), and controls its own datasets. Participants join by application, are approved by the Authority, and are provisioned as a Keycloak realm entry (a service-account client at Tier 1; a client + human user at Tier 2).
 - **Peer-to-peer data plane.** Once negotiated, data flows directly between participant connectors over the Dataspace Protocol (DSP). The Authority is not on the data path.
-- **External billing / payment infrastructure** (Tier 2+, post-M1). GLCDI does not run its own payment rail; the payment-gating design ([`PAYMENT_GATING.md`](PAYMENT_GATING.md)) integrates with the participant's own billing system and records payment status on the immutable DSP agreement.
+- **External billing / payment infrastructure** (Tier 2+, post-M1). GLCDI does not run its own payment rail; the payment-gating design ([`design/payment-gating.md`](design/payment-gating.md)) integrates with the participant's own billing system and records payment status on the immutable DSP agreement.
 
 ---
 
@@ -121,14 +121,14 @@ Every mechanism above rests on a public specification. The condensed mapping:
 | Layer | Standard | Where used |
 |-------|----------|------------|
 | Contract negotiation, transfer, catalog | [Dataspace Protocol (DSP)](https://docs.internationaldataspaces.org/ids-knowledgebase/dataspace-protocol/) | Every connector-to-connector call |
-| Policy expression | [ODRL 2.2](https://www.w3.org/TR/odrl-model/) | All policy JSON in `policies/` |
+| Policy expression | [ODRL 2.2](https://www.w3.org/TR/odrl-model/) | All policy JSON in `reference/policies/` |
 | Catalog metadata | [DCAT 3](https://www.w3.org/TR/vocab-dcat-3/) | Catalog responses |
 | Serialisation | [JSON-LD 1.1](https://www.w3.org/TR/json-ld11/) + `context.jsonld` | Every policy and catalog document |
 | Connector identity (Tier 1–2) | [OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html), [OAuth 2.0 Client Credentials](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4), [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | Authority KC → connector token; connector-to-connector DSP auth |
 | Connector identity (Tier 3, deferred) | [Decentralized Claims Protocol (DCP)](https://projects.eclipse.org/projects/technology.dataspace-decentralized-claims-protocol), [IATP](https://github.com/eclipse-tractusx/identity-trust), [W3C Verifiable Credentials 2.0](https://www.w3.org/TR/vc-data-model-2.0/), [W3C DIDs 1.0](https://www.w3.org/TR/did-core/) | Identity Hub; reserved for the connector-VC migration |
 | LDP resource semantics | [W3C Linked Data Platform 1.0](https://www.w3.org/TR/ldp/) | Participant `djangoldp-glcdi` backend |
 
-Full per-mechanism traceability (which mechanism, which sub-spec clause, which file) lives in [`STANDARDS.md`](STANDARDS.md).
+Full per-mechanism traceability (which mechanism, which sub-spec clause, which file) lives in [`strategy/standards.md`](strategy/standards.md).
 
 ---
 
@@ -142,7 +142,7 @@ Identity is layered so the M1 prototype ships on the minimum credible model and 
 | **Tier 2** ([Phase 7.2](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)) | Deferred post-M1 | `X-Api-Key` + user OIDC Bearer (oauth2-proxy in front of `/management`) | Unchanged from Tier 1 | Authority Keycloak (adds `glcdi-ui` client + groups + human users) |
 | **Tier 3** ([Phase 7.3](IMPLEM_PLAN.md#phase-73-identity-tier-3--migrate-connector-identity-to-verifiable-credentials-via-dcp)) | Deferred; long-term direction | Likely `X-Api-Key` + DID-bound presentation | Verifiable Presentation minted by the Identity Hub via DCP / IATP | Per-participant issuer (Authority KC's role as connector-token issuer disappears) |
 
-See [`IDENTITY.md`](IDENTITY.md) for the tier rationale, the claim model, and the OIDC-vs-OID4VC-vs-VC decision.
+See [`reference/identity.md`](reference/identity.md) for the tier rationale, the claim model, and the OIDC-vs-OID4VC-vs-VC decision.
 
 ---
 
@@ -154,8 +154,8 @@ Not everything a policy asserts can be enforced by code. GLCDI is explicit about
 |-----------|-------------|----------|
 | Access-policy filtering | EDC connector (automatic) | Hiding offers from non-researchers, non-members |
 | Contract-constraint evaluation | EDC connector (at negotiation) | Purpose check, temporal check |
-| Payment status + transfer gating | Connector extension (v0 request filter on transfer initiation; v1 ODRL constraint function) + external billing/payment + v2 scheduled DSP termination of overdue agreements | `payment-required` policy - see [`PAYMENT_GATING.md`](PAYMENT_GATING.md) |
-| Refund obligation (record vs. execute) | Recording: connector (immutable DSP agreement + audit endpoints). Adjudication: Dataspace Authority. Execution: external billing/payment | [`PAYMENT_GATING.md` § 3.3](PAYMENT_GATING.md) |
+| Payment status + transfer gating | Connector extension (v0 request filter on transfer initiation; v1 ODRL constraint function) + external billing/payment + v2 scheduled DSP termination of overdue agreements | `payment-required` policy - see [`design/payment-gating.md`](design/payment-gating.md) |
+| Refund obligation (record vs. execute) | Recording: connector (immutable DSP agreement + audit endpoints). Adjudication: Dataspace Authority. Execution: external billing/payment | [`design/payment-gating.md` § 3.3](design/payment-gating.md) |
 | Anonymisation | Data Sharing Agreement (legal) | Anonymisation duty |
 | Attribution | Data Sharing Agreement (legal) | Citation duty |
 | Data deletion | Data Sharing Agreement (legal) | Retention-limit obligation |
@@ -182,12 +182,12 @@ For the operator's per-VM layout, secret management convention, and CI deploy sh
 
 | For | Read |
 |-----|------|
-| The Dataspace Authority's proposed responsibilities, composition, and remit | [`AUTHORITY.md`](AUTHORITY.md) |
-| Identity model, realm roles, claim mappers, OIDC-vs-OID4VC-vs-VC rationale | [`IDENTITY.md`](IDENTITY.md) |
-| Per-tier authentication design and phased rollout | [`AUTHENTICATION.md`](AUTHENTICATION.md) |
-| Policy catalogue, access vs. contract vs. combined scenarios | [`policies/README.md`](policies/README.md) |
-| Full standards traceability (ODRL, DSP, DCAT, JSON-LD, identity) | [`STANDARDS.md`](STANDARDS.md) |
-| Payment-gating design proposal | [`PAYMENT_GATING.md`](PAYMENT_GATING.md) |
+| The Dataspace Authority's proposed responsibilities, composition, and remit | [`strategy/authority.md`](strategy/authority.md) |
+| Identity model, realm roles, claim mappers, OIDC-vs-OID4VC-vs-VC rationale | [`reference/identity.md`](reference/identity.md) |
+| Per-tier authentication design and phased rollout | [`reference/authentication.md`](reference/authentication.md) |
+| Policy catalogue, access vs. contract vs. combined scenarios | [`reference/policies/README.md`](reference/policies/README.md) |
+| Full standards traceability (ODRL, DSP, DCAT, JSON-LD, identity) | [`strategy/standards.md`](strategy/standards.md) |
+| Payment-gating design proposal | [`design/payment-gating.md`](design/payment-gating.md) |
 | Phased implementation plan and current status | [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) |
 | Deployment runbook + local end-to-end validation | [`ops/deployment.md`](ops/deployment.md) |
 | Governance model overview (Trust Framework, cohorts, membership) | [`README.md`](README.md) |

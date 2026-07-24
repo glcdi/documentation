@@ -4,19 +4,19 @@ How users, connectors, and the dataspace governance layer authenticate in
 GLCDI - today, and where we expect it to go.
 
 This document complements two existing references:
-- [`IDENTITY.md`](IDENTITY.md) - the identity tiering rationale and the standards mapping
+- [`identity.md`](identity.md) - the identity tiering rationale and the standards mapping
   (which specs we lean on, why OIDC before OID4VC).
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - the per-phase implementation backlog (realm JSON,
+- [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) - the per-phase implementation backlog (realm JSON,
   protocol mappers, EDC policy functions, onboarding wiring).
 
 The four phases below are the operational shape of authentication at each
 milestone. Each phase is **additive on top of the previous one** - none of
 them rewrites the connector trust chain or the GLCDI claim shape.
 
-> **Companion presentation:** [`AUTHENTICATION.html`](AUTHENTICATION.html) is a
+> **Companion presentation:** [`AUTHENTICATION.html`](../AUTHENTICATION.html) is a
 > reveal.js slide deck of the same material with rendered PlantUML diagrams.
 > The diagrams below are the same source the slides embed; both are
-> regenerated from [`scripts/plantuml-encode.py`](scripts/plantuml-encode.py).
+> regenerated from [`scripts/plantuml-encode.py`](../scripts/plantuml-encode.py).
 
 ## Roadmap at a glance
 
@@ -231,7 +231,7 @@ per-org variants in `djangoldp_glcdi_pointblue` /
 `djangoldp_edc.EdcContractPermissionV3`, which validates DSP-AGREEMENT-ID /
 DSP-PARTICIPANT-ID against the local connector - so the same M1 contract
 gates `/management/` *and* the dataset bytes. See
-[IMPLEM_PLAN.md § 7.6](IMPLEM_PLAN.md) for the wiring and a local validation
+[IMPLEM_PLAN.md § 7.6](../IMPLEM_PLAN.md) for the wiring and a local validation
 walkthrough. The LDP backend is gated behind the `dev` compose profile and
 is not deployed to staging yet.
 
@@ -476,7 +476,7 @@ that the participant operator controls.
 ## Phase 4 - OID4VCI / OID4VP
 
 This is the long-term direction described in
-[`IDENTITY.md § Tier 3`](IDENTITY.md#tier-3--decentralised-claims-via-vc--dcp).
+[`identity.md § Tier 3`](identity.md#tier-3--decentralised-claims-via-vc--dcp).
 The Authority Keycloak (and the per-participant KCs from Phase 3) step out
 of the runtime trust path; users hold W3C Verifiable Credentials in their
 wallets, connectors hold VCs in their Identity Hubs, and verifiers check
@@ -625,7 +625,7 @@ end note
 
 ### Why this is a long-term phase, not a near-term one
 
-The IDENTITY.md analysis already covers why OIDC (and not OID4VC) is the
+The identity.md analysis already covers why OIDC (and not OID4VC) is the
 right choice for the prototype - short version: the OID4VC specs are still
 Implementer's Drafts, the wallet ecosystem is not in production at user
 scale, and the trust frameworks (EUDI, Gaia-X) are still firming up.

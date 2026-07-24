@@ -236,7 +236,7 @@ real data.
 - Tier 2 design (post-M1): `../IMPLEM_PLAN.md` § 7.2.
 - Bruno track design context: `../IMPLEM_PLAN.md` § 4.5.E.
 - M1 acceptance criteria: `../IMPLEM_PLAN.md` § Milestone M1.
-- URN conventions: `../PAYMENT_GATING.md` § 3.7.
+- URN conventions: `../../design/payment-gating.md` § 3.7.
 - GLCDI vocabulary: `../context.jsonld` (and the hosted copy at
   `https://cdn.startinblox.com/owl/glcdi/context.jsonld`).
 - Staging hosts and ufw caveat: `../../CLAUDE.md`.

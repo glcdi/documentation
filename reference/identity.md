@@ -1,12 +1,12 @@
-# GLCDI Identity & Authentication
+# GLCDI Identity Architecture
 
-Identity management, authentication, and the technical standards the dataspace relies on for them. Consolidated here so the architecture, rationale, and standards mapping live in one place.
+The GLCDI identity model: the tier progression, the claim shape, the realm-role catalogue, the onboarding flow, and the rationale for choosing OpenID Connect at Tier 1 over Verifiable Credentials at Tier 3. This is the architectural snapshot; the operational per-phase roadmap (what changes at each tier, sequence diagrams for onboarding + connector-to-connector trust + user login + VC issuance) lives in the sibling document [`authentication.md`](authentication.md).
 
-For the overall governance model and policy design this feeds into, see [`README.md`](README.md). For the step-by-step implementation plan (realm JSON, protocol mappers, EDC policy functions), see [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - Phase 2 covers Keycloak claim configuration and Phase 3 covers the EDC-side claim extraction.
+For the overall governance model this feeds into, see [`README.md`](../README.md). The full specification traceability — every identity-adjacent standard alongside the ODRL / DSP / DCAT / semantic ones — lives in [`../strategy/standards.md`](../strategy/standards.md). For the step-by-step implementation plan (realm JSON, protocol mappers, EDC policy functions), see [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) - Phase 2 covers Keycloak claim configuration and Phase 3 covers the EDC-side claim extraction.
 
 ## Architecture
 
-GLCDI's identity model is **tiered**: the M1 prototype ships on Tier 1 (the smallest credible model that makes the policy stack work), and richer identity layers on as governance / audit needs justify it. The three tiers (defined in [`IMPLEM_PLAN.md` § Identity Tiering Strategy](IMPLEM_PLAN.md#identity-tiering-strategy)) share the same Authority Keycloak realm and the same `glcdi_*` claim shape; each tier adds a credential surface on top of the previous one.
+GLCDI's identity model is **tiered**: the M1 prototype ships on Tier 1 (the smallest credible model that makes the policy stack work), and richer identity layers on as governance / audit needs justify it. The three tiers (defined in [`IMPLEM_PLAN.md` § Identity Tiering Strategy](../IMPLEM_PLAN.md#identity-tiering-strategy)) share the same Authority Keycloak realm and the same `glcdi_*` claim shape; each tier adds a credential surface on top of the previous one.
 
 ### Tier 1 - Connector-only auth (M1 default)
 
@@ -171,7 +171,7 @@ The receiver-side gate sits at steps 9–13: claims have to flow through `glcdi-
           └─────────────┘  └────────────┘  └──────────────┘
 ```
 
-**Tier 2 layers user OIDC on top of Tier 1** - adding the `glcdi-ui` client, per-org groups, human users, and oauth2-proxy in front of `/management`. Connector ↔ connector trust is unchanged. Per-user audit ("who at caney-fork pressed negotiate") becomes possible; UI views can role-gate per user. The `X-Api-Key` floor stays in place - at Tier 2 both the user Bearer token *and* the API key gate `/management`. Detailed steps live in [`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui).
+**Tier 2 layers user OIDC on top of Tier 1** - adding the `glcdi-ui` client, per-org groups, human users, and oauth2-proxy in front of `/management`. Connector ↔ connector trust is unchanged. Per-user audit ("who at caney-fork pressed negotiate") becomes possible; UI views can role-gate per user. The `X-Api-Key` floor stays in place - at Tier 2 both the user Bearer token *and* the API key gate `/management`. Detailed steps live in [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui).
 
 ### Tier 3 - Decentralised claims via VC / DCP (long-term)
 
@@ -205,7 +205,7 @@ The receiver-side gate sits at steps 9–13: claims have to flow through `glcdi-
                 └────────────────────────┘  └──────────────────────┘
 ```
 
-**Tier 3 replaces the Authority Keycloak as the issuer of connector credentials.** Connectors hold W3C Verifiable Credentials in their Identity Hub; DSP handshakes exchange Verifiable Presentations rather than Authority-KC-issued JWTs. The `glcdi_*` claim *names* and the policy functions are unchanged - they read claims from `ParticipantAgent`, indifferent to whether the issuer was a Keycloak JWT or a VC. What changes is who *signs* the claims, and how trust is anchored: Authority KC's JWKS endpoint goes away; in its place is a trust list of issuer DIDs (a governance artefact). Detailed migration in [`IMPLEM_PLAN § 7.3`](IMPLEM_PLAN.md#phase-73-identity-tier-3--decentralised-claims-via-vc--dcp).
+**Tier 3 replaces the Authority Keycloak as the issuer of connector credentials.** Connectors hold W3C Verifiable Credentials in their Identity Hub; DSP handshakes exchange Verifiable Presentations rather than Authority-KC-issued JWTs. The `glcdi_*` claim *names* and the policy functions are unchanged - they read claims from `ParticipantAgent`, indifferent to whether the issuer was a Keycloak JWT or a VC. What changes is who *signs* the claims, and how trust is anchored: Authority KC's JWKS endpoint goes away; in its place is a trust list of issuer DIDs (a governance artefact). Detailed migration in [`IMPLEM_PLAN § 7.3`](../IMPLEM_PLAN.md#phase-73-identity-tier-3--decentralised-claims-via-vc--dcp).
 
 ### Why this tiered roadmap
 
@@ -287,22 +287,13 @@ No human user accounts at this tier - onboarding produces a *connector identity*
 4. Participant operator receives credentials  ──→  Can authenticate via UI and access catalog
 ```
 
-The Tier-2 flow does not regenerate the Tier-1 connector identity - it adds a human-user surface alongside it. See [`IMPLEM_PLAN § 7.2.5`](IMPLEM_PLAN.md#725-tier-2-onboarding-flow).
+The Tier-2 flow does not regenerate the Tier-1 connector identity - it adds a human-user surface alongside it. See [`IMPLEM_PLAN § 7.2.5`](../IMPLEM_PLAN.md#725-tier-2-onboarding-flow).
 
 ---
 
 ## Identity Standards Mapping
 
-Each identity / authentication mechanism in GLCDI is backed by one or more open specifications. This table maps **what the dataspace does** to **which standard enables it**.
-
-| Mechanism | What it does in GLCDI | Specification | How it's used |
-|-----------|----------------------|---------------|---------------|
-| **OAuth2 client_credentials flow** (Tier 1, M1) | Each connector authenticates as itself against Authority KC; the resulting JWT is what it presents on outbound DSP requests | [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) + [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | One `glcdi-connector-<org>` client per participant; service-account user carries `glcdi_*` claims that flow into the JWT via the `glcdi-claims` scope mappers. |
-| **Token-based authorisation** (Tier 1+) | Identity claims carried in signed tokens, evaluated by provider's connector | [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) + [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | Access tokens contain `glcdi_roles`, `glcdi_membership`, `glcdi_certification_status`, `glcdi_contribution_status` claims. EDC policy functions extract and evaluate them, regardless of issuer (Authority KC at Tier 1+2, VC at Tier 3). |
-| **Role-based access control** (Tier 1+) | Participant type (producer, researcher, corporate) determines catalog visibility | [OIDC Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims) via Keycloak realm roles | `members-only.json`, `researchers-only.json`, `regenerative-producers.json`. Roles serialised as JWT claims. |
-| **OpenID Connect** (Tier 2) | Operators authenticate at the Authority Keycloak via the UI, organisations modelled as groups | [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) | Single-tier OIDC against Authority KC only. `glcdi-ui` is the OIDC client; user JWTs carry the same claim shape as the Tier-1 connector JWTs. |
-| **Decentralised identity** (Tier 3) | Participants identified by DIDs, claims carried in Verifiable Credentials | [W3C DID Core 1.0](https://www.w3.org/TR/did-core/) + [W3C VC Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) | Currently `did:web:<participant>.glcdi.startinblox.com` is configured in EDC but VCs are not yet issued. The DCP-shaped config (`edc.iam.issuer.id`, `edc.iam.sts.oauth.token.url`) is the placeholder for this direction. |
-| **Gaia-X compliance** (Tier 3 alignment) | Self-descriptions, trust anchors, credential issuance aligned with Gaia-X | [Gaia-X Trust Framework](https://docs.gaia-x.eu/policy-rules-committee/trust-framework/) | GLCDI architecture is designed to be Gaia-X-compatible (Self-Descriptions, Federated Catalogue, Compliance Service); full alignment lands with Tier 3. |
+The identity / authentication mechanisms below — OAuth2 `client_credentials`, JWT token-based authorisation, OIDC-claim RBAC, and the Tier-3 DID / VC / Gaia-X targets — are catalogued alongside every other GLCDI specification (policy, protocol, semantic, sovereignty) in [`../strategy/standards.md` § Identity, Authentication & Role-Based Access](../strategy/standards.md#identity-authentication--role-based-access). Deferring to that document keeps a single canonical standards table and avoids drift.
 
 ---
 

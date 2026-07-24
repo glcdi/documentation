@@ -62,4 +62,4 @@ java -jar plantuml.jar -tsvg diagrams/*.puml
 | `06-time-limited-expiry.puml` | Temporal constraint expiry and renewal |
 | `07-corporate-supply-chain-flow.puml` | Corporate ESG flow with payment and retention |
 | `08-reciprocal-benchmarking-pool.puml` | Contribute-to-access reciprocity (observer blocked, contributor accesses + shares back) |
-| `09-payment-gated-data-exchange.puml` | Payment-gated transfer (post-prototype): finalization → email → external payment → status update → transfer; with v2 deadline-termination via DSP. See [`../../PAYMENT_GATING.md`](../../PAYMENT_GATING.md). |
+| `09-payment-gated-data-exchange.puml` | Payment-gated transfer (post-prototype): finalization → email → external payment → status update → transfer; with v2 deadline-termination via DSP. See [`../../../../../design/payment-gating.md`](../../../design/payment-gating.md). |

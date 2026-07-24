@@ -1,26 +1,31 @@
 # GLCDI Trust & Control Mechanisms - Specification Mapping
 
-Each trust and control mechanism used in the GLCDI dataspace is backed by one or more
-open specifications. This document maps **what the dataspace does** to **which standard
-enables it**, providing traceability from governance intent to technical implementation.
-
-Identity and authentication standards (OIDC, OAuth 2.0 / JWT, DID / VC, Gaia-X) are covered separately in [`IDENTITY.md`](IDENTITY.md). This document covers the policy, protocol, sovereignty, and semantic layers.
+Each trust and control mechanism used in the GLCDI dataspace is backed by one or more open specifications. This document maps **what the dataspace does** to **which standard enables it**, providing full traceability from governance intent to technical implementation. Every layer — policy, protocol, identity, sovereignty, semantic — lives here in one place. For the identity architecture and rationale (not the standards list itself), see [`../reference/identity.md`](../reference/identity.md).
 
 ## Data Consent & Usage Control
 
 | Mechanism | What it does in GLCDI | Specification | How it's used |
 |-----------|----------------------|---------------|---------------|
-| **Policy expression** | Encodes access rules, usage constraints, obligations, prohibitions as machine-readable policies | [ODRL 2.2](https://www.w3.org/TR/odrl-model/) (W3C Recommendation) | All policy JSON files in `policies/`. ODRL `Permission`, `Prohibition`, `Obligation` structures express what is allowed, forbidden, or required. |
+| **Policy expression** | Encodes access rules, usage constraints, obligations, prohibitions as machine-readable policies | [ODRL 2.2](https://www.w3.org/TR/odrl-model/) (W3C Recommendation) | All policy JSON files in `../reference/policies/`. ODRL `Permission`, `Prohibition`, `Obligation` structures express what is allowed, forbidden, or required. |
 | **Purpose constraint** | Consumer declares intended purpose; provider checks it against allowed purposes | [ODRL 2.2 - `odrl:purpose`](https://www.w3.org/TR/odrl-vocab/#term-purpose) | `purpose-model-training.json`, `internal-use-only.json`, `non-commercial.json`. Consumer includes purpose in contract offer; EDC evaluates at negotiation time. |
 | **Temporal constraint** | Usage permitted only within a time window | [ODRL 2.2 - `odrl:dateTime`](https://www.w3.org/TR/odrl-vocab/#term-dateTime) | `time-limited.json`. Native EDC support - evaluated at negotiation and transfer time. |
 | **Duration / retention constraint** | Data must be deleted after an elapsed period | [ODRL 2.2 - `odrl:elapsedTime`](https://www.w3.org/TR/odrl-vocab/#term-elapsedTime) | `data-retention-limit.json`. Requires custom policy function (ISO 8601 duration from transfer date). |
 | **Duty (obligation)** | Consumer must perform an action (anonymise, attribute, delete, inform) | [ODRL 2.2 - `odrl:duty`](https://www.w3.org/TR/odrl-model/#rule-duty) | `anonymisation.json`, `attribution.json`, `data-retention-limit.json`. Governance-level enforcement via DSA. |
 | **Prohibition** | Consumer must NOT perform an action (redistribute, commercialise) | [ODRL 2.2 - `odrl:prohibition`](https://www.w3.org/TR/odrl-model/#rule-prohibition) | `internal-use-only.json`, `non-commercial.json`. Contractual enforcement. |
-| **Compensation / payment** | Access requires financial payment; the connector tracks payment status, gates transfer until paid, records the refund obligation on the agreement, and (v2) terminates overdue agreements via DSP `ContractNegotiationTermination` | [ODRL 2.2 - `odrl:compensate`](https://www.w3.org/TR/odrl-vocab/#term-compensate), [`odrl:pay`](https://www.w3.org/TR/odrl-vocab/#term-pay), [`odrl:payAmount`](https://www.w3.org/TR/odrl-vocab/#term-payAmount), [`odrl:invalidate`](https://www.w3.org/TR/odrl-vocab/#term-invalidate) | `payment-required.json`; design: [`PAYMENT_GATING.md`](PAYMENT_GATING.md); sequence: [`policies/diagrams/09-payment-gated-data-exchange.puml`](policies/diagrams/09-payment-gated-data-exchange.puml) |
+| **Compensation / payment** | Access requires financial payment; the connector tracks payment status, gates transfer until paid, records the refund obligation on the agreement, and (v2) terminates overdue agreements via DSP `ContractNegotiationTermination` | [ODRL 2.2 - `odrl:compensate`](https://www.w3.org/TR/odrl-vocab/#term-compensate), [`odrl:pay`](https://www.w3.org/TR/odrl-vocab/#term-pay), [`odrl:payAmount`](https://www.w3.org/TR/odrl-vocab/#term-payAmount), [`odrl:invalidate`](https://www.w3.org/TR/odrl-vocab/#term-invalidate) | `payment-required.json`; design: [`../design/payment-gating.md`](../design/payment-gating.md); sequence: [`../reference/policies/diagrams/09-payment-gated-data-exchange.puml`](../reference/policies/diagrams/09-payment-gated-data-exchange.puml) |
 
 ## Identity, Authentication & Role-Based Access
 
-Covered in [`IDENTITY.md` § Identity Standards Mapping](IDENTITY.md#identity-standards-mapping): OIDC federation, OAuth 2.0 / JWT token-based authorisation, realm-role-to-claim RBAC, and the future DID / Verifiable Credentials / Gaia-X targets.
+| Mechanism | What it does in GLCDI | Specification | How it's used |
+|-----------|----------------------|---------------|---------------|
+| **OAuth2 client_credentials flow** (Tier 1, M1) | Each connector authenticates as itself against Authority KC; the resulting JWT is what it presents on outbound DSP requests | [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) + [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | One `glcdi-connector-<org>` client per participant; service-account user carries `glcdi_*` claims that flow into the JWT via the `glcdi-claims` scope mappers. |
+| **Token-based authorisation** (Tier 1+) | Identity claims carried in signed tokens, evaluated by provider's connector | [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749) + [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519) | Access tokens contain `glcdi_roles`, `glcdi_membership`, `glcdi_certification_status`, `glcdi_contribution_status` claims. EDC policy functions extract and evaluate them, regardless of issuer (Authority KC at Tier 1+2, VC at Tier 3). |
+| **Role-based access control** (Tier 1+) | Participant type (producer, researcher, corporate) determines catalog visibility | [OIDC Claims](https://openid.net/specs/openid-connect-core-1_0.html#Claims) via Keycloak realm roles | `members-only.json`, `researchers-only.json`, `regenerative-producers.json`. Roles serialised as JWT claims. |
+| **OpenID Connect** (Tier 2) | Operators authenticate at the Authority Keycloak via the UI, organisations modelled as groups | [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) | Single-tier OIDC against Authority KC only. `glcdi-ui` is the OIDC client; user JWTs carry the same claim shape as the Tier-1 connector JWTs. |
+| **Decentralised identity** (Tier 3) | Participants identified by DIDs, claims carried in Verifiable Credentials | [W3C DID Core 1.0](https://www.w3.org/TR/did-core/) + [W3C VC Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) | Currently `did:web:<participant>.glcdi.startinblox.com` is configured in EDC but VCs are not yet issued. The DCP-shaped config (`edc.iam.issuer.id`, `edc.iam.sts.oauth.token.url`) is the placeholder for this direction. |
+| **Gaia-X compliance** (Tier 3 alignment) | Self-descriptions, trust anchors, credential issuance aligned with Gaia-X | [Gaia-X Trust Framework](https://docs.gaia-x.eu/policy-rules-committee/trust-framework/) | GLCDI architecture is designed to be Gaia-X-compatible (Self-Descriptions, Federated Catalogue, Compliance Service); full alignment lands with Tier 3. |
+
+See [`../reference/identity.md`](../reference/identity.md) for the identity architecture the table above operationalises — tier progression, claim model, and the OIDC-vs-OID4VC-vs-VC decision.
 
 ## Catalog Discovery & Contract Negotiation
 
@@ -70,7 +75,8 @@ Covered in [`IDENTITY.md` § Identity Standards Mapping](IDENTITY.md#identity-st
 │  OIDC / OAuth 2.0 / JWT  (prototype)                      │
 │  DID + Verifiable Credentials  (post-prototype)           │
 │  (enforcement: Keycloak + EDC identity service)           │
-│  See IDENTITY.md for details.                             │
+│  Standards catalogued above; architecture in              │
+│  ../reference/identity.md.                                │
 ├─────────────────────────────────────────────────────────┤
 │                    Semantic Layer                         │
 │  JSON-LD · DCAT 3 · Dublin Core · ODRL Vocabulary         │
