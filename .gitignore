@@ -1,2 +1,3 @@
 # glcdi.sh's local-stack working directory - rotated secrets, per-org configs.
 scripts/.glcdi.local/
+__pycache__
