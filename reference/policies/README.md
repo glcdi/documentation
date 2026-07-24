@@ -16,7 +16,7 @@ A catalogue of 14 policies + 4 end-to-end scenarios that govern how data flows b
 - **Enforcement split.** Native EDC handles `odrl:dateTime` and `odrl:purpose` out of the box. Claim-based constraints need a custom policy-functions extension (~200 LOC Java). Duty-based clauses (`attribution`, `anonymisation`, `reciprocal-insights`) are governance-level only - enforced via the DSA, not the connector.
 - **Implementation feasibility.** Per-policy ratings (None / Low / Medium / High) are in §Implementation Feasibility below; effort for the prototype stack is almost entirely Low. `data-retention-limit` is Medium, `payment-required` is High and post-prototype.
 
-For implementation sequencing see [`../IMPLEM_PLAN.md`](../../IMPLEM_PLAN.md); for cohort-level rollout see [`plan.md`](plan.md).
+For implementation sequencing see [`../IMPLEM_PLAN.md`](../../build/implementation-plan.md); for cohort-level rollout see [`plan.md`](plan.md).
 
 ## How EDC Policies Work
 

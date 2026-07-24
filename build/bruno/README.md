@@ -98,7 +98,7 @@ exercise the oauth2-proxy validation path, not to fake user identities.
 
 1. Install Bruno: <https://www.usebruno.com/downloads>.
 2. Open this folder via *Open Collection* - select
-   `glcdi/management/bruno/`.
+   `glcdi/management/build/bruno/`.
 3. Pick an environment (`local` or `staging`).
 4. Confirm `tier=tier1` (default) or set to `tier2` if validating
    the post-M1 layer.
@@ -113,12 +113,12 @@ npm install -g @usebruno/cli
 ```
 
 **Recommended invocation: drive Bruno through the orchestrator** -
-`./management/scripts/glcdi.sh test` injects the rotated secrets via
+`./management/build/scripts/glcdi.sh test` injects the rotated secrets via
 `--env-var` flags so the secret-marked vars actually have values:
 
 ```sh
-./management/scripts/glcdi.sh test           # tier1 default
-./management/scripts/glcdi.sh test tier2     # tier2 mode
+./management/build/scripts/glcdi.sh test           # tier1 default
+./management/build/scripts/glcdi.sh test tier2     # tier2 mode
 ```
 
 Need to run a specific folder or file by hand? Use `bruno-cmd` to print the
@@ -126,13 +126,13 @@ exact `bru run` invocation with the rotated secrets baked in, then append
 the folder/file you want:
 
 ```sh
-./management/scripts/glcdi.sh bruno-cmd
+./management/build/scripts/glcdi.sh bruno-cmd
 # pastes:
-#   cd /…/management/bruno
+#   cd /…/management/build/bruno
 #   bru run --env local --env-var tier=tier1 --env-var caney_fork_api_key=… [folder|file]
 
 # Then, e.g.:
-cd management/bruno
+cd management/build/bruno
 bru run --env local --env-var tier=tier1 --env-var caney_fork_api_key=… 20-catalog-discovery
 ```
 

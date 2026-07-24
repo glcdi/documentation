@@ -17,16 +17,16 @@
 # Exit codes: 0 = success; 1 = any step failed.
 #
 # Usage:
-#   ./management/scripts/test-farmos-transfer.sh                   # local
-#   ./management/scripts/test-farmos-transfer.sh --target staging  # staging
+#   ./management/build/scripts/test-farmos-transfer.sh                   # local
+#   ./management/build/scripts/test-farmos-transfer.sh --target staging  # staging
 #
 # Both modes read EDC credentials from .glcdi.local/secrets.env. Local
 # also reuses the local Bruno env URLs; staging hits the public host.
 #
 # Pre-reqs (local):
-#   - GLCDI_FARMOS=1 ./management/scripts/glcdi.sh up
-#   - GLCDI_FARMOS=1 ./management/scripts/glcdi.sh farmos-install
-#   - GLCDI_FARMOS=1 ./management/scripts/glcdi.sh seed
+#   - GLCDI_FARMOS=1 ./management/build/scripts/glcdi.sh up
+#   - GLCDI_FARMOS=1 ./management/build/scripts/glcdi.sh farmos-install
+#   - GLCDI_FARMOS=1 ./management/build/scripts/glcdi.sh seed
 #       (lands the caney-fork-farmos-animals-cd that we negotiate against)
 #
 # Known trap (see memory `reference_glcdi_edc_transfer_diag` § 7): if the

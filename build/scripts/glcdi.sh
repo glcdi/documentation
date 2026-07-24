@@ -63,8 +63,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# The script lives in management/scripts/. The workspace root is two levels up.
-WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# The script lives in management/build/scripts/. The workspace root is three levels up.
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LOCAL_DIR="$SCRIPT_DIR/.glcdi.local"
 SECRETS_FILE="$LOCAL_DIR/secrets.env"
 
@@ -83,7 +83,7 @@ PARTICIPANT_DIR="$WORKSPACE_ROOT/participant-agent-services"
 EDC_CONNECTOR_DIR="$WORKSPACE_ROOT/edc-connector"
 EDC_EXTENSION_DIR="$WORKSPACE_ROOT/edc-glcdi-extension"
 PARTICIPANT_UI_DIR="$WORKSPACE_ROOT/participant-ui"
-BRUNO_DIR="$WORKSPACE_ROOT/management/bruno"
+BRUNO_DIR="$WORKSPACE_ROOT/management/build/bruno"
 
 # Participants. M1 trio runs locally + staging; demo is staging-only
 # (a workshop showcase VM colocating Stone Barns / Sonoma / UFL / Pasa

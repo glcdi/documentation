@@ -366,7 +366,7 @@ When the v0 extension lands:
 - [`../reference/policies/README.md`](../reference/policies/README.md) - `payment-required` row in the Implementation Feasibility table moves from "post-prototype, requires custom function + external payment API" to reflect the v0 shape (filter + privateProperties + external payment system + audit endpoints for the refund-obligation substrate).
 - [`../reference/policies/contract/payment-required.json`](../reference/policies/contract/payment-required.json) - replace with the richer reference template once the Dataspace Authority approves it; remove the misused `systemDevice` term in favour of a `glcdi:`-namespaced equivalent (§3.5).
 - [`README.md`](../README.md) "Technical vs. Governance Enforcement" table - `payment-required` row updated to reference this document; add a row (or footnote) clarifying the recording-vs-execution split for refund obligations (§3.3).
-- [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) Phase 6 (governance-level enforcement) - link to this document; mark v0/v1/v2 as substages of the payment workstream.
+- [`IMPLEM_PLAN.md`](../build/implementation-plan.md) Phase 6 (governance-level enforcement) - link to this document; mark v0/v1/v2 as substages of the payment workstream.
 - [`../strategy/standards.md`](../strategy/standards.md) - ODRL Duty + Consequence + Obligation row gets a footnote pointing to this document for the GLCDI-specific implementation.
 - [`../strategy/authority.md` § D](../strategy/authority.md) - add a sub-bullet under "Compliance, monitoring & incident response" pointing to this document's audit endpoints (§5.3) as the evidence substrate the Authority would query when adjudicating a refund claim, and reflecting the proposal in §3.3 for an authority-side auditing service + UI that aggregates evidence across participant connectors.
 - **Trust Framework v0/v1** (drafted by the Dataspace Authority, not in this repo yet) - needs sections covering: refund-claim intake procedure, evidence the Authority can request from each party, adjudication timeline, expected provider behaviour on an upheld claim. The connector's audit endpoints provide the substrate; the procedure itself is governance.
@@ -378,7 +378,7 @@ When the v0 extension lands:
 - [`../reference/policies/README.md`](../reference/policies/README.md) - policy catalogue & feasibility ratings
 - [`../reference/policies/contract/payment-required.json`](../reference/policies/contract/payment-required.json) - current policy template (simpler than the reference policy in §1)
 - [`README.md` § Technical vs. Governance Enforcement](../README.md) - the bridging table this document elaborates one row of
-- [`IMPLEM_PLAN.md` § Phase 6](../IMPLEM_PLAN.md) - governance-level enforcement phase
+- [`IMPLEM_PLAN.md` § Phase 6](../build/implementation-plan.md) - governance-level enforcement phase
 - [`../strategy/authority.md` § D Compliance, monitoring & incident response](../strategy/authority.md) - the body that would adjudicate refund claims
 - [`../strategy/standards.md`](../strategy/standards.md) - ODRL Duty / Consequence / Obligation as standards
 - [Eclipse EDC docs - Custom Policy Functions](https://eclipse-edc.github.io/docs/) - for the v1 constraint-function implementation

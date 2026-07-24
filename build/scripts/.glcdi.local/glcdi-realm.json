@@ -1,0 +1,577 @@
+{
+  "realm": "glcdi",
+  "displayName": "GLCDI Dataspace",
+  "enabled": true,
+  "loginTheme": "glcdi",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Default user role"
+      },
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      },
+      {
+        "name": "glcdi_member",
+        "description": "GLCDI dataspace member (active participant)"
+      },
+      {
+        "name": "glcdi_producer",
+        "description": "Producer participant type - regenerative qualification is carried by glcdi_certification_status, not by a separate role"
+      },
+      {
+        "name": "glcdi_researcher",
+        "description": "Research institution / NGO"
+      },
+      {
+        "name": "glcdi_non_regulatory",
+        "description": "Non-regulatory body"
+      },
+      {
+        "name": "glcdi_non_profit",
+        "description": "Non-commercial / non-profit organization"
+      },
+      {
+        "name": "glcdi_corporate_or_supply_chain",
+        "description": "Corporate participant / supply-chain actor"
+      },
+      {
+        "name": "glcdi_other",
+        "description": "Other participant type (catch-all for onboarding mapping)"
+      }
+    ],
+    "client": {
+      "governance": [
+        {
+          "name": "manage-users",
+          "description": "Manage users in the Authority realm"
+        }
+      ],
+      "glcdi-ui": [
+        {
+          "name": "catalog-viewer",
+          "description": "View catalogue entries"
+        }
+      ]
+    }
+  },
+  "clientScopes": [
+    {
+      "name": "glcdi-claims",
+      "description": "GLCDI custom claims (membership, roles, organization, certification status, contribution status)",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "glcdi-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "glcdi_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "glcdi-membership-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "glcdi_membership",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "glcdi_membership",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "glcdi-organization-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "glcdi_organization",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "glcdi_organization",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "glcdi-certification-status-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "glcdi_certification_status",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "glcdi_certification_status",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "glcdi-contribution-status-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "glcdi_contribution_status",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "glcdi_contribution_status",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "governance",
+      "name": "GLCDI Authority Admin Client",
+      "enabled": true,
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "secret": "b891f280aaabf0a8a8b230b1948f7c8d319dc57e3a9c0b2a05e679054d7b6b02",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "onboarding",
+      "name": "GLCDI Onboarding Application",
+      "enabled": true,
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "secret": "changeme-onboarding-client-secret",
+      "redirectUris": [
+        "http://localhost/*",
+        "https://authority.glcdi.startinblox.com/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "glcdi-ui",
+      "name": "GLCDI Catalogue UI",
+      "description": "Single-client OIDC for the participant catalogue UI and the management API (post-Phase-1.5).",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8081/*",
+        "https://*.glcdi.startinblox.com/*",
+        "https://caney-fork.glcdi.startinblox.com/silent-callback.html",
+        "https://point-blue.glcdi.startinblox.com/silent-callback.html",
+        "https://white-buffalo.glcdi.startinblox.com/silent-callback.html"
+      ],
+      "webOrigins": [
+        "+",
+        "https://caney-fork.glcdi.startinblox.com",
+        "https://point-blue.glcdi.startinblox.com",
+        "https://white-buffalo.glcdi.startinblox.com"
+      ],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "web-origins",
+        "glcdi-claims"
+      ]
+    },
+    {
+      "clientId": "edc-api-client",
+      "name": "EDC API Client (legacy - kept for transition)",
+      "description": "Pre-Phase-1.5 oauth2-proxy client. Post-Phase-1.5 oauth2-proxy uses glcdi-ui. Retain until staging cutover is verified, then remove.",
+      "enabled": true,
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "secret": "changeme-edc-api-client-secret",
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "participant-broker",
+      "name": "Participant Identity Broker Client (legacy - federation removed)",
+      "description": "Pre-Phase-1.5 broker used by per-participant Keycloaks. Per-participant KCs are removed in Phase 1.5; this client is no longer functional. Retain for one cycle in case rollback is needed, then remove.",
+      "enabled": false,
+      "publicClient": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "secret": "changeme-broker-secret",
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8081/*",
+        "https://caney-fork.glcdi.startinblox.com/*",
+        "https://point-blue.glcdi.startinblox.com/*",
+        "https://white-buffalo.glcdi.startinblox.com/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "glcdi-connector-caney-fork",
+      "name": "EDC Connector Service Account - caney-fork",
+      "description": "client_credentials flow. caney-fork's EDC connector authenticates as itself for DSP-level traffic; the SA inherits caney-fork-team group claims.",
+      "enabled": true,
+      "publicClient": false,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "347b777884d6bf68f79ad5cf4707362647e850ebff5a2749b2673fb92d47aa4b",
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "web-origins",
+        "glcdi-claims"
+      ]
+    },
+    {
+      "clientId": "glcdi-connector-point-blue",
+      "name": "EDC Connector Service Account - point-blue",
+      "description": "client_credentials flow. point-blue's EDC connector authenticates as itself for DSP-level traffic; the SA inherits point-blue-team group claims.",
+      "enabled": true,
+      "publicClient": false,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "7890fb9c4c53b35519ca48502e0a628aa36cea9609440c8c94098d0e1bb66b04",
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "web-origins",
+        "glcdi-claims"
+      ]
+    },
+    {
+      "clientId": "glcdi-connector-white-buffalo",
+      "name": "EDC Connector Service Account - white-buffalo",
+      "description": "client_credentials flow. white-buffalo's EDC connector authenticates as itself for DSP-level traffic; the SA inherits white-buffalo-team group claims.",
+      "enabled": true,
+      "publicClient": false,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "28a0f657d9130c4548a02b53cf92b242d5e9091e13041f40f38329dee8531e83",
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "web-origins",
+        "glcdi-claims"
+      ]
+    }
+  ],
+  "identityProviders": [],
+  "groups": [
+    {
+      "name": "caney-fork-team",
+      "path": "/caney-fork-team",
+      "attributes": {
+        "glcdi_organization": [
+          "caney-fork"
+        ]
+      },
+      "realmRoles": [
+        "glcdi_member",
+        "glcdi_producer"
+      ]
+    },
+    {
+      "name": "point-blue-team",
+      "path": "/point-blue-team",
+      "attributes": {
+        "glcdi_organization": [
+          "point-blue"
+        ]
+      },
+      "realmRoles": [
+        "glcdi_member",
+        "glcdi_researcher"
+      ]
+    },
+    {
+      "name": "white-buffalo-team",
+      "path": "/white-buffalo-team",
+      "attributes": {
+        "glcdi_organization": [
+          "white-buffalo"
+        ]
+      },
+      "realmRoles": [
+        "glcdi_member",
+        "glcdi_producer"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@glcdi.startinblox.com",
+      "firstName": "Admin",
+      "lastName": "GLCDI",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": true
+        }
+      ],
+      "realmRoles": [
+        "admin",
+        "user"
+      ]
+    },
+    {
+      "username": "caney-fork",
+      "enabled": true,
+      "email": "caney-fork@glcdi.startinblox.com",
+      "firstName": "Caney Fork",
+      "lastName": "Operator",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "caney-fork",
+          "temporary": true
+        }
+      ],
+      "groups": [
+        "/caney-fork-team"
+      ],
+      "attributes": {
+        "glcdi_membership": [
+          "active"
+        ],
+        "glcdi_organization": [
+          "caney-fork"
+        ],
+        "glcdi_certification_status": [
+          "regenerative-verified"
+        ],
+        "glcdi_contribution_status": [
+          "contributing"
+        ]
+      }
+    },
+    {
+      "username": "point-blue",
+      "enabled": true,
+      "email": "point-blue@glcdi.startinblox.com",
+      "firstName": "Point Blue",
+      "lastName": "Operator",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "point-blue",
+          "temporary": true
+        }
+      ],
+      "groups": [
+        "/point-blue-team"
+      ],
+      "attributes": {
+        "glcdi_membership": [
+          "active"
+        ],
+        "glcdi_organization": [
+          "point-blue"
+        ],
+        "glcdi_certification_status": [
+          "not-applicable"
+        ],
+        "glcdi_contribution_status": [
+          "observer"
+        ]
+      }
+    },
+    {
+      "username": "white-buffalo",
+      "enabled": true,
+      "email": "white-buffalo@glcdi.startinblox.com",
+      "firstName": "White Buffalo",
+      "lastName": "Operator",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "white-buffalo",
+          "temporary": true
+        }
+      ],
+      "groups": [
+        "/white-buffalo-team"
+      ],
+      "attributes": {
+        "glcdi_membership": [
+          "active"
+        ],
+        "glcdi_organization": [
+          "white-buffalo"
+        ],
+        "glcdi_certification_status": [
+          "regenerative-verified"
+        ],
+        "glcdi_contribution_status": [
+          "contributing"
+        ]
+      }
+    },
+    {
+      "username": "service-account-glcdi-connector-caney-fork",
+      "enabled": true,
+      "serviceAccountClientId": "glcdi-connector-caney-fork",
+      "groups": [
+        "/caney-fork-team"
+      ],
+      "attributes": {
+        "glcdi_membership": [
+          "active"
+        ],
+        "glcdi_organization": [
+          "caney-fork"
+        ],
+        "glcdi_certification_status": [
+          "regenerative-verified"
+        ],
+        "glcdi_contribution_status": [
+          "contributing"
+        ]
+      },
+      "realmRoles": [
+        "glcdi_member",
+        "glcdi_producer"
+      ]
+    },
+    {
+      "username": "service-account-glcdi-connector-point-blue",
+      "enabled": true,
+      "serviceAccountClientId": "glcdi-connector-point-blue",
+      "groups": [
+        "/point-blue-team"
+      ],
+      "attributes": {
+        "glcdi_membership": [
+          "active"
+        ],
+        "glcdi_organization": [
+          "point-blue"
+        ],
+        "glcdi_certification_status": [
+          "not-applicable"
+        ],
+        "glcdi_contribution_status": [
+          "observer"
+        ]
+      },
+      "realmRoles": [
+        "glcdi_member",
+        "glcdi_researcher"
+      ]
+    },
+    {
+      "username": "service-account-glcdi-connector-white-buffalo",
+      "enabled": true,
+      "serviceAccountClientId": "glcdi-connector-white-buffalo",
+      "groups": [
+        "/white-buffalo-team"
+      ],
+      "attributes": {
+        "glcdi_membership": [
+          "active"
+        ],
+        "glcdi_organization": [
+          "white-buffalo"
+        ],
+        "glcdi_certification_status": [
+          "regenerative-verified"
+        ],
+        "glcdi_contribution_status": [
+          "contributing"
+        ]
+      },
+      "realmRoles": [
+        "glcdi_member",
+        "glcdi_producer"
+      ]
+    },
+    {
+      "username": "service-account-governance",
+      "enabled": true,
+      "serviceAccountClientId": "governance",
+      "clientRoles": {
+        "realm-management": [
+          "realm-admin"
+        ]
+      }
+    }
+  ]
+}

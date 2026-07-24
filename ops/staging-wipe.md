@@ -4,7 +4,7 @@
 
 **What it does:** drops the EDC connector Postgres volume on a staging
 participant VM, then re-seeds the M1 fixtures with current IDs via
-`./management/scripts/glcdi.sh seed`. Preserves the participant
+`./management/build/scripts/glcdi.sh seed`. Preserves the participant
 Keycloak realm and the identity-hub state by default; `--total-wipe`
 extends to those too.
 
@@ -21,7 +21,7 @@ and runs entirely over the mgmt API. See [§7](#7-when-not-to-use-this-script).
 
 ## 1. The orchestrator script
 
-`management/scripts/nuclear-wipe-stagings.sh` automates the whole flow
+`management/build/scripts/nuclear-wipe-stagings.sh` automates the whole flow
 from your laptop. SSH login defaults to `root@<slug>.glcdi.startinblox.com`.
 
 ```bash
@@ -29,10 +29,10 @@ distrobox enter dev
 cd ~/Workspaces/Dataspaces/glcdi
 
 # Always preview first - default is dry-run.
-./management/scripts/nuclear-wipe-stagings.sh --target all-staging
+./management/build/scripts/nuclear-wipe-stagings.sh --target all-staging
 
 # Commit when the dry-run looks right.
-./management/scripts/nuclear-wipe-stagings.sh --target all-staging --no-dry-run
+./management/build/scripts/nuclear-wipe-stagings.sh --target all-staging --no-dry-run
 ```
 
 What it does per VM, in order:
@@ -51,7 +51,7 @@ What it does per VM, in order:
    ~3 minutes, requires HTTP 200 to proceed.
 7. Verifies all three collections (`assets`, `policydefinitions`,
    `contractdefinitions`) return `count=0`.
-8. Runs `./management/scripts/glcdi.sh seed --target <vm>` to re-seed
+8. Runs `./management/build/scripts/glcdi.sh seed --target <vm>` to re-seed
    the M1 fixtures.
 9. Verifies the expected policies + contract definitions are now present.
 
@@ -89,7 +89,7 @@ The script assumes `~/participant-agent-services` on each VM (matches
 
 ```bash
 VM_REPO_PATH=/glcdi/participant-agent-services \
-  ./management/scripts/nuclear-wipe-stagings.sh --target all-staging
+  ./management/build/scripts/nuclear-wipe-stagings.sh --target all-staging
 ```
 
 ## 2. What the script preserves vs drops
@@ -187,11 +187,11 @@ From the dev distrobox:
 distrobox enter dev
 cd ~/Workspaces/Dataspaces/glcdi
 
-./management/scripts/glcdi.sh seed --target all-staging
+./management/build/scripts/glcdi.sh seed --target all-staging
 # Or per-VM:
-./management/scripts/glcdi.sh seed --target caney-fork
-./management/scripts/glcdi.sh seed --target point-blue
-./management/scripts/glcdi.sh seed --target white-buffalo
+./management/build/scripts/glcdi.sh seed --target caney-fork
+./management/build/scripts/glcdi.sh seed --target point-blue
+./management/build/scripts/glcdi.sh seed --target white-buffalo
 ```
 
 ## 6. Verify the new IDs landed (after a manual reseed)
@@ -234,9 +234,9 @@ listing what it actually found.
 
 | Goal | Use instead |
 |---|---|
-| "I just want to drop stale assets/policies/CDs" | `./management/scripts/glcdi.sh wipe --target T --no-dry-run` - pure mgmt-API, no SSH, no volumes touched. |
+| "I just want to drop stale assets/policies/CDs" | `./management/build/scripts/glcdi.sh wipe --target T --no-dry-run` - pure mgmt-API, no SSH, no volumes touched. |
 | "I want a clean Keycloak too" | `--total-wipe`. Only do this if you've actually changed the realm JSON; otherwise you'll have to manually re-apply admin-console-only changes. |
-| "Local development reset" | `./management/scripts/glcdi.sh reset` - wipes the local stack only, not staging. |
+| "Local development reset" | `./management/build/scripts/glcdi.sh reset` - wipes the local stack only, not staging. |
 
 ## 8. Known traps
 
@@ -264,8 +264,8 @@ listing what it actually found.
 
 ## 9. References
 
-- `management/scripts/nuclear-wipe-stagings.sh` - orchestrator
-- `management/scripts/glcdi.sh` - `cmd_seed`, `cmd_wipe`,
+- `management/build/scripts/nuclear-wipe-stagings.sh` - orchestrator
+- `management/build/scripts/glcdi.sh` - `cmd_seed`, `cmd_wipe`,
   `fetch_staging_api_key`, `expand_target`
 - `glcdi/CLAUDE.md` - VM layout, Keycloak realm import semantics
 - `participant-agent-services/.env.example` - Compose env vars

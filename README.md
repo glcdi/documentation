@@ -24,7 +24,7 @@ Grouped by intent.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Head document for the "Data Space Architecture Design" deliverable - topology, components, data flows, standards, tiering, enforcement boundary. **Read this first.** |
 | [`strategy/authority.md`](strategy/authority.md) | Proposed responsibilities, composition, and operating mode of the Dataspace Authority (for the body to review and ratify). |
 | [`strategy/open-questions.md`](strategy/open-questions.md) | Decisions pending — cutover date, cohort composition, vocabulary + framework ratifications. |
-| [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) | Phased implementation plan - the master backlog. Current status per phase in the TL;DR. |
+| [`build/implementation-plan.md`](build/implementation-plan.md) | Phased implementation plan — index + TL;DR + identity tiering + runtime architecture, with each phase in its own file under [`build/plan/`](build/plan/). |
 
 **Reference (as-designed).**
 
@@ -46,8 +46,8 @@ Grouped by intent.
 
 | Path | For |
 |------|-----|
-| [`scripts/`](scripts/) | Local-stack orchestrator (`glcdi.sh`) + deploy helpers. |
-| [`bruno/`](bruno/) | HTTP test collection driving the M1 scenario end-to-end. |
+| [`build/scripts/`](build/scripts/) | Local-stack orchestrator (`glcdi.sh`) + deploy helpers. |
+| [`build/bruno/`](build/bruno/) | HTTP test collection driving the M1 scenario end-to-end. |
 
 **Operate.**
 
@@ -118,7 +118,7 @@ Specific participant composition per cohort is under discussion and intentionall
 Identity management, authentication, the GLCDI claim model (realm roles, certification status, membership), the OIDC-vs-OID4VC rationale, the proposed onboarding flow, the identity standards mapping, and the migration path to Verifiable Credentials all live in a dedicated document: [`reference/identity.md`](reference/identity.md).
 
 At a glance:
-- **Tiered rollout** - Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`IMPLEM_PLAN.md` § Identity Tiering Strategy](IMPLEM_PLAN.md#identity-tiering-strategy) for the full argument.
+- **Tiered rollout** - Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`IMPLEM_PLAN.md` § Identity Tiering Strategy](build/implementation-plan.md#identity-tiering-strategy) for the full argument.
 - **GLCDI token claims** on connector service-account tokens: `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`, `glcdi_organisation` - consumed by EDC policy functions.
 - **OIDC for the prototype**; Verifiable Credentials / OID4VC considered but deliberately deferred to Tier 3 - see [`reference/identity.md`](reference/identity.md).
 
@@ -159,4 +159,4 @@ The standards-mapping reference (ODRL, DSP, DCAT, JSON-LD, identity standards) h
 
 ## Implementation Status & Roadmap
 
-See [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) for the full seven-phase implementation plan and current status. Cohort-level policy rollout sequencing lives in [`reference/policies/plan.md`](reference/policies/plan.md).
+See [`IMPLEM_PLAN.md`](build/implementation-plan.md) for the full seven-phase implementation plan and current status. Cohort-level policy rollout sequencing lives in [`reference/policies/plan.md`](reference/policies/plan.md).

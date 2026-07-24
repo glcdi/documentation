@@ -1,8 +1,8 @@
 # Authority Rename - Operator Migration Checklist
 
-Live-infrastructure tasks required to complete the rename of the governance deployment from `governance-*` to the new Dataspace Authority name **and** apply the [Phase 1.5 (Identity Tier 1)](../IMPLEM_PLAN.md#phase-15-identity-tier-1--single-tier-auth--authority-cleanup) topology cuts. The local (in-repo) renames and topology changes can be done by the project team (or by an automation agent) ahead of this checklist; the items below are the parts that require hands-on access to DNS, running services, and CI/CD secrets.
+Live-infrastructure tasks required to complete the rename of the governance deployment from `governance-*` to the new Dataspace Authority name **and** apply the [Phase 1.5 (Identity Tier 1)](../build/plan/phase-1.5-identity-tier1.md) topology cuts. The local (in-repo) renames and topology changes can be done by the project team (or by an automation agent) ahead of this checklist; the items below are the parts that require hands-on access to DNS, running services, and CI/CD secrets.
 
-> **Scope at Tier 1:** the dataspace ships M1 with **no end-user OIDC anywhere** - the catalogue UI uses `X-Api-Key` only, and the Authority KC holds 3 connector service-account clients (one per participant org) for `client_credentials`-based DSP-level identity. `oauth2-proxy`, the `glcdi-ui` OIDC client, per-org groups, and human user accounts are deliberately deferred to **Tier 2** ([IMPLEM_PLAN § 7.2](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)). This checklist covers Tier 1 only; the Tier-2 follow-up appendix at the end lists the additional steps that re-enable user OIDC if/when that phase is approved.
+> **Scope at Tier 1:** the dataspace ships M1 with **no end-user OIDC anywhere** - the catalogue UI uses `X-Api-Key` only, and the Authority KC holds 3 connector service-account clients (one per participant org) for `client_credentials`-based DSP-level identity. `oauth2-proxy`, the `glcdi-ui` OIDC client, per-org groups, and human user accounts are deliberately deferred to **Tier 2** ([IMPLEM_PLAN § 7.2](../build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)). This checklist covers Tier 1 only; the Tier-2 follow-up appendix at the end lists the additional steps that re-enable user OIDC if/when that phase is approved.
 
 ## Status (confirm before executing)
 
@@ -47,7 +47,7 @@ The Tier-1 realm content the live KC needs after cutover:
 - 13 realm roles (`user`, `admin`, plus 11 `glcdi_*` roles).
 - `glcdi-claims` client scope with 5 protocol mappers (realm-role mapper for `glcdi_roles`; user-attribute mappers for `glcdi_membership` / `glcdi_organisation` / `glcdi_certification_status` / `glcdi_contribution_status`).
 - **3 `glcdi-connector-<org>` clients** (`caney-fork`, `point-blue`, `white-buffalo`) with `serviceAccountsEnabled: true`, `directAccessGrantsEnabled: false`, `standardFlowEnabled: false`, `glcdi-claims` in default scopes.
-- **3 service-account users** (auto-created from the 3 clients) with `glcdi_*` realm roles + per-user attributes set per [`IMPLEM_PLAN § 1.5.4`](../IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
+- **3 service-account users** (auto-created from the 3 clients) with `glcdi_*` realm roles + per-user attributes set per [`IMPLEM_PLAN § 1.5.4`](../build/plan/phase-1.5-identity-tier1.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
 
 Two migration paths - pick one:
 
@@ -114,14 +114,14 @@ Order matters. Recommended sequence during the maintenance window:
 - [ ] Execute the Keycloak path (A or B from §3).
 - [ ] Bring up the **authority-services** stack at the new hostname.
 - [ ] Verify: `curl -k https://authority.glcdi.startinblox.com/auth/realms/glcdi/.well-known/openid-configuration` returns a valid config with the new issuer.
-- [ ] **Mint a test token** for one connector client and decode it (per [`IMPLEM_PLAN § 2.5`](../IMPLEM_PLAN.md#25-verify-token-contents)) - confirms the Tier-1 claim chain end-to-end.
+- [ ] **Mint a test token** for one connector client and decode it (per [`IMPLEM_PLAN § 2.5`](../build/plan/phase-2-keycloak-claims.md#25-verify-token-contents)) - confirms the Tier-1 claim chain end-to-end.
 - [ ] Bring up each **participant-agent-services** stack one at a time.
 - [ ] Verify Tier-1 sanity for one participant: `curl -H "X-Api-Key: $EDC_API_KEY" .../management/v3/assets/request` returns 200; UI loads at `https://<participant>/` and asks for the API key.
 - [ ] Re-enable auto-deploy / unfreeze merges.
 
 ## 7. Post-cutover verification (within 24h)
 
-- [ ] **Connector `client_credentials` flow** verified for each participant: `client_credentials` mint against `glcdi-connector-<org>` returns a JWT carrying the right `glcdi_*` claims. (Until [`IMPLEM_PLAN § 3.5`](../IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) ships the iam-mock → iam-oauth2 swap, the receiving connector won't yet validate these - that's expected; the verification here is "the token is mintable and the claims are right.")
+- [ ] **Connector `client_credentials` flow** verified for each participant: `client_credentials` mint against `glcdi-connector-<org>` returns a JWT carrying the right `glcdi_*` claims. (Until [`IMPLEM_PLAN § 3.5`](../build/plan/phase-3-edc-policy-extension.md#35-replace-iam-mock-with-a-real-oauth2-identityservice-and-configure-claim-extraction) ships the iam-mock → iam-oauth2 swap, the receiving connector won't yet validate these - that's expected; the verification here is "the token is mintable and the claims are right.")
 - [ ] EDC catalog query verified from each participant's connector with `X-Api-Key` only.
 - [ ] Confirm scheduled certbot renewal is working against the new hostname.
 - [ ] Confirm no references to the old hostname remain in browser dev-console network traces during a normal participant session (stale JS / cached config).
@@ -160,7 +160,7 @@ If cutover fails during the window:
 
 ## Appendix: Tier 2 follow-up checklist (post-M1, optional)
 
-If/when [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) is approved, the additional operator-side steps to re-enable user OIDC are:
+If/when [`IMPLEM_PLAN § 7.2`](../build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) is approved, the additional operator-side steps to re-enable user OIDC are:
 
 - [ ] **Authority KC** - confirm the `glcdi-ui` client is active (not just imported), with redirect URIs covering all participant origins + `silent-callback.html` paths and `glcdi-claims` in its default scopes.
 - [ ] **Per-org groups** - confirm `caney-fork-team`, `point-blue-team`, `white-buffalo-team` exist with their realm-role + `glcdi_organisation` attribute assignments.
@@ -171,4 +171,4 @@ If/when [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-u
 - [ ] **Per-participant cutover** - bring each participant stack down + up against the Tier-2 compose. Verify a full OIDC round-trip (login → catalog query → contract negotiation → transfer) for one participant before rolling to the rest.
 - [ ] **Verification** - browser dev-tools shows `Authorization: Bearer` on every `/management` call (alongside the persisted `X-Api-Key`); oauth2-proxy logs show successful Bearer-token validations against Authority KC JWKS.
 
-Onboarding workflow at Tier 2 - when a new participant is approved, the onboarding app calls Keycloak Admin API to create the human user and add them to the org's group; see [`IMPLEM_PLAN § 7.2.5`](../IMPLEM_PLAN.md#725-tier-2-onboarding-flow).
+Onboarding workflow at Tier 2 - when a new participant is approved, the onboarding app calls Keycloak Admin API to create the human user and add them to the org's group; see [`IMPLEM_PLAN § 7.2.5`](../build/plan/phase-7-future.md#725-tier-2-onboarding-flow).

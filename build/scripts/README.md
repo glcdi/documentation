@@ -5,27 +5,27 @@ plus the three M1 participant connectors (`caney-fork`, `point-blue`,
 `white-buffalo`) - in the right order with secrets rotated from their
 `changeme-*` placeholders.
 
-It is the scripted form of [`../ops/deployment.md` § 3 (local validation)](../ops/deployment.md).
+It is the scripted form of [`../ops/deployment.md` § 3 (local validation)](../../ops/deployment.md).
 
 ## Quick start
 
 ```sh
 # From the workspace root (or anywhere - paths are absolute):
-./management/scripts/glcdi.sh preflight   # verify tools
-./management/scripts/glcdi.sh build       # edc-connector + participant-ui images
-./management/scripts/glcdi.sh up          # authority KC + 3 participants
-./management/scripts/glcdi.sh seed        # M1 fixtures via Bruno
-./management/scripts/glcdi.sh test        # Bruno run (tier1 default)
-./management/scripts/glcdi.sh status      # health check
+./management/build/scripts/glcdi.sh preflight   # verify tools
+./management/build/scripts/glcdi.sh build       # edc-connector + participant-ui images
+./management/build/scripts/glcdi.sh up          # authority KC + 3 participants
+./management/build/scripts/glcdi.sh seed        # M1 fixtures via Bruno
+./management/build/scripts/glcdi.sh test        # Bruno run (tier1 default)
+./management/build/scripts/glcdi.sh status      # health check
 
 # Or all at once:
-./management/scripts/glcdi.sh all
+./management/build/scripts/glcdi.sh all
 ```
 
 To reset (destructive):
 
 ```sh
-./management/scripts/glcdi.sh reset       # down + remove volumes + nuke local state
+./management/build/scripts/glcdi.sh reset       # down + remove volumes + nuke local state
 ```
 
 ## Subcommand reference
@@ -46,7 +46,7 @@ To reset (destructive):
 
 ## Tier toggle
 
-Tier 1 (default) and Tier 2 of the [identity tiering strategy](../IMPLEM_PLAN.md#identity-tiering-strategy):
+Tier 1 (default) and Tier 2 of the [identity tiering strategy](../implementation-plan.md#identity-tiering-strategy):
 
 ```sh
 ./glcdi.sh test          # tier1: X-Api-Key only
@@ -57,7 +57,7 @@ GLCDI_TIER=tier2 ./glcdi.sh all     # equivalent
 The script itself doesn't bring up oauth2-proxy differently between tiers
 (the participant compose has `oauth2-proxy` as a long-running service
 either way today). The tier flag drives Bruno's auth model only - see
-`../bruno/README.md`. **Until [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)
+`../bruno/README.md`. **Until [`IMPLEM_PLAN § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)
 lands the actual Tier-2 UI changes**, `test tier2` exercises the
 oauth2-proxy validation path but the catalogue UI itself is still in
 its pre-§ 4.5.F state.
@@ -105,10 +105,10 @@ The script remaps via `NGINX_PORT` and per-participant `configuration.properties
 | `/management` reachable with rotated `X-Api-Key` | ✅ | - |
 | Bruno's `00-auth/` succeeds - connector SAs mint tokens with the right claims | ✅ post-realm-import | - |
 | Bruno's `10-provider-seeding/` (asset / policy / contract def CRUD) | ✅ | - |
-| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ⚠ partial | [`IMPLEM_PLAN § 3`](../IMPLEM_PLAN.md#phase-3-edc-policy-extension-development) (custom constraint functions) + [`§ 3.5`](../IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) (iam-oauth2 swap) - until both land, `iam-mock` accepts everything and the access policy doesn't filter |
+| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ⚠ partial | [`IMPLEM_PLAN § 3`](../plan/phase-3-edc-policy-extension.md) (custom constraint functions) + [`§ 3.5`](../plan/phase-3-edc-policy-extension.md#35-replace-iam-mock-with-a-real-oauth2-identityservice-and-configure-claim-extraction) (iam-oauth2 swap) - until both land, `iam-mock` accepts everything and the access policy doesn't filter |
 | Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ⚠ partial | Same as above + EDC async-state-machine polling files |
 | Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 3+4 + transfer state-machine polling |
-| `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
+| `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`IMPLEM_PLAN § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
 
 The script doesn't pretend more works than does. Run it, observe what's
 green vs. red, and use the red rows as a checklist for the next phase.
@@ -173,7 +173,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
   `.glcdi.local/`. If `participant-agent-services/docker-compose.yml`
   changes how `./participant` is mounted, the override needs updating.
 - **`oauth2-proxy` stays in compose at Tier 1.** The Tier-1 strip-down
-  per [`IMPLEM_PLAN § 1.5.2`](../IMPLEM_PLAN.md#152-remove-per-participant-keycloak-and-oauth2-proxy-from-the-participant-compose-stack)
+  per [`IMPLEM_PLAN § 1.5.2`](../plan/phase-1.5-identity-tier1.md#152-remove-per-participant-keycloak-and-oauth2-proxy-from-the-participant-compose-stack)
   removes `oauth2-proxy` from the participant compose. Until that lands
   in `participant-agent-services/docker-compose.yml`, the script brings
   it up - it just doesn't gate any Bruno path at Tier 1 because the
@@ -182,7 +182,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
 
 ## Pointers
 
-- Identity tiering: [`../IMPLEM_PLAN.md` § Identity Tiering Strategy](../IMPLEM_PLAN.md#identity-tiering-strategy)
-- Tier-1 cutover (manual, runbook): [`../ops/deployment.md`](../ops/deployment.md)
-- Authority rename runbook: [`../ops/authority-migration.md`](../ops/authority-migration.md)
+- Identity tiering: [`../implementation-plan.md` § Identity Tiering Strategy](../implementation-plan.md#identity-tiering-strategy)
+- Tier-1 cutover (manual, runbook): [`../ops/deployment.md`](../../ops/deployment.md)
+- Authority rename runbook: [`../ops/authority-migration.md`](../../ops/authority-migration.md)
 - Bruno collection: [`../bruno/`](../bruno/)

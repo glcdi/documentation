@@ -141,7 +141,7 @@ Per-scenario sequence diagrams: `reference/policies/diagrams/*.puml`.
 
 ## Implementation status (current)
 
-Track the authoritative status in [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md); the summary below is a snapshot for orientation.
+Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.md); the summary below is a snapshot for orientation.
 
 | Component | Status |
 |-----------|--------|
@@ -211,7 +211,7 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md); the summar
 |------------------|-----|
 | "What does the system look like?" | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | "How do I run it locally?" | [`ops/deployment.md`](ops/deployment.md) § Fast local bootstrap |
-| "What is planned next?" | [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) |
+| "What is planned next?" | [`IMPLEM_PLAN.md`](build/implementation-plan.md) |
 | "What decisions are still open?" | [`strategy/open-questions.md`](strategy/open-questions.md) |
 | "How does auth work today / next / later?" | [`reference/identity.md`](reference/identity.md) + [`reference/authentication.md`](reference/authentication.md) |
 | "Which specifications is X built on?" | [`strategy/standards.md`](strategy/standards.md) |

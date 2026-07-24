@@ -2,7 +2,7 @@
 
 Technical architecture of the **Grazing Lands Carbon Data Initiative (GLCDI)** dataspace - the federated, decentralised infrastructure that lets participants share soil-organic-carbon and grazing-management data under enforceable consent, and the interoperability standards that make that sharing portable across implementations.
 
-This document is the entry point for the "Data Space Architecture Design" deliverable. It describes the topology, the components each participant runs, how data flows between them under the Dataspace Protocol (DSP), and where the technical enforcement boundary lies. For per-mechanism specification traceability see [`strategy/standards.md`](strategy/standards.md); for the identity model in detail see [`reference/identity.md`](reference/identity.md); for the phased implementation plan see [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md).
+This document is the entry point for the "Data Space Architecture Design" deliverable. It describes the topology, the components each participant runs, how data flows between them under the Dataspace Protocol (DSP), and where the technical enforcement boundary lies. For per-mechanism specification traceability see [`strategy/standards.md`](strategy/standards.md); for the identity model in detail see [`reference/identity.md`](reference/identity.md); for the phased implementation plan see [`IMPLEM_PLAN.md`](build/implementation-plan.md).
 
 ---
 
@@ -110,7 +110,7 @@ A single scenario illustrates every edge in the diagram. **Provider** publishes 
 5. **Consumer negotiates.** The consumer proposes a contract offer; the provider re-evaluates the contract policy at negotiation time (purpose check), reaches `FINALIZED` (or `TERMINATED` on mismatch).
 6. **Transfer.** The consumer requests a transfer; the provider issues an EDR token pointing at its data-plane. The consumer calls the data-plane endpoint with the EDR (browser-side over CORS with echoed `Access-Control-Allow-Origin` + `Allow-Credentials`), the data-plane resolves the underlying HttpData source through the LDP, and the bytes flow directly between the two participants. **The Authority is not on this path.**
 
-The [Bruno collection](bruno/) exercises every step of this walkthrough; see [`ops/deployment.md` § 3](ops/deployment.md) for the local end-to-end run.
+The [Bruno collection](build/bruno) exercises every step of this walkthrough; see [`ops/deployment.md` § 3](ops/deployment.md) for the local end-to-end run.
 
 ---
 
@@ -139,8 +139,8 @@ Identity is layered so the M1 prototype ships on the minimum credible model and 
 | Tier | Status | UI auth | Connector-to-connector auth | Identity issuer |
 |------|--------|---------|-----------------------------|-----------------|
 | **Tier 1** (M1 default) | Done | `X-Api-Key` only | Authority-signed JWT (`client_credentials`, `iam-oauth2`) | Authority Keycloak |
-| **Tier 2** ([Phase 7.2](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)) | Deferred post-M1 | `X-Api-Key` + user OIDC Bearer (oauth2-proxy in front of `/management`) | Unchanged from Tier 1 | Authority Keycloak (adds `glcdi-ui` client + groups + human users) |
-| **Tier 3** ([Phase 7.3](IMPLEM_PLAN.md#phase-73-identity-tier-3--migrate-connector-identity-to-verifiable-credentials-via-dcp)) | Deferred; long-term direction | Likely `X-Api-Key` + DID-bound presentation | Verifiable Presentation minted by the Identity Hub via DCP / IATP | Per-participant issuer (Authority KC's role as connector-token issuer disappears) |
+| **Tier 2** ([Phase 7.2](build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)) | Deferred post-M1 | `X-Api-Key` + user OIDC Bearer (oauth2-proxy in front of `/management`) | Unchanged from Tier 1 | Authority Keycloak (adds `glcdi-ui` client + groups + human users) |
+| **Tier 3** ([Phase 7.3](build/plan/phase-7-future.md#73-identity-tier-3---decentralised-claims-via-vc--dcp)) | Deferred; long-term direction | Likely `X-Api-Key` + DID-bound presentation | Verifiable Presentation minted by the Identity Hub via DCP / IATP | Per-participant issuer (Authority KC's role as connector-token issuer disappears) |
 
 See [`reference/identity.md`](reference/identity.md) for the tier rationale, the claim model, and the OIDC-vs-OID4VC-vs-VC decision.
 
@@ -188,6 +188,6 @@ For the operator's per-VM layout, secret management convention, and CI deploy sh
 | Policy catalogue, access vs. contract vs. combined scenarios | [`reference/policies/README.md`](reference/policies/README.md) |
 | Full standards traceability (ODRL, DSP, DCAT, JSON-LD, identity) | [`strategy/standards.md`](strategy/standards.md) |
 | Payment-gating design proposal | [`design/payment-gating.md`](design/payment-gating.md) |
-| Phased implementation plan and current status | [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) |
+| Phased implementation plan and current status | [`IMPLEM_PLAN.md`](build/implementation-plan.md) |
 | Deployment runbook + local end-to-end validation | [`ops/deployment.md`](ops/deployment.md) |
 | Governance model overview (Trust Framework, cohorts, membership) | [`README.md`](README.md) |

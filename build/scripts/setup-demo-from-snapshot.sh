@@ -10,8 +10,8 @@
 # Runs ON the VM as root, after SSH-ing in:
 #   ssh root@demo.glcdi.startinblox.com
 #   cd ~/participant-agent-services
-#   bash management/scripts/setup-demo-from-snapshot.sh                            # dry-run
-#   bash management/scripts/setup-demo-from-snapshot.sh --no-dry-run --kc-secret X # commit
+#   bash management/build/scripts/setup-demo-from-snapshot.sh                            # dry-run
+#   bash management/build/scripts/setup-demo-from-snapshot.sh --no-dry-run --kc-secret X # commit
 #
 # Usage:
 #   setup-demo-from-snapshot.sh [--no-dry-run] [--kc-secret SECRET] [-h|--help]
@@ -42,7 +42,7 @@
 #        mapping).
 #
 #   2. From your laptop, seed the demo VM with M1 fixtures:
-#         ./management/scripts/glcdi.sh seed --target demo
+#         ./management/build/scripts/glcdi.sh seed --target demo
 #
 # Failure recovery: rerun in dry-run mode. The backup .env is at
 # .env.snapshot-backup-<TIMESTAMP> in the participant-agent-services repo.
@@ -430,7 +430,7 @@ next_steps() {
   printf '     - Protocol mapper: glcdi_member role → claim glcdi:membership=active\n'
   printf '\n'
   printf '  2. From your laptop:\n'
-  printf '     ./management/scripts/glcdi.sh seed --target %s\n' "$DEMO_SLUG"
+  printf '     ./management/build/scripts/glcdi.sh seed --target %s\n' "$DEMO_SLUG"
   printf '\n'
   printf '  3. Validate:\n'
   printf '     - Open https://%s/ in a browser; catalogue loads.\n' "$DEMO_DOMAIN"

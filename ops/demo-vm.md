@@ -121,11 +121,11 @@ Wiring:
 
 | File | Status |
 |---|---|
-| `management/scripts/glcdi.sh` | extended: `demo` in ORGS/ORG_PORTS/ORG_COLORS/ORG_TYPES/ORG_LDP_PACKAGES, expand_target, target_host, target_bruno_env, SSH_USER_VAR/SSH_HOST_VAR; `LOCAL_ORGS` introduced (= M1 trio) for local-iteration spots; `seed_one` dispatches `demo` → `seed_demo` → `12-provider-seeding-demo` Bruno folder |
-| `management/scripts/nuclear-wipe-stagings.sh` | extended: `demo` in SSH var maps + `expand_target`; `expected_policies_for` / `expected_cds_for` per-org dispatchers cover M1 trio + demo |
-| `management/scripts/setup-demo-from-snapshot.sh` | **NEW** - VM-side conversion from a white-buffalo snapshot. Dry-run by default. See §9 |
-| `management/bruno/12-provider-seeding-demo/` | **NEW** folder - 7 policy files (01 public + 02 internal + 03–07 atomic obligations) + 4 contributor trios (asset / composite / CD), see §4–5 |
-| `management/bruno/environments/staging.bru` | added `demo_host` / `demo_dsp` / `demo_participant_id` / `demo_data_root` + `demo_api_key` / `demo_client_secret` / `demo_token` in `vars:secret` |
+| `management/build/scripts/glcdi.sh` | extended: `demo` in ORGS/ORG_PORTS/ORG_COLORS/ORG_TYPES/ORG_LDP_PACKAGES, expand_target, target_host, target_bruno_env, SSH_USER_VAR/SSH_HOST_VAR; `LOCAL_ORGS` introduced (= M1 trio) for local-iteration spots; `seed_one` dispatches `demo` → `seed_demo` → `12-provider-seeding-demo` Bruno folder |
+| `management/build/scripts/nuclear-wipe-stagings.sh` | extended: `demo` in SSH var maps + `expand_target`; `expected_policies_for` / `expected_cds_for` per-org dispatchers cover M1 trio + demo |
+| `management/build/scripts/setup-demo-from-snapshot.sh` | **NEW** - VM-side conversion from a white-buffalo snapshot. Dry-run by default. See §9 |
+| `management/build/bruno/12-provider-seeding-demo/` | **NEW** folder - 7 policy files (01 public + 02 internal + 03–07 atomic obligations) + 4 contributor trios (asset / composite / CD), see §4–5 |
+| `management/build/bruno/environments/staging.bru` | added `demo_host` / `demo_dsp` / `demo_participant_id` / `demo_data_root` + `demo_api_key` / `demo_client_secret` / `demo_token` in `vars:secret` |
 | `participant-agent-services/.env.demo.example` | **NEW** - env template (purple branding, glcdi-connector-demo, DSP_PROVIDERS = 3 M1 peers, PARTICIPANT_DATA_DIR=./data/demo) |
 | `participant-agent-services/.gitlab-ci.yml` | **NEW** `deploy-demo` job mirroring `deploy-white-buffalo`, gated on `SSH_USER_DEMO` / `SSH_HOST_DEMO` CI vars |
 | `participant-agent-services/docker-compose.yml` | `nginx-prod` gains `${PARTICIPANT_DATA_DIR:-./data/empty}:/usr/share/nginx/html/data:ro` mount |
@@ -156,8 +156,8 @@ conversion runbook:
 ssh root@demo.glcdi.startinblox.com
 cd ~/participant-agent-services
 git pull       # to get the new script + templates from this branch
-bash management/scripts/setup-demo-from-snapshot.sh                            # dry-run first
-bash management/scripts/setup-demo-from-snapshot.sh --no-dry-run --kc-secret <SECRET-FROM-KC>
+bash management/build/scripts/setup-demo-from-snapshot.sh                            # dry-run first
+bash management/build/scripts/setup-demo-from-snapshot.sh --no-dry-run --kc-secret <SECRET-FROM-KC>
 ```
 
 The script:
@@ -213,7 +213,7 @@ in the `glcdi` realm on `governance.glcdi.startinblox.com/auth/admin/`:
 distrobox enter dev
 cd ~/Workspaces/Dataspaces/glcdi
 
-./management/scripts/glcdi.sh seed --target demo
+./management/build/scripts/glcdi.sh seed --target demo
 ```
 
 `glcdi.sh seed --target demo` dispatches to `seed_demo`, which runs the
@@ -229,8 +229,8 @@ cd ~/Workspaces/Dataspaces/glcdi
 Validate:
 
 ```bash
-./management/scripts/nuclear-wipe-stagings.sh --target demo                  # dry-run preview (does NOT wipe)
-./management/scripts/nuclear-wipe-stagings.sh --target demo --no-dry-run     # if you need to re-seed clean
+./management/build/scripts/nuclear-wipe-stagings.sh --target demo                  # dry-run preview (does NOT wipe)
+./management/build/scripts/nuclear-wipe-stagings.sh --target demo --no-dry-run     # if you need to re-seed clean
 ```
 
 The wipe script's `verify_seeded` step now expects, for demo: 7 policies
@@ -272,10 +272,10 @@ Manual catalog visibility checks:
 - `management/../reference/assets/workshop-inputs-2026.md` - workshop dataset inputs
 - `management/IMPLEM_PLAN.md` - M1 trio + roadmap
 - `management/ops/staging-wipe.md` - wipe + reseed flow
-- `management/scripts/setup-demo-from-snapshot.sh` - VM-side conversion
-- `management/scripts/glcdi.sh:76-104` - `ORGS` + `LOCAL_ORGS` + per-org maps
-- `management/scripts/glcdi.sh:1062-1080` - `seed_demo`
-- `management/bruno/12-provider-seeding-demo/` - full seed contract
+- `management/build/scripts/setup-demo-from-snapshot.sh` - VM-side conversion
+- `management/build/scripts/glcdi.sh:76-104` - `ORGS` + `LOCAL_ORGS` + per-org maps
+- `management/build/scripts/glcdi.sh:1062-1080` - `seed_demo`
+- `management/build/bruno/12-provider-seeding-demo/` - full seed contract
 - `participant-agent-services/.env.demo.example` - env template
 - `participant-agent-services/data/demo/*.json` - stub datasets
 - `participant-agent-services/participant/nginx-prod.conf` - `/data/` location block

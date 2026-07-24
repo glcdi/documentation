@@ -1,0 +1,1 @@
+http://djangoldp-backend:8083/metrics/1/
