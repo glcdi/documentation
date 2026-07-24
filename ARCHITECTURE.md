@@ -10,7 +10,7 @@ This document is the entry point for the "Data Space Architecture Design" delive
 
 GLCDI's architecture is shaped by four commitments:
 
-- **Federated, not central.** Data stays on the participant side. The Authority publishes and runs the governance services (identity, roles, policies) and hosts onboarding; it does not proxy, store, or observe payloads or data transfers.
+- **Federated, not central.** Data stays on the participant side. The Authority operates the governance services — the Keycloak realm that holds identity, roles, and policy vocabularies, plus the onboarding portal — but it never proxies, stores, or observes payloads or data transfers.
 - **Consent-governed and permissioned.** Every asset carries a policy; every access is negotiated; every transfer is EDR-gated. The default is "not discoverable."
 - **Standards-first.** Every mechanism used by the dataspace is backed by a public specification (Dataspace Protocol, ODRL, DCAT, OIDC, OAuth 2.0, JSON-LD, and - at Tier 3 - DCP / IATP / W3C VCs). Nothing proprietary sits on the critical path.
 - **Tiered identity, tiered ambition.** The M1 prototype ships on the smallest identity model that makes the policy stack work (Tier 1). Richer credential surfaces (Tier 2 user OIDC, Tier 3 Verifiable Credentials) layer on top without rewriting the connector trust chain.
@@ -28,7 +28,7 @@ GLCDI is a **one Authority + N participants** system:
 
 ---
 
-## 3. Reference topology (Tier 1 - M1 target)
+## 3. Reference system architecture (Tier 1 - M1 target)
 
 The diagram below shows the M1 topology: one Authority Keycloak, one participant presented fully, and one peer participant collapsed. The `X-Api-Key` at the UI edge and the Authority-signed JWT on the DSP edge are the *only* auth mechanisms at this stage - no OAuth2, no per-participant Keycloak, no per-user OIDC redirect.
 

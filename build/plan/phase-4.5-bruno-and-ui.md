@@ -30,7 +30,7 @@ Bruno runs against either a single participant's connector locally, or against t
 
 ## 4.5.F Participant-UI configuration (Track F - parallel agent)
 
-Adapt `participant-ui/` for the **Tier 1** topology - API-key login only, no OIDC envvars, no `LINKED_PROVIDER_*`, no silent-callback iframe:
+Adapt `participant-ui/` for the **Tier 1** auth flow - API-key login only, no OIDC envvars, no `LINKED_PROVIDER_*`, no silent-callback iframe:
 
 - Strip OIDC plumbing from `docker-entrypoint.sh` and `config.json.template`: remove `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `OIDC_CLIENT_ID`, `KC_IDP_HINT`, `LINKED_PROVIDER_*`, `LINKED_PROVIDER_SILENT_REDIRECT_URI`. Remove `silent-callback.html` from the served paths. Drop the `sib-auth-linked-provider` widget from the Hubl config.
 - Implement **API-key login** as the only entry path - operator pastes an `X-Api-Key` value that the UI uses for every management-API call. Trust boundary is the per-participant network (see § 1.5.3); flag clearly in the UI copy that the key is *not* a per-user credential.

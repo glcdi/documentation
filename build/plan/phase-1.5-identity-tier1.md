@@ -132,7 +132,7 @@ EDC policy engine on Connector B evaluates the access policy against those claim
 ## Dependencies & risks
 
 - **Blocks Phase 2** - claims now live on the 3 connector SAs in the Authority KC.
-- **Coordinates with [`ops/authority-migration.md`](../../ops/authority-migration.md)** - the operator-side rename and the topology simplification benefit from a single deploy window per participant.
+- **Coordinates with [`ops/authority-migration.md`](../../ops/authority-migration.md)** - the operator-side rename and the compose-stack simplification (per-participant Keycloak + oauth2-proxy removed) benefit from a single deploy window per participant.
 - **§ 3.5 (iam-mock → iam-oauth2) is the load-bearing gate.** Until it ships, Tier 1's claims are wired but not enforced - the receiving connector still trusts mock tokens. Treat § 3.5 as part of the Tier-1 critical path, not an afterthought.
 - **Trust boundary at the catalogue UI is the per-participant network.** If a stakeholder pushes back on "API key in the browser," the answer is either (a) add basic-auth/VPN at Nginx - orthogonal to the connector stack - or (b) graduate to Tier 2 (§ 7.2). Do not introduce ad-hoc Bearer-token plumbing at Tier 1.
 - **No remaining architectural unknowns** after the spike. Risk is operational: cutover sequencing, API-key rotation, and the § 3.5 swap.

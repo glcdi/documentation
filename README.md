@@ -1,15 +1,13 @@
 # GLCDI Dataspace Management
 
-Governance, policy design, and identity management resources for the
-**Grazing Lands Carbon Data Initiative (GLCDI)** dataspace.
+Architecture, governance, policy design, and identity management resources for the **Grazing Lands Carbon Data Initiative (GLCDI)** dataspace.
 
-This directory is the working space for designing the rules, roles, and trust mechanisms
-that govern how data flows between participants. It is not a deployable service - it feeds into the three deployable sub-projects of the GLCDI workspace:
+This directory is the working space for designing the rules, roles, and trust mechanisms that govern how data flows between participants. It is not a deployable service - it feeds into the three deployable sub-projects of the GLCDI workspace:
 
 | Sub-project | What it deploys | What it takes from here |
 |-------------|----------------|------------------------|
 | `edc-connector/` + `edc-glcdi-extension/` | EDC connector runtime + GLCDI-specific extensions | Custom policy function extension (Phase 3) |
-| `authority-services/` (formerly `governance-services/`) | Authority Keycloak + onboarding portal | Realm roles, protocol mappers, connector service-account clients (Phase 2) |
+| `authority-services/` | Authority Keycloak + onboarding portal | Realm roles, protocol mappers, connector service-account clients (Phase 2) |
 | `participant-agent-services/` | Per-participant Docker Compose stack | Policy-aware seeding scripts + Bruno test collection (Phase 4) |
 | `participant-ui/` | Catalogue UI image | Catalogue UI configuration + policy-aware components |
 
@@ -69,9 +67,9 @@ Grouped by intent.
 
 ## Architecture at a glance
 
-GLCDI runs on a **one Authority + N participants** topology: the Authority publishes governance (identity, roles, membership) and hosts onboarding; each participant deploys the same self-contained Compose stack and exposes its datasets to peers over the Dataspace Protocol (DSP). Identity ships in tiers - the M1 prototype uses `X-Api-Key` at the UI edge and an Authority-signed JWT on the DSP edge; per-user OIDC (Tier 2) and Verifiable Credentials via DCP (Tier 3) are deliberately deferred.
+GLCDI runs on a **one Authority + N participants** system: the Authority operates the governance Keycloak realm (the source of truth for participant identity, roles, and memberships) and the onboarding portal; each participant deploys the same self-contained Compose stack and exposes its datasets to peers over the Dataspace Protocol (DSP). Identity ships in tiers - the M1 prototype uses `X-Api-Key` at the UI edge and an Authority-signed JWT on the DSP edge; per-user OIDC (Tier 2) and Verifiable Credentials via DCP (Tier 3) are deliberately deferred.
 
-The full architecture - topology diagram, per-component role, data-flow walkthrough, interoperability standards, tier evolution, deployment layout - lives in **[`ARCHITECTURE.md`](ARCHITECTURE.md)**. Read that first; the rest of this README covers the governance and enforcement model that sits on top of it.
+The full architecture - system diagram, per-component role, data-flow walkthrough, interoperability standards, tier evolution, deployment layout - lives in **[`ARCHITECTURE.md`](ARCHITECTURE.md)**. Read that first; the rest of this README covers the governance and enforcement model that sits on top of it.
 
 ---
 
