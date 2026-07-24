@@ -164,6 +164,5 @@ Listed explicitly to prevent scope creep and to make the body's remit auditable.
 - [`README.md`](../README.md) - governance overview (high-level)
 - [`../reference/identity.md`](../reference/identity.md) - identity, onboarding flow, role assignments
 - [`IMPLEM_PLAN.md`](../build/implementation-plan.md) - phased implementation plan; Phase 2 (Keycloak claims), Phase 6 (governance-level enforcement)
-- [`ops/authority-migration.md`](../ops/authority-migration.md) - operator checklist for renaming the live `governance-*` infrastructure once this proposal is ratified
 - [`../reference/policies/plan.md`](../reference/policies/plan.md) - cohort-level policy rollout proposal, including Authority-owned decision points
 - [`../reference/policies/README.md`](../reference/policies/README.md) - per-policy implementation feasibility and governance-vs-technical enforcement

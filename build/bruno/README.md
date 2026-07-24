@@ -69,7 +69,7 @@ Authority KC is correctly configured.
 The DSP-level claim chain (catalog query, negotiation) flows over a
 different channel: each connector mints its own `client_credentials`
 token at startup and presents it to the remote connector via DSP;
-`iam-oauth2` (post-§ 3.5) extracts the `glcdi_*` claims into ClaimToken
+the `glcdi-iam-keycloak` extension (§ 3.5, landed) extracts the `glcdi_*` claims into ClaimToken
 for policy evaluation. Bruno doesn't drive that path - the connector
 does it itself.
 
@@ -208,9 +208,9 @@ place (per the M1 acceptance criteria in `../IMPLEM_PLAN.md` § Milestone M1):
   `glcdi_certification_status`, `glcdi_contribution_status`.
 - **Phase 3** - Custom `AtomicConstraintFunction`s registered for
   `glcdi:membership`, `glcdi:participantType`, `glcdi:certificationStatus`,
-  and `iam-mock` swapped for `iam-oauth2` against the Authority KC
-  (§ 3.5 - load-bearing for the catalog-discovery + negotiation
-  scenarios to actually exercise policy logic).
+  and `iam-mock` swapped for the custom `glcdi-iam-keycloak` extension
+  against the Authority KC (§ 3.5 — landed; the catalog-discovery +
+  negotiation scenarios exercise real policy logic today).
 - **Phase 4** - Provider seeding scripts publish the M1 fixture asset with
   the correct policies (this collection's `10-provider-seeding/` mirrors
   what those scripts will do, but state will be re-created if the seeding

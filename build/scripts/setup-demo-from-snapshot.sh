@@ -58,9 +58,9 @@ DEMO_SECONDARY="#4A148C"
 DEMO_ACCENT="#BA68C8"
 
 # Reuse the baseline djangoldp package. The demo VM doesn't actually
-# serve LDP-backed assets (data backing = static JSON stubs per
-# ops/demo-vm.md §5 Option A), but the LDP container still boots
-# so it needs SOME package.
+# serve LDP-backed assets - its 4 assets' dataAddress.baseUrl points at
+# static JSON stubs served by nginx under /data/<slug>.json - but the
+# LDP container still boots and needs SOME package.
 DEMO_LDP_PACKAGE=djangoldp_glcdi
 
 REPO_DEFAULT=~/participant-agent-services
@@ -267,7 +267,7 @@ ACCENT_COLOR=${DEMO_ACCENT}
 # --- DSP Catalog Providers ---
 DSP_PROVIDERS=${dsp_providers}
 
-# --- Static data backing for asset dataAddress.baseUrl (ops/demo-vm.md §5 A) ---
+# --- Static data backing for asset dataAddress.baseUrl (JSON stubs served by nginx) ---
 PARTICIPANT_DATA_DIR=./data/demo
 EOF
 )

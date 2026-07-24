@@ -8,18 +8,6 @@ Grouped by decision-maker.
 
 ---
 
-## Needs a decision from the project team / operators
-
-Operational and cutover-planning items that don't need governance-body review — they need someone to pick a date, an owner, or a strategy.
-
-| # | Question | Currently marked | Source |
-|---|----------|------------------|--------|
-| 1 | Cutover date + maintenance window for the Tier-1 Authority cutover | `TBD` | [`../ops/authority-migration.md`](../ops/authority-migration.md) |
-| 2 | Rollback owner for the same cutover | `TBD` | [`../ops/authority-migration.md`](../ops/authority-migration.md) |
-| 3 | Migration strategy: **cutover** (brief downtime, simpler) or **parallel** (dual-run, zero downtime)? Runbook currently assumes cutover; explicit confirmation missing. | Assumed cutover, not ratified | [`../ops/authority-migration.md`](../ops/authority-migration.md) |
-
----
-
 ## Needs a decision from the Dataspace Authority (once seated)
 
 Governance-body items — cadence, cohorts, and ratifications of the vocabularies + onboarding sequences the code already relies on.
@@ -28,9 +16,9 @@ Governance-body items — cadence, cohorts, and ratifications of the vocabularie
 
 | # | Question | Currently marked | Source |
 |---|----------|------------------|--------|
-| 4 | Dataspace Authority standing-session cadence | "Monthly (indicative — to be agreed)" | [`authority.md`](authority.md) |
-| 5 | Cohort 3 composition + timing (participant type mix) | `TBD` (expanded institutional participation, Q3 2026) | [`../README.md` § Cohort Timeline](../README.md#cohort-timeline-proposal) |
-| 6 | Post-prototype onboarding cadence and criteria | `TBD` (rolling institutional + corporate onboarding, 2027+) | [`../README.md` § Cohort Timeline](../README.md#cohort-timeline-proposal) |
+| 1 | Dataspace Authority standing-session cadence | "Monthly (indicative — to be agreed)" | [`authority.md`](authority.md) |
+| 2 | Cohort 3 composition + timing (participant type mix) | `TBD` (expanded institutional participation, Q3 2026) | [`../README.md` § Cohort Timeline](../README.md#cohort-timeline-proposal) |
+| 3 | Post-prototype onboarding cadence and criteria | `TBD` (rolling institutional + corporate onboarding, 2027+) | [`../README.md` § Cohort Timeline](../README.md#cohort-timeline-proposal) |
 
 ### Ratifications the code already relies on
 
@@ -38,14 +26,14 @@ These are documented as proposals; the code and realm JSON already encode them f
 
 | # | Ratification | Status | Source |
 |---|--------------|--------|--------|
-| 7 | GLCDI kebab-case vocabulary for statuses / types / outcomes (`producer`, `researcher`, `data-steward`, `regenerative-verified`, etc.) | Proposal encoded in `context.jsonld` + realm JSON | [`../IMPLEM_PLAN.md` § 1](../build/implementation-plan.md) |
-| 8 | PascalCase ODRL purpose vocabulary (`InternalAnalysis`, `ModelTraining`, etc.) | Proposal encoded in `context.jsonld` | [`../IMPLEM_PLAN.md` § 1](../build/implementation-plan.md) |
-| 9 | Tier-1 onboarding sequence (form → admin approval → KC group + user + temp password mail) | Proposal, local smoke passing, awaiting staging cutover | [`../IMPLEM_PLAN.md` § 2.7](../build/plan/phase-2-keycloak-claims.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band) |
-| 10 | Trust Framework v0 wording (DSA template, participant obligations, refund adjudication scope) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.1](../build/plan/phase-6-governance.md) |
-| 11 | Trust Framework compliance section (self-attestation, audit rights, escalation) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.2](../build/plan/phase-6-governance.md) |
-| 12 | Revocation procedure (consent revocation, agreement invalidation) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.3](../build/plan/phase-6-governance.md) |
-| 13 | Rollout / cohort-sequencing proposal for policies (which policies land at which cohort) | Proposal in `policies/plan.md` | [`../reference/policies/plan.md`](../reference/policies/plan.md) |
-| 14 | Human-user onboarding proposal at Tier 2 (post-M1) | Proposal, not ratified; only triggers when Tier 2 is approved | [`../IMPLEM_PLAN.md` § 7.2.5](../build/plan/phase-7-future.md#725-tier-2-onboarding-flow) |
+| 4 | GLCDI kebab-case vocabulary for statuses / types / outcomes (`producer`, `researcher`, `data-steward`, `regenerative-verified`, etc.) | Proposal encoded in `context.jsonld` + realm JSON | [`../IMPLEM_PLAN.md` § 1](../build/implementation-plan.md) |
+| 5 | PascalCase ODRL purpose vocabulary (`InternalAnalysis`, `ModelTraining`, etc.) | Proposal encoded in `context.jsonld` | [`../IMPLEM_PLAN.md` § 1](../build/implementation-plan.md) |
+| 6 | Tier-1 onboarding sequence (form → admin approval → KC group + user + temp password mail) | Proposal, local smoke passing | [`../IMPLEM_PLAN.md` § 2.7](../build/plan/phase-2-keycloak-claims.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band) |
+| 7 | Trust Framework v0 wording (DSA template, participant obligations, refund adjudication scope) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.1](../build/plan/phase-6-governance.md) |
+| 8 | Trust Framework compliance section (self-attestation, audit rights, escalation) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.2](../build/plan/phase-6-governance.md) |
+| 9 | Revocation procedure (consent revocation, agreement invalidation) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.3](../build/plan/phase-6-governance.md) |
+| 10 | Rollout / cohort-sequencing proposal for policies (which policies land at which cohort) | Proposal in `policies/plan.md` | [`../reference/policies/plan.md`](../reference/policies/plan.md) |
+| 11 | Human-user onboarding proposal at Tier 2 (post-M1) | Proposal, not ratified; only triggers when Tier 2 is approved | [`../IMPLEM_PLAN.md` § 7.2.5](../build/plan/phase-7-future.md#725-tier-2-onboarding-flow) |
 
 ---
 
@@ -56,6 +44,7 @@ Kept here as a short changelog so a reviewer can see recent decisions without di
 | # | Question | Resolution | Date |
 |---|----------|------------|------|
 | — | Governance body naming: "Authority" vs. "Committee" / "Council" / "Trust Body" | Keep **Dataspace Authority** (working name) | 2026-07-24 |
+| — | Tier-1 Authority cutover (cutover date, rollback owner, cutover-vs-parallel strategy) | Completed — `governance-*` → `authority-*` rename applied to staging; cutover strategy used. The migration runbook has been removed as it no longer applies. | 2026-07-24 |
 
 ---
 

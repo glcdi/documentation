@@ -51,10 +51,9 @@ Grouped by intent.
 
 | Doc | For |
 |-----|-----|
-| [`ops/deployment.md`](ops/deployment.md) | Deployment runbook + local end-to-end validation (with the `glcdi.sh` fast-path). |
-| [`ops/authority-migration.md`](ops/authority-migration.md) | Operator checklist for the in-flight `governance-*` → `authority-*` rename + Tier-1 cutover. |
+| [`ops/local-stack.md`](ops/local-stack.md) | Run the whole stack on a laptop via `glcdi.sh` — the gate before any staging deploy. |
+| [`ops/vm-deployment.md`](ops/vm-deployment.md) | Deploy to staging/prod VMs — GitLab CI/CD does the pull + up; this covers realm refresh, snapshots, and rollback. |
 | [`ops/staging-wipe.md`](ops/staging-wipe.md) | Staging-participant full-reset runbook. |
-| [`ops/demo-vm.md`](ops/demo-vm.md) | Plan for the co-located demo staging VM. |
 
 **Meta.**
 
@@ -86,7 +85,7 @@ around:
 - **Membership** - the proposal is that participants are onboarded through a formal process (application, review by a governance body, signed MOU/Data Sharing Agreement).
 - **Roles** - each participant would have a declared type (producer, researcher, data steward, etc.) that determines what data they can discover and under what terms.
 - **Policies** - ODRL-based rules attached to data assets that enforce access control and usage conditions at the technical level.
-- **Trust Framework** - a living document (proposed v0 in Q1 2026, v1 in Q2) that would codify the governance norms, templates, and compliance expectations.
+- **Trust Framework** - a living document that would codify the governance norms, templates, and compliance expectations. Proposed cadence: v0 alongside Cohort 1 as the initial baseline, v1 alongside Cohort 2 with the first round of stakeholder feedback folded in. Neither has been ratified yet; see [`strategy/open-questions.md`](strategy/open-questions.md).
 
 ### Governance Bodies (Proposed)
 
@@ -102,12 +101,14 @@ A standalone proposal for the Dataspace Authority's responsibilities, compositio
 
 Specific participant composition per cohort is under discussion and intentionally omitted here. The proposed shape is:
 
-| Phase | Period | Participant count (indicative) | Focus |
-|-------|--------|-------------------------------|-------|
-| Cohort 1 | Q1 2026 | ~3 (prototype onboarding) | Foundational validation, Trust Framework v0 |
-| Cohort 2 | Q2 2026 | ~6 (C1 + a proposed second wave, TBD) | Cross-context testing, Trust Framework v1 |
-| Cohort 3 | Q3 2026 | Expanded institutional participation (TBD) | Institutional stress-testing |
-| Post-prototype | 2027+ | Rolling institutional + corporate onboarding (TBD) | Broader onboarding |
+| Cohort | Participant count (indicative) | Focus | Status |
+|--------|-------------------------------|-------|--------|
+| **1** | ~3 (prototype onboarding) — the M1 trio | Foundational validation, Trust Framework v0 | In progress |
+| **2** | ~6 (Cohort 1 + a proposed second wave) | Cross-context testing, Trust Framework v1 | Composition under discussion |
+| **3** | Expanded institutional participation | Institutional stress-testing | Not scoped |
+| **Post-prototype** | Rolling institutional + corporate onboarding | Broader onboarding | Not scoped |
+
+Absolute dates and the composition of Cohorts 2+ are open items — see [`strategy/open-questions.md`](strategy/open-questions.md). A standalone showcase VM (`demo.glcdi.startinblox.com`) also runs alongside the M1 trio for workshop fixtures; that is not itself a cohort participant.
 
 ---
 
@@ -117,7 +118,7 @@ Identity management, authentication, the GLCDI claim model (realm roles, certifi
 
 At a glance:
 - **Tiered rollout** - Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`IMPLEM_PLAN.md` § Identity Tiering Strategy](build/implementation-plan.md#identity-tiering-strategy) for the full argument.
-- **GLCDI token claims** on connector service-account tokens: `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`, `glcdi_organisation` - consumed by EDC policy functions.
+- **GLCDI token claims** on connector service-account tokens carry the participant's membership, role, certification status, contribution status, and organisation — consumed by EDC policy functions. Full shape + mapper details in [`reference/identity.md`](reference/identity.md).
 - **OIDC for the prototype**; Verifiable Credentials / OID4VC considered but deliberately deferred to Tier 3 - see [`reference/identity.md`](reference/identity.md).
 
 ---

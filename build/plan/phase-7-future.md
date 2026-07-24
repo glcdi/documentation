@@ -94,6 +94,17 @@ Connector ↔ connector traffic is **unchanged** from Tier 1 - `iam-oauth2` agai
 
 **Deliverable:** the Tier-1 staging cluster keeps running; Tier-2-ready realm JSON, compose changes, and UI build are validated against staging in a controlled rollout per participant.
 
+### 7.2.7 Cutover operator checklist
+
+When Tier 2 is approved and the changes above have shipped to `main`, the per-VM cutover is:
+
+- [ ] **Authority KC** - confirm the `glcdi-ui` client is active (not just imported), with redirect URIs covering all participant origins + `silent-callback.html` paths and `glcdi-claims` in its default scopes.
+- [ ] **Per-org groups** - confirm `caney-fork-team`, `point-blue-team`, `white-buffalo-team` exist with their realm-role + `glcdi_organisation` attribute assignments.
+- [ ] **Starter human users** - confirm one starter user per team group exists, with per-user attributes (`glcdi_certification_status`, `glcdi_contribution_status`) set. Set initial credentials and distribute via vault.
+- [ ] **GitLab CI/CD variables** - re-add or rotate `GLCDI_UI_CLIENT_SECRET`; populate per VM's `.env`.
+- [ ] **Per-participant rollout** - bring each participant stack down + up against the Tier-2 compose. **Verify a full OIDC round-trip** (login → catalog query → contract negotiation → transfer) for one participant before rolling to the rest.
+- [ ] **Verification** - browser dev-tools shows `Authorization: Bearer` on every `/management` call (alongside the persisted `X-Api-Key`); oauth2-proxy logs show successful Bearer-token validations against Authority KC JWKS.
+
 ## 7.3 Identity (Tier 3) - Decentralised claims via VC / DCP
 
 Long-term migration replacing the Authority Keycloak as the *issuer* of connector credentials with W3C Verifiable Credentials presented through the Decentralised Claims Protocol (DCP / IATP). Aligns GLCDI with Gaia-X / DSBA federation requirements.

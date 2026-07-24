@@ -265,7 +265,7 @@ These are the proposed onboarding flows, to be validated with the Dataspace Auth
 3. On approval (proposed actions):
    a. Authority operator extends realm JSON: new `glcdi-connector-<org>` client +
       service-account user with appropriate `glcdi_*` realm roles + attributes
-   b. Realm JSON re-imported (or live-edited via admin console) per ops/deployment.md § 2.2
+   b. Realm JSON re-imported (or live-edited via admin console) per ops/vm-deployment.md § 3
    c. Rotated client_id / client_secret shipped to participant via vault / OOB channel
 4. Participant operator drops client_id / client_secret into participant/configuration.properties,
    restarts connector → can publish assets, query catalogs, negotiate contracts
@@ -444,12 +444,12 @@ what GLCDI ships at M1) to the most decentralised (Tier 3, long-term target).
 | **Credential format** | JWT (`client_credentials` grant) | JWT (user OIDC + connector `client_credentials`) | VC (JWT-VC, SD-JWT-VC, or JSON-LD VC) |
 | **Trust anchor** | Authority Keycloak - proposed: Dataspace Authority manages connector clients + SA claims | Authority Keycloak - extended: per-org groups + human users alongside connector SAs | DID-based trust list managed by the Dataspace Authority; alignment with Gaia-X Compliance Service |
 | **UI auth** | `X-Api-Key` only (no end-user identity in any KC) | `X-Api-Key` + user OIDC Bearer via `glcdi-ui` client | (TBD per Tier-3 design - likely `X-Api-Key` + DID-bound presentation) |
-| **How provider verifies consumer** | Extract claims from connector's `client_credentials` JWT (post-§ 3.5: `iam-oauth2`) | Same DSP path as Tier 1 - connector JWTs unchanged; user JWTs sit in front of UI only | Resolve DID → verify Verifiable Presentation → extract claims |
+| **How provider verifies consumer** | Extract claims from connector's `client_credentials` JWT via the `glcdi-iam-keycloak` extension (§ 3.5 landed) | Same DSP path as Tier 1 - connector JWTs unchanged; user JWTs sit in front of UI only | Resolve DID → verify Verifiable Presentation → extract claims |
 | **Participant requirement** | One connector client + secret in Authority KC, distributed out-of-band | Tier 1 setup + a Keycloak human-user account per operator | DID, Identity Hub, VCs from trusted issuer(s) |
 | **Onboarding complexity** | Low: realm-JSON edit per new participant; client secret distributed OOB | Medium: Tier-1 + automated user-provisioning via Keycloak Admin API | High: participant creates DID, requests VCs, configures Identity Hub |
 | **Per-user audit** | No (org-level only - "someone at caney-fork pressed negotiate") | Yes (per-user JWT, audit log captures user identity) | Yes (presentation includes holder DID) |
 | **Revocation** | Immediate: rotate connector client secret + remove role in Keycloak | Immediate (user) or by client-secret rotation (connector) | VC revocation list / status list (latency) |
-| **EDC support** | `iam-oauth2` against Authority KC (mature, swap from `iam-mock` per § 3.5) | Same `iam-oauth2` (unchanged); oauth2-proxy in front of `/management` | `iam-identity-trust` (DCP / IATP), Identity Hub - experimental, evolving per release |
+| **EDC support** | Custom `glcdi-iam-keycloak` extension against Authority KC (stock `iam-oauth2` was retired in EDC 0.15.x) | Same `glcdi-iam-keycloak` (unchanged); oauth2-proxy in front of `/management` | `iam-identity-trust` (DCP / IATP), Identity Hub - experimental, evolving per release |
 | **Maturity for production** | Production-ready (vanilla OAuth2 + Keycloak) | Production-ready | R&D / pilot |
 | **Best for** | M1 - prototype with 3 managed participants | Mid-MVP, when per-user audit becomes a stakeholder ask | Scaled dataspace with autonomous participants joining without realm-JSON edits at the centre |
 

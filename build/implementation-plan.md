@@ -15,10 +15,10 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 **Delivery order:**
 
 1. **Phase 1 - Vocabulary & Namespace.** Register `glcdi:` JSON-LD context; agree on participant-type, certification-status, purpose taxonomies. Foundational; blocks Phase 3.
-2. **Phase 1.5 - Identity (Tier 1) + Authority cleanup.** Complete the governance→authority rename (per [`ops/authority-migration.md`](../ops/authority-migration.md)); remove per-participant Keycloak from the participant compose stack; provision 3 connector service-account clients in the Authority Keycloak (`glcdi-connector-<org>`) with `glcdi_*` claims; UI runs on `X-Api-Key` only. **No end-user OIDC at this tier.**
+2. **Phase 1.5 - Identity (Tier 1) + Authority cleanup.** Remove per-participant Keycloak from the participant compose stack; provision 3 connector service-account clients in the Authority Keycloak (`glcdi-connector-<org>`) with `glcdi_*` claims; UI runs on `X-Api-Key` only. **No end-user OIDC at this tier.** The `governance-*` → `authority-*` rename that was bundled with this phase is now complete.
 3. **Phase 1.6 - Packaged organization onboarding (current intermediate delivery).** Replace the placeholder onboarding stack in `governance-services` with the `djangoldp_glcdi_onboarding` package - a public registration form at `/registration/` and a Django admin dashboard at `/registration/admin/`. Approval triggers automatic Keycloak provisioning (group, user with temp password, roles); approve/deny links land directly in admin mail. Pairs with the realm-roles cleanup (only `glcdi_member`, `glcdi_producer`, `glcdi_researcher`, `glcdi_non_profit`, `glcdi_non_regulatory`), the realm-wide spelling normalisation to `glcdi_organization`, and the addition of `realm-management.realm-admin` to the `governance` client's service account. **Connector onboarding stays out-of-band (Tier-1 - see § 2.7); only human-org onboarding is packaged here.**
 4. **Phase 2 - Keycloak claims (on connector SAs).** Realm roles, attributes, protocol mappers so each connector's `client_credentials` token carries `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`. Claims live on the SA users that back each connector client.
-4. **Phase 3 - EDC policy functions.** Custom `AtomicConstraintFunction`s reading the claims above. ~200 LOC. § 3.5 swaps `iam-mock` for `iam-oauth2` against the Authority KC - **the gate to "real auth" between connectors**.
+4. **Phase 3 - EDC policy functions.** Custom `AtomicConstraintFunction`s reading the claims above. ~200 LOC. § 3.5 swaps `iam-mock` for the custom `glcdi-iam-keycloak` extension against the Authority KC — **the gate to "real auth" between connectors, landed**.
 5. **Phase 4 - Seeding scripts.** Replace the current single `glcdi:policy:open-research` with per-asset access + contract policies - scoped initially to the M1 scenario.
 6. **Phase 4.5 - Bruno test suite + Participant-UI configuration (parallel tracks).** (E) Bruno collection executing the M1 scenario non-interactively against the management API; (F) ship `participant-ui` in API-key-only mode for the asset/policy/contract/history components. Both run in parallel agents and feed Phase 5.
 7. **Phase 5 - Integration testing.** Anchored on the M1 scenario: regenerative-producers-only access policy + internal-use-only contract policy, full positive and negative paths.
@@ -29,7 +29,7 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 12. **Phase 7.3 - Identity (Tier 3): decentralised claims via VC/DCP.** Long-term migration to Verifiable Credentials and the Decentralised Claims Protocol. Aligns GLCDI with Gaia-X / DSBA direction.
 13. **Phase 7.4–7.5 - Other future enhancements.** Federated Catalogue policy metadata, participant-facing policy UI.
 
-**Status (in-repo):** Phase 1 (vocabulary), Phase 1.5 (Tier-1 identity + rename), Phase 1.6 (packaged organization onboarding - **current intermediate delivery, local smoke complete (form → admin mail → approve → KC group `sib` with `glcdi_organization=["sib"]` + `glcdi_member+glcdi_producer` + new user + temp password mail); awaiting staging cutover**), Phase 2 (Keycloak claims on connector SAs), and Phase 4.5 (Bruno + UI tracks) have substantive in-repo work in their working trees, blocked only on the staging cutover (Path-A re-import per [`ops/deployment.md` § 2.2](../ops/deployment.md)). Phase 3 (EDC policy extension), Phase 4 (seeding scripts), Phase 5 (integration testing), and Milestone M1 are still to start. Phase 6 (governance / Trust Framework) runs in parallel and is owned outside this repo. Phase 7 (post-M1) - Tier 2 identity (7.2) and the VC migration (7.3) sit alongside payment (7.1) as candidate next workstreams once M1 is signed off.
+**Status (in-repo):** Phases 1 (vocabulary), 1.5 (Tier-1 identity + rename), 1.6 (packaged organization onboarding), 2 (Keycloak claims on connector SAs), 3 (EDC policy extension including § 3.5's custom `glcdi-iam-keycloak`), and 4.5 (Bruno + UI tracks) are shipped and on staging. Phase 4 (seeding scripts), Phase 5 (integration testing), and Milestone M1 sign-off are the remaining Tier-1 work. Phase 6 (governance / Trust Framework) runs in parallel and is owned outside this repo. Phase 7 (post-M1) — Tier 2 identity (7.2) and the VC migration (7.3) sit alongside payment (7.1) as candidate next workstreams once M1 is signed off.
 
 **Parallelisation:** up to **3 concurrent agents** at peak - main implementation track (1.5 → 2 → 3 → 4 → 5 → M1 → 7.1), Bruno track (4.5 E), Participant-UI track (4.5 F). Phase 6 also runs in parallel with the technical phases.
 
@@ -67,48 +67,9 @@ The GLCDI prototype is sequenced so that the **simplest credible identity model 
 
 ## Runtime architecture (Tier 1 - M1 target)
 
-The runtime the phases below build toward is a **one Authority + N participants** deployment. The Authority holds identity, realm roles, and onboarding. Each participant runs the same Compose stack; peers negotiate over DSP and fetch data over an EDR-gated data-plane. At Tier 1 there is exactly one credential at each edge: **`X-Api-Key` at the management-API edge, an Authority-signed JWT (minted via `client_credentials` on the connector's service-account client) at the DSP edge**. No user accounts in any Keycloak. No oauth2-proxy. No per-participant Keycloak.
+The runtime the phases below build toward is a **one Authority + N participants** deployment. At Tier 1 there is exactly one credential at each edge: **`X-Api-Key` at the management-API edge, an Authority-signed JWT (minted via `client_credentials` on the connector's service-account client) at the DSP edge**. No user accounts in any Keycloak. No oauth2-proxy. No per-participant Keycloak.
 
-```mermaid
-flowchart TB
-    subgraph Auth["Dataspace Authority - governance.glcdi.startinblox.com"]
-        direction TB
-        AKC["Keycloak - realm glcdi<br/>N × glcdi-connector-«org» SA clients<br/>+ human onboarding clients"]
-        Onb["Onboarding portal<br/>(djangoldp-glcdi-onboarding)"]
-        APg[("Postgres")]
-        AKC -.- APg
-        Onb -.- APg
-    end
-
-    subgraph PA["Participant · one of N · «name».glcdi.startinblox.com"]
-        direction TB
-        NGX["nginx (TLS · reverse proxy)"]
-        UI["Catalogue UI · X-Api-Key only<br/>(Hubl / Lit)"]
-        CP["EDC control-plane<br/>+ glcdi-policy-functions (Phase 3)<br/>+ iam-oauth2 (Phase 3.5)"]
-        DP["EDC data-plane<br/>(embedded - Phase 3.8)"]
-        IDH["Identity Hub<br/>(reserved for Tier 3 · DCP)"]
-        LDP["djangoldp-glcdi<br/>(external in prod, sibling in dev)"]
-        Pg[("Postgres")]
-        NGX --> UI
-        NGX --> CP
-        UI --> LDP
-        CP -.- Pg
-        CP --> DP
-        CP -.- IDH
-    end
-
-    subgraph PB["Peer participant"]
-        direction TB
-        CP2["EDC control-plane"]
-        DP2["EDC data-plane"]
-    end
-
-    UI -->|"X-Api-Key on /management"| CP
-    CP ---|"DSP · Authority-signed JWT (iam-oauth2 post-§ 3.5)"| CP2
-    DP ---|"HTTP transfer · EDR-gated"| DP2
-    CP -->|"client_credentials → glcdi_* claims"| AKC
-    CP2 -->|"client_credentials → glcdi_* claims"| AKC
-```
+The full topology diagram + per-component role + data-flow walkthrough live in [`../ARCHITECTURE.md § 3–5`](../ARCHITECTURE.md). The mapping below shows which phase builds which block of that diagram.
 
 ### Which phase builds which piece
 
@@ -120,7 +81,7 @@ flowchart TB
 | Removal of per-participant Keycloak + oauth2-proxy from the participant stack | Phase 1.5.2 |
 | `X-Api-Key` as the primary management-API gate | Phase 1.5.3 |
 | `glcdi-policy-functions` EDC extension | Phase 3.1 – 3.4 |
-| Swap `iam-mock` → `iam-oauth2` (real DSP-edge auth) | Phase 3.5 - the load-bearing gate to "real auth" between connectors |
+| Swap `iam-mock` → `glcdi-iam-keycloak` (real DSP-edge auth) | Phase 3.5 — landed (custom extension replacing stock `iam-oauth2` retired in EDC 0.15.x) |
 | Embedded data-plane + `HttpData` endpoint generator | Phase 3.8 |
 | M1-scoped seeding scripts (regenerative-only access + internal-use-only contract) | Phase 4 |
 | Bruno test suite exercising the M1 scenario via management API | Phase 4.5.E |

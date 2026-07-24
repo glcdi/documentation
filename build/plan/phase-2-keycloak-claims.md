@@ -31,7 +31,7 @@ policy functions only see claim *names*, not the issuer.
 |------|--------|
 | **Task** | Add realm roles to the `glcdi` realm in Authority Keycloak |
 | **Roles to create** | `glcdi_member` (active membership), `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder` |
-| **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` - in the `roles.realm[]` array |
+| **Where** | `authority-services/resources/keycloak/realms/glcdi-realm.json` - in the `roles.realm[]` array |
 | **Status** | [x] Declared in realm JSON (13 roles total: 2 inherited + 11 GLCDI) · [x] Imported into live Authority KC (verified after each `glcdi.sh reset && up`) |
 
 **Realm JSON snippet to add:**
@@ -77,7 +77,7 @@ explicit mappers to surface claims in the format the EDC policy functions expect
 |------|--------|
 | **Task** | Add protocol mappers to relevant Keycloak clients so that GLCDI claims appear as top-level claims in access tokens |
 | **Approach** | Realm-level **client scope** `glcdi-claims` carries all five mappers (one for `glcdi_roles` from realm roles; four `oidc-usermodel-attribute-mapper` entries for `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`). The scope is added to `defaultClientScopes` on each `glcdi-connector-<org>` client at Tier 1 (and on the future `glcdi-ui` client at Tier 2 - see § 7.2). No per-client mapper duplication. |
-| **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` - `clientScopes[]` array (the `glcdi-claims` scope) plus `defaultClientScopes` on each consuming client. |
+| **Where** | `authority-services/resources/keycloak/realms/glcdi-realm.json` - `clientScopes[]` array (the `glcdi-claims` scope) plus `defaultClientScopes` on each consuming client. |
 | **Status** | [x] `glcdi-claims` client scope declared (5 mappers) · [x] Wired into `defaultClientScopes` on the 3 connector clients · [x] Imported into live Authority KC (decoded JWT shows `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status` populated) |
 
 **Five mappers in the `glcdi-claims` client scope (declarative, in the realm JSON):**
@@ -193,13 +193,7 @@ hardcoded claim mapper on the client scope that applies to all authenticated use
 | **Task** | Each `service-account-glcdi-connector-<org>` user in the realm JSON carries that org's realm roles directly and the `glcdi_membership` / `glcdi_organisation` / `glcdi_certification_status` / `glcdi_contribution_status` attributes. The realm JSON is the source of truth; live edits go through the admin console. |
 | **Status** | [x] Declared in realm JSON: 3 connector clients + 3 SA users with role + attribute assignments · [x] Imported into live Authority KC (caney-fork → `glcdi_producer`; point-blue → `glcdi_researcher`; white-buffalo same as caney-fork) |
 
-The Tier-1 assignment for the M1 prototype cluster (already encoded in `governance-services/resources/keycloak/realms/glcdi-realm.json`):
-
-| SA user | Realm roles | `glcdi_organisation` | `glcdi_certification_status` | `glcdi_contribution_status` |
-|---------|-------------|----------------------|------------------------------|-----------------------------|
-| `service-account-glcdi-connector-caney-fork` | `glcdi_member`, `glcdi_producer` | `caney-fork` | `regenerative-verified` | `contributing` |
-| `service-account-glcdi-connector-white-buffalo` | `glcdi_member`, `glcdi_producer` | `white-buffalo` | `regenerative-verified` | `contributing` |
-| `service-account-glcdi-connector-point-blue` | `glcdi_member`, `glcdi_researcher` | `point-blue` | `not-applicable` | `observer` |
+The Tier-1 assignment for the M1 trio (`caney-fork` / `white-buffalo` as regenerative producers, `point-blue` as researcher) is the canonical table in [`phase-1.5-identity-tier1.md § 1.5.4`](phase-1.5-identity-tier1.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
 
 The proposed assignment *pattern* by participant type (for new onboardings beyond the M1 trio):
 
@@ -300,7 +294,7 @@ read from the token:
 | Item | Detail |
 |------|--------|
 | **Task** | At Tier 1, **connector** onboarding is **out-of-band**: the Authority operator extends the realm JSON with a new `glcdi-connector-<org>` client + SA user (same shape as § 2.4) and ships the secret to the participant operator via a side channel. Connectors are infrastructure, not human users - there is no need for a self-serve form here. The *human-org* onboarding case (registering the organization itself, creating its first operator user) is covered by the packaged flow in [§ Phase 1.6](phase-1.6-onboarding.md). |
-| **Where** | `governance-services/resources/keycloak/realms/glcdi-realm.json` - append to `clients[]` and `users[]`. After import, also distribute the rotated `client_secret` via a vault / out-of-band channel for the participant's `participant/configuration.properties`. |
+| **Where** | `authority-services/resources/keycloak/realms/glcdi-realm.json` - append to `clients[]` and `users[]`. After import, also distribute the rotated `client_secret` via a vault / out-of-band channel for the participant's `participant/configuration.properties`. |
 | **Status** | [ ] Not started - first new onboarding post-M1 will exercise this |
 
 **Tier-1 onboarding sequence** (to be ratified by the Dataspace Authority):
@@ -309,7 +303,7 @@ read from the token:
 2. The Dataspace Authority reviews and approves.
 3. On approval, the Authority operator:
    - Adds a `glcdi-connector-<new-org>` client (with `serviceAccountsEnabled: true`, `glcdi-claims` default scope) and its SA user (with the right `glcdi_*` realm roles + attributes) to the realm JSON.
-   - Imports / patches the live realm (admin console for a single client; Path B re-import for a batch - see [`ops/deployment.md` § 2.2](../../ops/deployment.md)).
+   - Imports / patches the live realm (admin console for a single client; Option 2 (partial import via Admin API) - see [`ops/vm-deployment.md` § 3](../../ops/vm-deployment.md)).
    - Rotates the placeholder secret and ships `client_id` / `client_secret` to the participant operator via vault / out-of-band channel.
 4. The participant operator drops `client_id` / `client_secret` into `participant/configuration.properties` (`edc.oauth.client.id` / `edc.oauth.client.secret.alias` per § 3.5) and restarts the connector.
 

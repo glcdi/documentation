@@ -23,7 +23,7 @@ defined and resolvable.
 | **Proposed participant types** | `producer`, `researcher`, `data-steward`, `conservation-org`, `technology-provider`, `corporate`, `certification-body`, `supply-chain-partner`, `funder` |
 | **Proposed certification statuses** | `organic-certified`, `regenerative-verified`, `transitioning-organic`, `conventional`, `not-applicable` |
 | **Deliverable** | Enumeration documented in the vocabulary context and in the Trust Framework (v0) |
-| **Status** | [x] Documented as proposal (this section) · [x] Encoded in [`context.jsonld`](../../context.jsonld) value aliases · [x] Realm roles + group/user attributes for the M1 subset (`producer`, `researcher`, `data-steward`, `regenerative-verified`, `not-applicable`) declared in `governance-services/resources/keycloak/realms/glcdi-realm.json` · [ ] Ratified by the Dataspace Authority |
+| **Status** | [x] Documented as proposal (this section) · [x] Encoded in [`context.jsonld`](../../context.jsonld) value aliases · [x] Realm roles + group/user attributes for the M1 subset (`producer`, `researcher`, `data-steward`, `regenerative-verified`, `not-applicable`) declared in `authority-services/resources/keycloak/realms/glcdi-realm.json` · [ ] Ratified by the Dataspace Authority |
 
 ## 1.3 Define ODRL purpose taxonomy
 

@@ -5,28 +5,7 @@ plus the three M1 participant connectors (`caney-fork`, `point-blue`,
 `white-buffalo`) - in the right order with secrets rotated from their
 `changeme-*` placeholders.
 
-It is the scripted form of [`../ops/deployment.md` § 3 (local validation)](../../ops/deployment.md).
-
-## Quick start
-
-```sh
-# From the workspace root (or anywhere - paths are absolute):
-./management/build/scripts/glcdi.sh preflight   # verify tools
-./management/build/scripts/glcdi.sh build       # edc-connector + participant-ui images
-./management/build/scripts/glcdi.sh up          # authority KC + 3 participants
-./management/build/scripts/glcdi.sh seed        # M1 fixtures via Bruno
-./management/build/scripts/glcdi.sh test        # Bruno run (tier1 default)
-./management/build/scripts/glcdi.sh status      # health check
-
-# Or all at once:
-./management/build/scripts/glcdi.sh all
-```
-
-To reset (destructive):
-
-```sh
-./management/build/scripts/glcdi.sh reset       # down + remove volumes + nuke local state
-```
+The user-facing recipe (prerequisites, fast path, expected outcome, common failures) lives in [`../../ops/local-stack.md`](../../ops/local-stack.md). This document is the **subcommand reference** for `glcdi.sh` itself.
 
 ## Subcommand reference
 
@@ -105,9 +84,9 @@ The script remaps via `NGINX_PORT` and per-participant `configuration.properties
 | `/management` reachable with rotated `X-Api-Key` | ✅ | - |
 | Bruno's `00-auth/` succeeds - connector SAs mint tokens with the right claims | ✅ post-realm-import | - |
 | Bruno's `10-provider-seeding/` (asset / policy / contract def CRUD) | ✅ | - |
-| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ⚠ partial | [`IMPLEM_PLAN § 3`](../plan/phase-3-edc-policy-extension.md) (custom constraint functions) + [`§ 3.5`](../plan/phase-3-edc-policy-extension.md#35-replace-iam-mock-with-a-real-oauth2-identityservice-and-configure-claim-extraction) (iam-oauth2 swap) - until both land, `iam-mock` accepts everything and the access policy doesn't filter |
-| Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ⚠ partial | Same as above + EDC async-state-machine polling files |
-| Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 3+4 + transfer state-machine polling |
+| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ✅ | — (Phase 3 constraint functions + Phase 3.5 `glcdi-iam-keycloak` extension shipped) |
+| Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ✅ | — |
+| Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 4 seeding + transfer state-machine polling — see [`../plan/phase-4-seeding.md`](../plan/phase-4-seeding.md) |
 | `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`IMPLEM_PLAN § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
 
 The script doesn't pretend more works than does. Run it, observe what's
@@ -133,7 +112,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
 ### Iterating on Keycloak realm content
 
 ```sh
-# Edit governance-services/resources/keycloak/realms/glcdi-realm.json, then:
+# Edit authority-services/resources/keycloak/realms/glcdi-realm.json, then:
 ./glcdi.sh reset       # full wipe - KC re-imports the realm only on first boot
 ./glcdi.sh up
 ```
@@ -183,6 +162,6 @@ green vs. red, and use the red rows as a checklist for the next phase.
 ## Pointers
 
 - Identity tiering: [`../implementation-plan.md` § Identity Tiering Strategy](../implementation-plan.md#identity-tiering-strategy)
-- Tier-1 cutover (manual, runbook): [`../ops/deployment.md`](../../ops/deployment.md)
-- Authority rename runbook: [`../ops/authority-migration.md`](../../ops/authority-migration.md)
+- Local end-to-end runbook: [`../ops/local-stack.md`](../../ops/local-stack.md)
+- Staging VM deployment runbook: [`../ops/vm-deployment.md`](../../ops/vm-deployment.md)
 - Bruno collection: [`../bruno/`](../bruno/)

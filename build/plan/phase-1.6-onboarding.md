@@ -8,7 +8,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 2. **Cleans up the realm to its M1-essential roles only.** The realm JSON had 7 unused `glcdi_*` participant-type roles from an earlier draft taxonomy. Trimming to the four type roles + `glcdi_member` matches what the packaged onboarding actually drives and what the M1 policies actually read.
 3. **Surfaces realm-wide spelling drift.** The `governance` client expects `glcdi_organization` (en-US) on group and user attributes, but the existing realm had `glcdi_organisation` everywhere - protocol mapper included. The fix is one renaming pass; doing it now (while the realm import is still wipe-and-replay) avoids an admin-console migration later.
 
-## 1.6.1 Adopt `djangoldp_glcdi_onboarding` in `governance-services/onboarding`
+## 1.6.1 Adopt `djangoldp_glcdi_onboarding` in `authority-services/onboarding`
 
 | Item | Detail |
 |------|--------|
@@ -21,7 +21,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 
 | Item | Detail |
 |------|--------|
-| **Task** | In `governance-services/resources/keycloak/realms/glcdi-realm.json`, keep only `glcdi_member`, `glcdi_producer`, `glcdi_researcher`. Add `glcdi_non_profit` and `glcdi_non_regulatory`. Drop the seven unused draft roles (`glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder`). |
+| **Task** | In `authority-services/resources/keycloak/realms/glcdi-realm.json`, keep only `glcdi_member`, `glcdi_producer`, `glcdi_researcher`. Add `glcdi_non_profit` and `glcdi_non_regulatory`. Drop the seven unused draft roles (`glcdi_data_steward`, `glcdi_conservation_org`, `glcdi_technology_provider`, `glcdi_corporate`, `glcdi_certification_body`, `glcdi_supply_chain_partner`, `glcdi_funder`). |
 | **Why** | `djangoldp_glcdi_onboarding` maps each form-checked `organization_type` to exactly one of these four type roles, plus `glcdi_member` for every approved org. None of the dropped roles are referenced by any user, group, or seed script in the repo, so removal is non-breaking. |
 | **Status** | [x] Realm JSON updated · [x] Verified locally (`curl -H "Authorization: Bearer <governance SA token>" /admin/realms/glcdi/roles \| jq` returns exactly `["glcdi_member","glcdi_non_profit","glcdi_non_regulatory","glcdi_producer","glcdi_researcher"]`) · [ ] Verified on staging |
 
@@ -56,7 +56,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 | Item | Detail |
 |------|--------|
 | **Task** | Run `./management/build/scripts/glcdi.sh reset && ./management/build/scripts/glcdi.sh up` to bring up a clean Authority. Verify in order: (a) `https://.../auth/realms/glcdi/.well-known/openid-configuration` returns 200; (b) `POST .../realms/glcdi/protocol/openid-connect/token` with the `governance` `client_credentials` flow returns an access token whose service-account user holds `realm-management.realm-admin`; (c) `GET /registration/` renders the form; (d) submitting the form lands a "pending approval" mail in `onboarding-backend`'s `./mails`; (e) logging into `/registration/admin/` as the dummy admin and clicking Approve triggers the requester email with temp Keycloak credentials; (f) the new user appears in KC inside a group whose `glcdi_organization` attribute is the slugged org name. |
-| **Where** | Local: against `http://localhost/...` per the updated `governance-services/README.md`. Staging: same flow, after Path-A wipe-and-replay of the Authority KC volume per [`ops/deployment.md` § 2.2](../../ops/deployment.md). |
+| **Where** | Local: against `http://localhost/...` per the updated `authority-services/README.md`. Staging: same flow, after Option 1 wipe-and-replay of the Authority KC volume per [`ops/vm-deployment.md` § 3](../../ops/vm-deployment.md). |
 | **Status** | [x] Local smoke run completed end-to-end - `glcdi.sh reset && up` brought the stack up clean, the form at `http://localhost:8083/registration/` accepted a submission, the admin-notification mail landed in `/ldpserver/mails`, the dummy admin approved via the dashboard, a temporary KC password mail went to the requester, and the new user/group were verified via the Admin REST API (group `sib` with `glcdi_organization=["sib"]` + `glcdi_member` + `glcdi_producer`; user `benoit.aless` in group `sib` with a single password credential). · [ ] Re-run on staging once `1.6.7` ships through CI |
 
 ## 1.6.7 Public-facing KC login URL in the requester's approval mail
@@ -64,7 +64,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 | Item | Detail |
 |------|--------|
 | **Task** | Set `KEYCLOAK_LOGIN_URL` explicitly so the approval mail's "Log in at…" link points at a browser-reachable URL. Without it, `djangoldp_glcdi_onboarding` auto-derives the login URL from `KEYCLOAK_BASE_URL`, which is the *internal* docker hostname (`http://keycloak:8080/…`) that 404s outside the container network. |
-| **Where** | `onboarding/settings.yml.template` reads `${KEYCLOAK_LOGIN_URL}`; `docker-compose.yml` derives it from `${BASE_URL}`; `management/build/scripts/glcdi.sh` writes it explicitly into `authority.env` for the symmetric-port dev shape (KC is on `:8090`, BASE_URL is `:8083`, so the auto-derived value would be wrong); `governance-services/.gitlab-ci.yml` writes it from CI's `${BASE_URL}` into `.env`. |
+| **Where** | `onboarding/settings.yml.template` reads `${KEYCLOAK_LOGIN_URL}`; `docker-compose.yml` derives it from `${BASE_URL}`; `management/build/scripts/glcdi.sh` writes it explicitly into `authority.env` for the symmetric-port dev shape (KC is on `:8090`, BASE_URL is `:8083`, so the auto-derived value would be wrong); `authority-services/.gitlab-ci.yml` writes it from CI's `${BASE_URL}` into `.env`. |
 | **Status** | [x] Wired in source · [x] Re-tested locally (re-submission as "Benito Toto" produced an approval mail whose "Log in at:" anchor points at `http://localhost:8090/auth/realms/glcdi/account/` - the browser-reachable KC URL, not the docker-internal `http://keycloak:8080/...`) · [ ] Verified on staging that the approval mail's link opens the KC account console |
 
 ## Dependencies & risks

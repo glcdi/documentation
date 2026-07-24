@@ -42,8 +42,8 @@ note bottom of P4 : Aligns with EUDI Wallet /\nGaia-X Tier 3
 
 | Phase | What it adds | What it leaves alone | Status |
 |------|--------------|---------------------|--------|
-| **1 - Authority KC + onboarding** | One central Authority Keycloak (realm `glcdi`); per-org service-account clients for connectors; `djangoldp-glcdi` onboarding form + admin dashboard; realm-admin service account for user provisioning. | Per-participant Catalog UIs are still gated by `X-Api-Key`; no end-user OIDC anywhere. | **Shipped (Phase 1.6).** |
-| **2 - User identity on the governance VM** | A `glcdi-ui` OIDC client on the Authority KC; per-org groups; human users; `oauth2-proxy` in front of `/management/`. Users log into Catalog UI via Authority KC. | Connector-to-connector trust chain unchanged. `X-Api-Key` stays as a defence-in-depth floor at the edge. | Proposed. |
+| **1 - Authority KC + onboarding** | One central Authority Keycloak (realm `glcdi`); per-org service-account clients for connectors; `djangoldp-glcdi` onboarding form + admin dashboard; realm-admin service account for user provisioning. | Per-participant Catalogue UIs are still gated by `X-Api-Key`; no end-user OIDC anywhere. | **Shipped (Phase 1.6).** |
+| **2 - User identity on the governance VM** | A `glcdi-ui` OIDC client on the Authority KC; per-org groups; human users; `oauth2-proxy` in front of `/management/`. Users log into Catalogue UI via Authority KC. | Connector-to-connector trust chain unchanged. `X-Api-Key` stays as a defence-in-depth floor at the edge. | Proposed. |
 | **3 - Local Keycloaks, federated** | Each participant runs its own Keycloak (e.g. realm `caney-fork`). The Authority KC OIDC-brokers to each. UIs do the two-tier flow (governance + silent participant). | All policy machinery, all claim shapes, all DSP-level trust. | Proposed. |
 | **4 - OID4VCI / OID4VP** | An OID4VC issuer alongside (or instead of) the Authority KC. User wallets hold VCs; UIs and connectors verify VPs. Trust is anchored in an issuer-DID trust list. | The `glcdi_*` claim names and the EDC policy functions (`GlcdiClaims.java`, etc.) - they extract claims from `ParticipantAgent` whether the issuer was a KC JWT or a VC. | Long-term direction. |
 
@@ -69,7 +69,7 @@ phase. It holds:
   requests in Postgres on the same VM, and on admin approval calls the Admin
   API to materialise the user.
 
-There is no end-user OIDC at the participant Catalog UIs. The UI is gated by
+There is no end-user OIDC at the participant Catalogue UIs. The UI is gated by
 `X-Api-Key` only - operators paste an API key on first load, and the UI uses
 that key on `/management/` calls to the local EDC connector.
 
@@ -93,7 +93,7 @@ cloud "Authority VM\nauthority.glcdi.startinblox.com" as AUTH #E3F2FD {
 }
 
 cloud "Participant VM (× N)\ne.g. caney-fork.glcdi.startinblox.com" as PV #E8F5E9 {
-  component "Catalog UI (Hubl)" as UI
+  component "Catalogue UI (Hubl)" as UI
   component "EDC Controlplane\n+ Dataplane" as EDC
 }
 
@@ -142,11 +142,11 @@ end note
 ```
 
 Key implementation references for this flow:
-- `governance-services/onboarding/` - Django app + Dockerfile.
-- `governance-services/resources/keycloak/realms/glcdi-realm.json` - the
+- `authority-services/onboarding/` - Django app + Dockerfile.
+- `authority-services/resources/keycloak/realms/glcdi-realm.json` - the
   `governance` client + realm-admin SA + realm roles + `glcdi_organization`
   attribute.
-- `governance-services/.gitlab-ci.yml § deploy-authority` - the CI job that
+- `authority-services/.gitlab-ci.yml § deploy-authority` - the CI job that
   resolves the latest `djangoldp-glcdi` from PyPI and rebuilds the onboarding
   image on each deploy.
 
@@ -192,14 +192,14 @@ the policy passes.
 
 ## Phase 2 - User identity management from the governance VM
 
-The first concrete user-facing addition: **end users log into Catalog UIs via
+The first concrete user-facing addition: **end users log into Catalogue UIs via
 the Authority Keycloak.** Participants do not run their own Keycloak for
 users at this phase - there is exactly one user directory in the dataspace,
 and it lives on the governance VM.
 
 This is the natural step after Phase 1.6: the onboarding backend already
 provisions users into Authority KC. Phase 2 simply lets those users actually
-*use* the Catalog UI with their own identity, instead of operators sharing
+*use* the Catalogue UI with their own identity, instead of operators sharing
 an API key.
 
 ### What changes
@@ -209,7 +209,7 @@ an API key.
   org-level claims (`glcdi_organization`, `glcdi_member` + type role).
 - `oauth2-proxy` in front of `/management/` on each participant VM, configured
   against the Authority KC's JWKS.
-- The Catalog UI becomes a real OIDC client (redirect URI per participant).
+- The Catalogue UI becomes a real OIDC client (redirect URI per participant).
 - `X-Api-Key` stays in place - at this phase both the user JWT *and* the
   API key gate `/management/`. Defence in depth at the participant edge.
 
@@ -250,7 +250,7 @@ cloud "Authority VM" as AUTH #E3F2FD {
 }
 
 cloud "Participant VM (× N)" as PV #E8F5E9 {
-  component "Catalog UI\n(now OIDC)" as UI
+  component "Catalogue UI\n(now OIDC)" as UI
   component "oauth2-proxy\n(validates JWT)" as OP2
   component "EDC connector" as EDC
 }
@@ -274,7 +274,7 @@ EDC ..> KC : client_credentials
 skinparam defaultFontSize 11
 
 actor "User\n(Caney Fork)" as U
-participant "Catalog UI\n(Hubl)" as UI
+participant "Catalogue UI\n(Hubl)" as UI
 participant "Authority KC\nrealm: glcdi" as KC
 participant "oauth2-proxy\n(at participant edge)" as OP
 participant "EDC Management API" as EDC
@@ -322,7 +322,7 @@ Phase 2's single-IdP model is operationally simple but politically heavy:
 participants don't control their own user directories. Phase 3 federates
 them.
 
-Each participant deploys a local Keycloak alongside its EDC + Catalog UI
+Each participant deploys a local Keycloak alongside its EDC + Catalogue UI
 stack. The Authority KC stays in place as the dataspace's federation point,
 but it no longer holds participant users - it brokers to each participant's
 local KC over OIDC.
@@ -339,7 +339,7 @@ when that flow is real.
 - The Authority KC gains an identity provider entry per participant
   (OIDC brokering). `KC_IDP_HINT=<participant>` auto-redirects governance
   logins to the right local KC.
-- The Catalog UI does a **two-tier OIDC flow**: governance login first (for
+- The Catalogue UI does a **two-tier OIDC flow**: governance login first (for
   audit + federation), then a silent participant-KC token (for
   `/management/` calls).
 - The onboarding backend's approval step now provisions:
@@ -373,14 +373,14 @@ cloud "Authority VM" as AUTH #E3F2FD {
 
 cloud "Caney Fork VM" as PV1 #E8F5E9 {
   component "Local KC\nrealm: caney-fork" as PKC1
-  component "Catalog UI" as UI1
+  component "Catalogue UI" as UI1
   component "oauth2-proxy" as OP1
   component "EDC connector" as EDC1
 }
 
 cloud "Point Blue VM" as PV2 #FFF3E0 {
   component "Local KC\nrealm: point-blue" as PKC2
-  component "Catalog UI" as UI2
+  component "Catalogue UI" as UI2
   component "oauth2-proxy" as OP2
   component "EDC connector" as EDC2
 }
@@ -419,7 +419,7 @@ end note
 skinparam defaultFontSize 11
 
 actor "User\n(Caney Fork)" as U
-participant "Catalog UI\n(Hubl)" as UI
+participant "Catalogue UI\n(Hubl)" as UI
 participant "Authority KC\nrealm: glcdi" as AKC
 participant "Local KC\nrealm: caney-fork" as PKC
 participant "oauth2-proxy\n(participant edge)" as OP
@@ -454,7 +454,7 @@ end note
 
 ### Why bother with the two tiers?
 
-The naive simpler approach would be "the Catalog UI logs into the local KC
+The naive simpler approach would be "the Catalogue UI logs into the local KC
 directly, end of story." That works, but it loses two things:
 
 1. **Federated audit** at the governance layer. Today (Phase 1) and at Phase
@@ -493,7 +493,7 @@ signatures + trust lists instead of JWKS endpoints.
 - **EDC connectors** switch from `glcdi-iam-keycloak` to
   `iam-identity-trust` (or equivalent DCP-aware) and exchange Verifiable
   Presentations during DSP handshakes instead of KC-issued JWTs.
-- **The Catalog UI** becomes an **OID4VP verifier**: users present VPs
+- **The Catalogue UI** becomes an **OID4VP verifier**: users present VPs
   from a wallet (EUDI Wallet or compatible holder) to log in.
 - **The onboarding backend's approval step** triggers VC issuance into the
   applicant's wallet rather than provisioning a user on a Keycloak.
@@ -526,13 +526,13 @@ cloud "User device" as UD #F3E5F5 {
 }
 
 cloud "Caney Fork VM" as PV1 #E8F5E9 {
-  component "Catalog UI\n(OID4VP verifier)" as UI1
+  component "Catalogue UI\n(OID4VP verifier)" as UI1
   component "EDC connector\n+ iam-identity-trust" as EDC1
   component "Identity Hub\n(holds VCs for connector)" as IH1
 }
 
 cloud "Point Blue VM" as PV2 #FFF3E0 {
-  component "Catalog UI" as UI2
+  component "Catalogue UI" as UI2
   component "EDC connector" as EDC2
   component "Identity Hub" as IH2
 }
@@ -595,7 +595,7 @@ skinparam defaultFontSize 11
 
 actor "User" as U
 participant "Wallet" as W
-participant "Catalog UI\n(OID4VP verifier)" as UI
+participant "Catalogue UI\n(OID4VP verifier)" as UI
 participant "Trust list" as TL
 participant "EDC Mgmt API" as EDC
 
@@ -637,7 +637,7 @@ is mostly *replacing* components, not adding new ones:
 - Authority KC → issuer (or kept around in a reduced "issuer of last resort"
   role).
 - `glcdi-iam-keycloak` → `iam-identity-trust` (in EDC).
-- Catalog UI OIDC client → Catalog UI VP verifier.
+- Catalogue UI OIDC client → Catalogue UI VP verifier.
 - Per-participant Keycloaks (Phase 3) → either removed entirely or repurposed
   as participant-local credential issuers under the same trust list.
 

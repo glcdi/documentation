@@ -33,10 +33,9 @@ management/
 │   └── payment-gating.md     # Payment-required contract policy design
 │
 ├── ops/                      # Runbooks — anything an operator opens under time pressure
-│   ├── deployment.md         # Deployment + local end-to-end validation runbook
-│   ├── authority-migration.md # Rename runbook (governance-* → authority-*) + Tier-1 cutover
+│   ├── local-stack.md        # Run the whole stack on a laptop via glcdi.sh
+│   ├── vm-deployment.md      # Deploy to staging / prod VMs (CI-driven; manual bits documented)
 │   ├── staging-wipe.md       # Staging-participant full-reset runbook
-│   └── demo-vm.md            # Co-located demo staging VM plan
 │
 ├── bruno/                    # HTTP test collection driving the M1 scenario end-to-end
 ├── scripts/                  # Local-stack orchestrator (glcdi.sh) + deploy helpers
@@ -151,7 +150,7 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 | Onboarding portal (form → admin approve → KC group + user + mail) | Local smoke passing (Phase 1.6); awaiting staging cutover |
 | Keycloak protocol mappers + Bruno auth checks | Done (Phase 2) |
 | EDC custom policy functions (participant-type, cert-status) | Drafted (Phase 3.1–3.2); unit tests deferred |
-| `iam-mock` → `iam-oauth2` swap | Not started (Phase 3.5 — this is the load-bearing gate to real DSP identity) |
+| `iam-mock` → `glcdi-iam-keycloak` swap | Done — custom `glcdi-iam-keycloak` extension (stock `iam-oauth2` was retired in EDC 0.15.x; we hand-rolled the replacement). See `build/plan/phase-3-edc-policy-extension.md § 3.5`. |
 | Seeding scripts + Bruno M1 scenario | Done (Phase 4.5 tracks E + F) |
 | Milestone M1 sign-off | Blocked on staging cutover + Phase 3.5 |
 | DSA / Trust Framework v0/v1 | Not started (Phase 6, governance-body-owned) |
@@ -170,14 +169,14 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 └── participant-ui/                # Catalogue UI image (Hubl / Lit)
 ```
 
-`scripts/glcdi.sh` in this repo drives the whole stack locally; see `ops/deployment.md § Fast local bootstrap` for the one-command recipe and the sibling-repo `git clone` list.
+`build/scripts/glcdi.sh` drives the whole stack locally; see `ops/local-stack.md` for the one-command recipe and the sibling-repo `git clone` list.
 
 ## Files typically touched when implementing plan items
 
 | Plan phase | Files affected |
 |------------|----------------|
 | Phase 1 (vocabulary) | `context.jsonld`, `reference/policies/*.json` `@context` blocks |
-| Phase 1.5 (Tier-1 identity + rename) | `authority-services/resources/keycloak/realms/glcdi-realm.json`, `participant-agent-services/docker-compose.yml`, `participant-agent-services/nginx/*.conf`, `participant-agent-services/participant/configuration.properties.example`, `ops/authority-migration.md` |
+| Phase 1.5 (Tier-1 identity + rename) | `authority-services/resources/keycloak/realms/glcdi-realm.json`, `participant-agent-services/docker-compose.yml`, `participant-agent-services/nginx/*.conf`, `participant-agent-services/participant/configuration.properties.example` |
 | Phase 2 (KC claims on connector SAs) | Realm JSON protocol mappers (`glcdi-claims` scope), Bruno `00-auth/*.bru` |
 | Phase 3 (EDC policy extension) | `edc-glcdi-extension/policy-functions/src/main/java/...`, `edc-connector/runtimes/controlplane/build.gradle.kts` |
 | Phase 3.5 (iam-oauth2 swap) | `edc-connector/runtimes/controlplane/build.gradle.kts` (BOM swap), `participant/configuration.properties.example` |
@@ -199,9 +198,8 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 
 ## Important caveats
 
-- **`iam-mock` is still in place** — until Phase 3.5 swaps it for `iam-oauth2`, DSP-level identity is a fixed mock and the policy engine doesn't actually evaluate the `glcdi_*` claims at the receiving connector. Bruno's positive-case tests pass against the *expected* outcome, but the negative-case filtering (`researcher` blocked from `regenerative-producers-only` assets) only becomes load-bearing after Phase 3.5.
 - **Governance-level obligations are not technically enforced** — anonymisation, attribution, deletion duties rely on the Data Sharing Agreement, not the connector. Full enforcement-boundary table in [`ARCHITECTURE.md § 8`](ARCHITECTURE.md).
-- **The Authority KC realm JSON is imported only on first boot.** Post-init edits to the JSON do nothing; changes must go through the admin console, or the KC Postgres volume must be wiped for a re-import. See `ops/authority-migration.md` Paths A/B.
+- **The Authority KC realm JSON is imported only on first boot.** Post-init edits to the JSON do nothing; changes must go through the admin console, or the KC Postgres volume must be wiped for a re-import. See `ops/vm-deployment.md § 3` for the wipe + re-import path (Option 1) and the partial-import + admin-console alternatives.
 - **`combined/` policy files are not directly POSTable** — they bundle access + contract + contract definition for documentation; extract the individual policies to use them.
 - **`w3id.org/glcdi/…` redirect is not registered yet** — the JSON-LD context is served from `cdn.startinblox.com` for the prototype; namespace stewardship (redirect via the w3id PR process) is post-prototype work.
 
@@ -210,7 +208,8 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 | Kind of question | Doc |
 |------------------|-----|
 | "What does the system look like?" | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
-| "How do I run it locally?" | [`ops/deployment.md`](ops/deployment.md) § Fast local bootstrap |
+| "How do I run it locally?" | [`ops/local-stack.md`](ops/local-stack.md) |
+| "How do I deploy to a VM?" | [`ops/vm-deployment.md`](ops/vm-deployment.md) |
 | "What is planned next?" | [`IMPLEM_PLAN.md`](build/implementation-plan.md) |
 | "What decisions are still open?" | [`strategy/open-questions.md`](strategy/open-questions.md) |
 | "How does auth work today / next / later?" | [`reference/identity.md`](reference/identity.md) + [`reference/authentication.md`](reference/authentication.md) |
