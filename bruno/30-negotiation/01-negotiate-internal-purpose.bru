@@ -1,5 +1,5 @@
 meta {
-  name: Negotiate contract — purpose=InternalAnalysis (positive path)
+  name: Negotiate contract - purpose=InternalAnalysis (positive path)
   type: http
   seq: 1
 }
@@ -11,7 +11,7 @@ post {
 }
 
 docs {
-  white-buffalo (regenerative producer — the M1 positive consumer)
+  white-buffalo (regenerative producer - the M1 positive consumer)
   negotiates for the M1 fixture asset, declaring `purpose = InternalAnalysis`.
   The contract policy (internal-use-only) accepts this purpose, so the
   negotiation should reach FINALIZED. point-blue cannot negotiate this asset
@@ -19,7 +19,7 @@ docs {
   20-catalog-discovery/02).
 
   The offer policy here must structurally match the offer the provider would
-  emit (same access/contract policy IDs and constraints) — in practice the
+  emit (same access/contract policy IDs and constraints) - in practice the
   consumer first does a catalog query (20-catalog-discovery/01) and reuses
   the policy block from the catalog response. For the skeleton we inline a
   representative shape; Phase 4.5.E should refactor this to a pre-request

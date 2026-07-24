@@ -1,5 +1,5 @@
 meta {
-  name: Management API call with wrong X-Api-Key — expect 401
+  name: Management API call with wrong X-Api-Key - expect 401
   type: http
   seq: 2
 }
@@ -11,7 +11,7 @@ post {
 }
 
 docs {
-  Wrong key — should be rejected by the connector's tokenbased auth
+  Wrong key - should be rejected by the connector's tokenbased auth
   (`web.http.management.auth.type=tokenbased`) before any handler runs.
   Uses POST /assets/request to exercise an actual handler so the auth
   filter has a chance to fire (GET /assets 405s first).

@@ -4,7 +4,7 @@
     "odrl": "http://www.w3.org/ns/odrl/2/",
     "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
   },
-  "comment": "SCENARIO: Regional Benchmarking — A rancher (e.g., White Buffalo Land Trust) wants to compare their SOC levels and grazing strategies against regional peers. Another rancher (e.g., Caney Fork Farms) shares aggregated data so that participating producers can benchmark against each other. Visibility is limited to GLCDI members, and usage is for internal benchmarking only — no redistribution, no commercial use.",
+  "comment": "SCENARIO: Regional Benchmarking - A rancher (e.g., White Buffalo Land Trust) wants to compare their SOC levels and grazing strategies against regional peers. Another rancher (e.g., Caney Fork Farms) shares aggregated data so that participating producers can benchmark against each other. Visibility is limited to GLCDI members, and usage is for internal benchmarking only - no redistribution, no commercial use.",
 
   "accessPolicy": {
     "@id": "glcdi:access:peer-benchmarking",

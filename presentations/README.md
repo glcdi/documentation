@@ -13,7 +13,7 @@ in the GLCDI dataspace.
 ### Viewing the Reveal.js presentation
 
 Just open `data-sharing-steps.html` in any modern browser. It loads Reveal.js 5.1 from
-a CDN — no local install needed.
+a CDN - no local install needed.
 
 ```bash
 # From this directory
@@ -31,7 +31,7 @@ open data-sharing-steps.html         # macOS
 
 ### Editing
 
-The HTML file is self-contained. Edit it directly — all styles are inline, no build step.
+The HTML file is self-contained. Edit it directly - all styles are inline, no build step.
 The markdown file is the canonical reference; keep both in sync if you make changes.
 
 ### Exporting to PDF

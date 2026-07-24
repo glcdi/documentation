@@ -1,16 +1,16 @@
 # GLCDI Authentication Roadmap
 
 How users, connectors, and the dataspace governance layer authenticate in
-GLCDI — today, and where we expect it to go.
+GLCDI - today, and where we expect it to go.
 
 This document complements two existing references:
-- [`IDENTITY.md`](IDENTITY.md) — the identity tiering rationale and the standards mapping
+- [`IDENTITY.md`](IDENTITY.md) - the identity tiering rationale and the standards mapping
   (which specs we lean on, why OIDC before OID4VC).
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) — the per-phase implementation backlog (realm JSON,
+- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - the per-phase implementation backlog (realm JSON,
   protocol mappers, EDC policy functions, onboarding wiring).
 
 The four phases below are the operational shape of authentication at each
-milestone. Each phase is **additive on top of the previous one** — none of
+milestone. Each phase is **additive on top of the previous one** - none of
 them rewrites the connector trust chain or the GLCDI claim shape.
 
 > **Companion presentation:** [`AUTHENTICATION.html`](AUTHENTICATION.html) is a
@@ -26,10 +26,10 @@ them rewrites the connector trust chain or the GLCDI claim shape.
 skinparam defaultFontSize 12
 skinparam roundcorner 8
 
-rectangle "**Phase 1 — Today**\nAuthority KC + onboarding\nConnector-only DSP trust\nX-Api-Key at the UI" as P1 #E8F5E9
-rectangle "**Phase 2 — Next**\nUser OIDC against\nAuthority KC\noauth2-proxy at the UI" as P2 #FFF9C4
-rectangle "**Phase 3 — Later**\nPer-participant Keycloaks\nfederated to Authority\nTwo-tier UI login" as P3 #FFE0B2
-rectangle "**Phase 4 — Long-term**\nOID4VCI / OID4VP\nVerifiable Credentials\nDecentralised trust" as P4 #E1BEE7
+rectangle "**Phase 1 - Today**\nAuthority KC + onboarding\nConnector-only DSP trust\nX-Api-Key at the UI" as P1 #E8F5E9
+rectangle "**Phase 2 - Next**\nUser OIDC against\nAuthority KC\noauth2-proxy at the UI" as P2 #FFF9C4
+rectangle "**Phase 3 - Later**\nPer-participant Keycloaks\nfederated to Authority\nTwo-tier UI login" as P3 #FFE0B2
+rectangle "**Phase 4 - Long-term**\nOID4VCI / OID4VP\nVerifiable Credentials\nDecentralised trust" as P4 #E1BEE7
 
 P1 -right-> P2 : add user OIDC
 P2 -right-> P3 : federate user mgmt
@@ -42,19 +42,19 @@ note bottom of P4 : Aligns with EUDI Wallet /\nGaia-X Tier 3
 
 | Phase | What it adds | What it leaves alone | Status |
 |------|--------------|---------------------|--------|
-| **1 — Authority KC + onboarding** | One central Authority Keycloak (realm `glcdi`); per-org service-account clients for connectors; `djangoldp-glcdi` onboarding form + admin dashboard; realm-admin service account for user provisioning. | Per-participant Catalog UIs are still gated by `X-Api-Key`; no end-user OIDC anywhere. | **Shipped (Phase 1.6).** |
-| **2 — User identity on the governance VM** | A `glcdi-ui` OIDC client on the Authority KC; per-org groups; human users; `oauth2-proxy` in front of `/management/`. Users log into Catalog UI via Authority KC. | Connector-to-connector trust chain unchanged. `X-Api-Key` stays as a defence-in-depth floor at the edge. | Proposed. |
-| **3 — Local Keycloaks, federated** | Each participant runs its own Keycloak (e.g. realm `caney-fork`). The Authority KC OIDC-brokers to each. UIs do the two-tier flow (governance + silent participant). | All policy machinery, all claim shapes, all DSP-level trust. | Proposed. |
-| **4 — OID4VCI / OID4VP** | An OID4VC issuer alongside (or instead of) the Authority KC. User wallets hold VCs; UIs and connectors verify VPs. Trust is anchored in an issuer-DID trust list. | The `glcdi_*` claim names and the EDC policy functions (`GlcdiClaims.java`, etc.) — they extract claims from `ParticipantAgent` whether the issuer was a KC JWT or a VC. | Long-term direction. |
+| **1 - Authority KC + onboarding** | One central Authority Keycloak (realm `glcdi`); per-org service-account clients for connectors; `djangoldp-glcdi` onboarding form + admin dashboard; realm-admin service account for user provisioning. | Per-participant Catalog UIs are still gated by `X-Api-Key`; no end-user OIDC anywhere. | **Shipped (Phase 1.6).** |
+| **2 - User identity on the governance VM** | A `glcdi-ui` OIDC client on the Authority KC; per-org groups; human users; `oauth2-proxy` in front of `/management/`. Users log into Catalog UI via Authority KC. | Connector-to-connector trust chain unchanged. `X-Api-Key` stays as a defence-in-depth floor at the edge. | Proposed. |
+| **3 - Local Keycloaks, federated** | Each participant runs its own Keycloak (e.g. realm `caney-fork`). The Authority KC OIDC-brokers to each. UIs do the two-tier flow (governance + silent participant). | All policy machinery, all claim shapes, all DSP-level trust. | Proposed. |
+| **4 - OID4VCI / OID4VP** | An OID4VC issuer alongside (or instead of) the Authority KC. User wallets hold VCs; UIs and connectors verify VPs. Trust is anchored in an issuer-DID trust list. | The `glcdi_*` claim names and the EDC policy functions (`GlcdiClaims.java`, etc.) - they extract claims from `ParticipantAgent` whether the issuer was a KC JWT or a VC. | Long-term direction. |
 
 ---
 
-## Phase 1 — Authority KC + onboarding (today)
+## Phase 1 - Authority KC + onboarding (today)
 
 Authority Keycloak is the only identity provider in the dataspace at this
 phase. It holds:
 
-- **Connector service-account clients** — one `glcdi-connector-<org>` client per
+- **Connector service-account clients** - one `glcdi-connector-<org>` client per
   participant. The connector authenticates with `client_credentials`; the SA
   user on that client carries `glcdi_*` claims that flow into the JWT via the
   `glcdi-claims` scope mappers.
@@ -62,15 +62,15 @@ phase. It holds:
   Admin API. This client's service account holds the realm-management
   `realm-admin` role, which is what authorises user / group provisioning when
   an admin approves a registration.
-- **Realm roles** — `glcdi_member` plus participant-type roles
+- **Realm roles** - `glcdi_member` plus participant-type roles
   (`glcdi_producer`, `glcdi_researcher`, `glcdi_non_profit`,
-  `glcdi_non_regulatory`, etc.) — and the `glcdi_organization` user attribute.
+  `glcdi_non_regulatory`, etc.) - and the `glcdi_organization` user attribute.
 - **Onboarding state**, indirectly: `djangoldp-glcdi` persists registration
   requests in Postgres on the same VM, and on admin approval calls the Admin
   API to materialise the user.
 
 There is no end-user OIDC at the participant Catalog UIs. The UI is gated by
-`X-Api-Key` only — operators paste an API key on first load, and the UI uses
+`X-Api-Key` only - operators paste an API key on first load, and the UI uses
 that key on `/management/` calls to the local EDC connector.
 
 ### Architecture
@@ -106,7 +106,7 @@ EDC <--> EDC : DSP\n(Bearer JWT, glcdi_* claims)
 @enduml
 ```
 
-### Sequence — onboarding flow
+### Sequence - onboarding flow
 
 ```plantuml
 @startuml
@@ -133,7 +133,7 @@ DASH -> KCAPI : POST /users\n(set glcdi_organization\nattribute)
 DASH -> KCAPI : Role mapping:\nglcdi_member +\ntype role
 KCAPI --> DASH : user id
 DASH -> MAIL : Invite email\n(set-password link)
-MAIL --> OP : Welcome — set password
+MAIL --> OP : Welcome - set password
 note over DG, KCAPI
   Phase 1 today: Authority KC is the
   **only** user directory in the dataspace.
@@ -142,15 +142,15 @@ end note
 ```
 
 Key implementation references for this flow:
-- `governance-services/onboarding/` — Django app + Dockerfile.
-- `governance-services/resources/keycloak/realms/glcdi-realm.json` — the
+- `governance-services/onboarding/` - Django app + Dockerfile.
+- `governance-services/resources/keycloak/realms/glcdi-realm.json` - the
   `governance` client + realm-admin SA + realm roles + `glcdi_organization`
   attribute.
-- `governance-services/.gitlab-ci.yml § deploy-authority` — the CI job that
+- `governance-services/.gitlab-ci.yml § deploy-authority` - the CI job that
   resolves the latest `djangoldp-glcdi` from PyPI and rebuilds the onboarding
   image on each deploy.
 
-### Sequence — connector-to-connector trust
+### Sequence - connector-to-connector trust
 
 ```plantuml
 @startuml
@@ -190,11 +190,11 @@ the policy passes.
 
 ---
 
-## Phase 2 — User identity management from the governance VM
+## Phase 2 - User identity management from the governance VM
 
 The first concrete user-facing addition: **end users log into Catalog UIs via
 the Authority Keycloak.** Participants do not run their own Keycloak for
-users at this phase — there is exactly one user directory in the dataspace,
+users at this phase - there is exactly one user directory in the dataspace,
 and it lives on the governance VM.
 
 This is the natural step after Phase 1.6: the onboarding backend already
@@ -210,7 +210,7 @@ an API key.
 - `oauth2-proxy` in front of `/management/` on each participant VM, configured
   against the Authority KC's JWKS.
 - The Catalog UI becomes a real OIDC client (redirect URI per participant).
-- `X-Api-Key` stays in place — at this phase both the user JWT *and* the
+- `X-Api-Key` stays in place - at this phase both the user JWT *and* the
   API key gate `/management/`. Defence in depth at the participant edge.
 
 ### What does not change
@@ -221,7 +221,7 @@ an API key.
   the connector JWTs already carry; the EDC policy functions don't care
   whether the JWT came from a user login or a service account.
 
-### Side-channel — LDP-backed datasets
+### Side-channel - LDP-backed datasets
 
 Phase 2 is *orthogonal* to a second additive change that has already landed
 locally: every participant now runs a `djangoldp-backend` alongside its
@@ -229,7 +229,7 @@ connector, exposing the GLCDI domain models (Farm / Plot / Metric, plus the
 per-org variants in `djangoldp_glcdi_pointblue` /
 `djangoldp_glcdi_whitebuffalo`) under `/ldp/`. Each read goes through
 `djangoldp_edc.EdcContractPermissionV3`, which validates DSP-AGREEMENT-ID /
-DSP-PARTICIPANT-ID against the local connector — so the same M1 contract
+DSP-PARTICIPANT-ID against the local connector - so the same M1 contract
 gates `/management/` *and* the dataset bytes. See
 [IMPLEM_PLAN.md § 7.6](IMPLEM_PLAN.md) for the wiring and a local validation
 walkthrough. The LDP backend is gated behind the `dev` compose profile and
@@ -266,7 +266,7 @@ EDC ..> KC : client_credentials
 @enduml
 ```
 
-### Sequence — user login
+### Sequence - user login
 
 ```plantuml
 @startuml
@@ -306,17 +306,17 @@ end note
 
 | Pro | Con |
 |-----|-----|
-| Per-user audit ("who at caney-fork pressed negotiate?"). | All user accounts are in the governance team's directory — participants depend on the governance team for HR cycles, password resets, role changes. |
+| Per-user audit ("who at caney-fork pressed negotiate?"). | All user accounts are in the governance team's directory - participants depend on the governance team for HR cycles, password resets, role changes. |
 | One IdP to operate, one set of SSO integrations. | A governance KC outage breaks every participant's UI login simultaneously. |
 | Role-aware UI (the UI can show/hide views based on `glcdi_roles`). | Centralised user mgmt is at odds with the long-term self-sovereign direction. |
 
 Phase 2 is operationally the simplest "users in the dataspace" model, and
 the fastest to ship from where Phase 1.6 leaves us. It is *not* the
-end-state — Phase 3 walks back the centralisation.
+end-state - Phase 3 walks back the centralisation.
 
 ---
 
-## Phase 3 — Local Keycloaks for proper user management
+## Phase 3 - Local Keycloaks for proper user management
 
 Phase 2's single-IdP model is operationally simple but politically heavy:
 participants don't control their own user directories. Phase 3 federates
@@ -324,7 +324,7 @@ them.
 
 Each participant deploys a local Keycloak alongside its EDC + Catalog UI
 stack. The Authority KC stays in place as the dataspace's federation point,
-but it no longer holds participant users — it brokers to each participant's
+but it no longer holds participant users - it brokers to each participant's
 local KC over OIDC.
 
 This is the flow the `CLAUDE.md` snippet under `## Authentication flow`
@@ -411,7 +411,7 @@ end note
 @enduml
 ```
 
-### Sequence — two-tier login
+### Sequence - two-tier login
 
 ```plantuml
 @startuml
@@ -463,7 +463,7 @@ directly, end of story." That works, but it loses two things:
    are participating in which DSP exchanges.
 2. **A single SSO entry point** for governance tooling. The onboarding
    dashboard, the future contract-management UI, the certification status
-   tooling — they all live on the governance VM and want to authenticate
+   tooling - they all live on the governance VM and want to authenticate
    against Authority KC, not against N different participant KCs.
 
 The two-tier flow keeps those properties while delegating user mgmt to the
@@ -473,7 +473,7 @@ that the participant operator controls.
 
 ---
 
-## Phase 4 — OID4VCI / OID4VP
+## Phase 4 - OID4VCI / OID4VP
 
 This is the long-term direction described in
 [`IDENTITY.md § Tier 3`](IDENTITY.md#tier-3--decentralised-claims-via-vc--dcp).
@@ -553,7 +553,7 @@ end note
 @enduml
 ```
 
-### Sequence — VC issuance (OID4VCI)
+### Sequence - VC issuance (OID4VCI)
 
 ```plantuml
 @startuml
@@ -586,7 +586,7 @@ end note
 @enduml
 ```
 
-### Sequence — VP presentation (OID4VP)
+### Sequence - VP presentation (OID4VP)
 
 ```plantuml
 @startuml
@@ -617,7 +617,7 @@ EDC --> UI : Catalog
 UI --> U : Render
 
 note over U, EDC
-  Same /management/ edge as P2/P3 — defence in depth preserved.
+  Same /management/ edge as P2/P3 - defence in depth preserved.
   What changes is **how the user proves who they are**: VP, not OIDC.
 end note
 @enduml
@@ -626,11 +626,11 @@ end note
 ### Why this is a long-term phase, not a near-term one
 
 The IDENTITY.md analysis already covers why OIDC (and not OID4VC) is the
-right choice for the prototype — short version: the OID4VC specs are still
+right choice for the prototype - short version: the OID4VC specs are still
 Implementer's Drafts, the wallet ecosystem is not in production at user
 scale, and the trust frameworks (EUDI, Gaia-X) are still firming up.
 
-What Phase 4 here adds to that analysis is the operational shape — what the
+What Phase 4 here adds to that analysis is the operational shape - what the
 deployment looks like when the time comes. The path from Phase 3 to Phase 4
 is mostly *replacing* components, not adding new ones:
 

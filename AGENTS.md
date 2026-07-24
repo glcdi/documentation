@@ -1,4 +1,4 @@
-# AGENTS.md — GLCDI Management & Policies Context
+# AGENTS.md - GLCDI Management & Policies Context
 
 This file provides context for AI agents working in the `management/` sub-directory of the
 GLCDI project. It covers what this directory contains, how it relates to the broader project,
@@ -8,7 +8,7 @@ and what an agent needs to know to contribute effectively.
 
 `management/` is the **governance and policy design space** for the GLCDI dataspace. It
 contains ODRL policy definitions, sequence diagrams showing end-user flows, and an
-implementation plan for making those policies operational. It is not a deployable service —
+implementation plan for making those policies operational. It is not a deployable service -
 it feeds into the three deployable sub-projects (`edc-connector/`, `governance-services/`,
 `participant-agent-services/`).
 
@@ -53,9 +53,9 @@ lands. The prototype runs **January–September 2026**.
 
 Three use cases drive the prototype:
 
-1. **Regional benchmarking** — ranchers compare grazing strategies and SOC outcomes
-2. **Agronomic model calibration** — researchers train models predicting SOC response
-3. **Peer-to-peer data sharing** — consent-governed exchange between participants
+1. **Regional benchmarking** - ranchers compare grazing strategies and SOC outcomes
+2. **Agronomic model calibration** - researchers train models predicting SOC response
+3. **Peer-to-peer data sharing** - consent-governed exchange between participants
 
 ## Key Participant Types
 
@@ -75,9 +75,9 @@ Future (post-prototype): corporate supply-chain partners, certification bodies, 
 
 Every data asset published by a participant is governed by two policies:
 
-- **Access policy** — evaluated when a consumer queries the catalog. Controls **who can see**
+- **Access policy** - evaluated when a consumer queries the catalog. Controls **who can see**
   the offer. If the consumer's identity doesn't satisfy the constraints, the offer is hidden.
-- **Contract policy** — evaluated during contract negotiation. Controls **what the consumer
+- **Contract policy** - evaluated during contract negotiation. Controls **what the consumer
   can do** with the data. The consumer must accept these terms before transfer.
 
 Both are linked to assets through a **Contract Definition**:
@@ -105,8 +105,8 @@ the implementation uses:
 | `glcdi:participantType` | `glcdi_roles` (array) | `"glcdi_" + rightOperand` present in array |
 | `glcdi:participantType` (isAnyOf) | `glcdi_roles` (array) | any of `["glcdi_" + v for v in rightOperand]` present |
 | `glcdi:certificationStatus` | `glcdi_certification_status` (string) | `claim == rightOperand` or `claim in rightOperand` |
-| `odrl:dateTime` | System clock | Native EDC — no custom function needed |
-| `odrl:purpose` | Consumer's contract offer | Native EDC — consumer declares purpose |
+| `odrl:dateTime` | System clock | Native EDC - no custom function needed |
+| `odrl:purpose` | Consumer's contract offer | Native EDC - consumer declares purpose |
 | `odrl:elapsedTime` | Transfer timestamp + clock | Needs custom function |
 | `odrl:payAmount` | External payment system | Needs custom function + external API |
 
@@ -186,7 +186,7 @@ When implementing the policies from this directory, agents will need to modify:
 
 - **Policy files** are valid JSON-LD, using the EDC Management API format (can be POSTed directly to `/management/v3/policydefinitions`)
 - **Policy IDs** follow `glcdi:access:<name>` or `glcdi:contract:<name>`
-- **Combined files** are documentation-oriented — they group an access policy, contract policy, and contract definition example in one file (not directly POSTable as-is)
+- **Combined files** are documentation-oriented - they group an access policy, contract policy, and contract definition example in one file (not directly POSTable as-is)
 - **Diagrams** are PlantUML `.puml` files, renderable with `docker run --rm -v "$PWD/diagrams":/data plantuml/plantuml /data/*.puml`
 - **Comments** in JSON use a `"comment"` field (not standard JSON but common in EDC examples for documentation)
 
@@ -208,13 +208,13 @@ Federated Catalogue, vocabulary registry) that serve as reference implementation
 
 ## Important Caveats
 
-- **Policy functions don't exist yet** — the `glcdi:membership` and `glcdi:participantType`
+- **Policy functions don't exist yet** - the `glcdi:membership` and `glcdi:participantType`
   constraints in policy files require a custom EDC extension (see `IMPLEM_PLAN.md` Phase 3)
-- **Governance-level obligations are not technically enforced** — anonymisation, attribution,
+- **Governance-level obligations are not technically enforced** - anonymisation, attribution,
   deletion duties rely on the Data Sharing Agreement, not the connector
-- **`combined/` files are not directly POSTable** — they bundle access + contract + contract
+- **`combined/` files are not directly POSTable** - they bundle access + contract + contract
   definition for documentation; extract the individual policies to use them
 - **Temporal constraints work natively** in EDC; all other custom constraints need the
   `glcdi-policy-functions` extension
-- **The `glcdi:` namespace is not yet registered** — it needs a JSON-LD context file
+- **The `glcdi:` namespace is not yet registered** - it needs a JSON-LD context file
   (see `IMPLEM_PLAN.md` Phase 1)

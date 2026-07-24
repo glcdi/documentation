@@ -110,8 +110,8 @@ case "$TARGET" in
   *) die "unknown --target: $TARGET (expected local|staging)" ;;
 esac
 
-[[ -n "$PROVIDER_KEY" ]] || die "provider API key empty — check secrets.env or env vars for target=$TARGET"
-[[ -n "$CONSUMER_KEY" ]] || die "consumer API key empty — same"
+[[ -n "$PROVIDER_KEY" ]] || die "provider API key empty - check secrets.env or env vars for target=$TARGET"
+[[ -n "$CONSUMER_KEY" ]] || die "consumer API key empty - same"
 
 log "Test config:"
 echo "  target              = $TARGET"
@@ -164,7 +164,7 @@ edc_get() {
 }
 
 # -----------------------------------------------------------------------------
-# 1. Catalog discovery — find the farmOS asset + capture its offer policy
+# 1. Catalog discovery - find the farmOS asset + capture its offer policy
 # -----------------------------------------------------------------------------
 
 hr
@@ -191,7 +191,7 @@ offer=$(printf '%s' "$catalog" \
       | first
       | (."odrl:hasPolicy" // ."http://www.w3.org/ns/odrl/2/hasPolicy")
       | (if type == "array" then .[0] else . end)
-    ' 2>/dev/null) || die "catalog response did not include asset $ASSET_ID — has the seed run with GLCDI_FARMOS=1?"
+    ' 2>/dev/null) || die "catalog response did not include asset $ASSET_ID - has the seed run with GLCDI_FARMOS=1?"
 
 offer_id=$(printf '%s' "$offer" | jq -r '."@id"')
 [[ "$offer_id" != "null" && -n "$offer_id" ]] || die "could not extract offer id from catalog response"
@@ -254,7 +254,7 @@ while [[ $(date +%s) -lt $deadline ]]; do
       break ;;
     TERMINATED|TERMINATING)
       err_detail=$(printf '%s' "$neg_state" | jq -r '.errorDetail // "<none>"')
-      die "negotiation TERMINATED — errorDetail: $err_detail (see memory reference_glcdi_edc_transfer_diag § 7)" ;;
+      die "negotiation TERMINATED - errorDetail: $err_detail (see memory reference_glcdi_edc_transfer_diag § 7)" ;;
     *)
       printf '  state=%s\n' "$NEG_STATE"
       sleep 2 ;;
@@ -312,7 +312,7 @@ while [[ $(date +%s) -lt $deadline ]]; do
       break ;;
     TERMINATED|TERMINATING)
       err_detail=$(printf '%s' "$xfer_state" | jq -r '.errorDetail // "<none>"')
-      die "transfer TERMINATED — errorDetail: $err_detail" ;;
+      die "transfer TERMINATED - errorDetail: $err_detail" ;;
     *)
       printf '  state=%s\n' "$XFER_STATE"
       sleep 2 ;;
@@ -331,7 +331,7 @@ while [[ $(date +%s) -lt $deadline ]]; do
   fi
   sleep 2
 done
-[[ -n "$EDR_BODY" ]] || die "EDR /dataaddress 404 — see memory reference_glcdi_edc_transfer_diag"
+[[ -n "$EDR_BODY" ]] || die "EDR /dataaddress 404 - see memory reference_glcdi_edc_transfer_diag"
 
 EDR_ENDPOINT=$(printf '%s' "$EDR_BODY" | jq -r '.endpoint // .["endpoint"] // empty')
 EDR_AUTH_KEY=$(printf '%s' "$EDR_BODY" | jq -r '.authKey // "Authorization"')
@@ -355,7 +355,7 @@ if [[ "$proxy_http" != "200" ]]; then
   err "EDR proxy call returned HTTP $proxy_http"
   head -c 2000 "$proxy_resp_file" >&2
   rm -f "$proxy_resp_file"
-  die "transfer-time fetch failed — check the provider's edc-connector logs for glcdi-inline-oauth2 errors"
+  die "transfer-time fetch failed - check the provider's edc-connector logs for glcdi-inline-oauth2 errors"
 fi
 
 # Detect farmOS JSON:API shape: contains "data" array AND a "jsonapi" / "links" /
@@ -366,7 +366,7 @@ rm -f "$proxy_resp_file"
 
 if printf '%s' "$body" | jq -e '.data and (.jsonapi or .links or (.data | type == "array"))' >/dev/null 2>&1; then
   count=$(printf '%s' "$body" | jq -r '.data | if type == "array" then length else 1 end')
-  ok "received JSON:API payload from farmOS — data records: $count"
+  ok "received JSON:API payload from farmOS - data records: $count"
   # Render a short sample of the first record so the test output is a
   # concrete proof (not just a count). Picks 5 readable attributes so the
   # block stays compact in the terminal; falls back to the raw first
@@ -392,4 +392,4 @@ else
 fi
 
 hr
-ok "ALL STEPS PASSED — OAuth2 token exchange runs at transfer-time, farmOS data flows back through EDC dataplane."
+ok "ALL STEPS PASSED - OAuth2 token exchange runs at transfer-time, farmOS data flows back through EDC dataplane."

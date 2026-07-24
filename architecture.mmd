@@ -1,7 +1,7 @@
 flowchart TB
-    subgraph Auth["Dataspace Authority — governance.glcdi.startinblox.com"]
+    subgraph Auth["Dataspace Authority - authority.glcdi.startinblox.com"]
         direction TB
-        AKC["Keycloak — realm glcdi<br/>N × glcdi-connector-«org» SA clients<br/>+ human onboarding clients"]
+        AKC["Keycloak - realm glcdi<br/>N × glcdi-connector-«org» SA clients<br/>+ human onboarding clients"]
         Onb["Onboarding portal<br/>(djangoldp-glcdi-onboarding)"]
         APg[("Postgres")]
         AKC -.- APg

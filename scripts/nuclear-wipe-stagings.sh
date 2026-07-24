@@ -9,7 +9,7 @@
 # Run from a laptop with SSH access to the VMs. SSH login defaults to
 # root@<slug>.glcdi.startinblox.com per VM.
 #
-# By default this script DRY-RUNS — it prints every destructive command
+# By default this script DRY-RUNS - it prints every destructive command
 # without executing. Pass --no-dry-run to actually do it.
 #
 # Usage:
@@ -20,7 +20,7 @@
 #   --no-dry-run    actually execute the wipe + reseed (default: dry-run)
 #   --total-wipe    use `docker compose down -v` instead of dropping only
 #                   the connector pg volume. Drops ALL volumes for the
-#                   participant stack — INCLUDING participant Keycloak
+#                   participant stack - INCLUDING participant Keycloak
 #                   (you lose realm config + brokered IdP setup) and the
 #                   identity hub state. Default action preserves both.
 #   -h | --help     show this help
@@ -142,7 +142,7 @@ while [[ $# -gt 0 ]]; do
     --no-dry-run)  DRY_RUN=false; shift ;;
     --total-wipe)  TOTAL_WIPE=true; shift ;;
     -h|--help)     usage; exit 0 ;;
-    *)             die "unknown argument: $1 — see --help" ;;
+    *)             die "unknown argument: $1 - see --help" ;;
   esac
 done
 
@@ -170,7 +170,7 @@ ssh_host_for() {
 }
 host_url_for() { printf 'https://%s.glcdi.startinblox.com' "$1"; }
 
-# Run a shell command on a target VM. Quoted as one string to ssh — caller
+# Run a shell command on a target VM. Quoted as one string to ssh - caller
 # is responsible for shell-escaping the inner command if it contains
 # subshells, pipes, etc.
 ssh_run() {
@@ -205,7 +205,7 @@ preflight_ssh() {
   ssh -o BatchMode=yes -o ConnectTimeout=10 "${user}@${host}" \
       'docker version >/dev/null 2>&1 && docker compose version >/dev/null 2>&1 && echo ok' \
       >/dev/null 2>&1 \
-    || die "[$target] SSH preflight failed — cannot reach ${user}@${host} or docker/docker-compose missing"
+    || die "[$target] SSH preflight failed - cannot reach ${user}@${host} or docker/docker-compose missing"
   ok "[$target] SSH + docker reachable"
 }
 
@@ -221,12 +221,12 @@ fetch_api_key() {
     || die "[$target] could not fetch EDC_API_KEY from ${VM_REPO_PATH}/.env on ${user}@${host}"
   key="${key//$'\r'/}"
   key="${key%$'\n'}"
-  [[ -n "$key" ]] || die "[$target] empty EDC_API_KEY (path may be wrong — try VM_REPO_PATH=/glcdi/participant-agent-services)"
+  [[ -n "$key" ]] || die "[$target] empty EDC_API_KEY (path may be wrong - try VM_REPO_PATH=/glcdi/participant-agent-services)"
   printf '%s' "$key"
 }
 
 # Identify the connector pg volume name on the VM. Compose v2 prefixes
-# the project name, which can differ — match by suffix. Empty on absent
+# the project name, which can differ - match by suffix. Empty on absent
 # (idempotent re-runs after a prior wipe that already removed it).
 identify_connector_volume() {
   local target="$1"
@@ -261,7 +261,7 @@ wait_for_mgmt_api() {
     fi
     sleep 2
   done
-  die "[$target] mgmt API never returned 200 (last=$status) — connector did not come back up cleanly"
+  die "[$target] mgmt API never returned 200 (last=$status) - connector did not come back up cleanly"
 }
 
 # Count items in each mgmt-api collection. Echoes 'assets=N policies=N cds=N'.
@@ -295,7 +295,7 @@ verify_empty() {
   state="$(count_mgmt_state "$target" "$key")"
   log "[$target] state: $state"
   if [[ "$state" != "assets=0 policies=0 cds=0" ]]; then
-    die "[$target] wipe incomplete — expected all zero, got: $state"
+    die "[$target] wipe incomplete - expected all zero, got: $state"
   fi
   ok "[$target] all collections empty"
 }
@@ -345,7 +345,7 @@ verify_seeded() {
     printf '    %s\n' $policies >&2
     err "[$target] actual CDs:"
     printf '    %s\n' $cds >&2
-    die "[$target] verification failed — missing: ${missing[*]}"
+    die "[$target] verification failed - missing: ${missing[*]}"
   fi
   ok "[$target] seed verification passed"
 }
@@ -379,7 +379,7 @@ wipe_target() {
     if [[ -n "$vol" ]]; then
       log "[$target] connector pg volume: $vol"
     else
-      log "[$target] connector pg volume already absent — skipping volume rm"
+      log "[$target] connector pg volume already absent - skipping volume rm"
     fi
   fi
 
@@ -393,7 +393,7 @@ wipe_target() {
     elif [[ -n "$vol" ]]; then
       log "[$target] removing connector pg volume: $vol"
       ssh_run "$target" "docker volume rm '$vol'" \
-        || die "[$target] docker volume rm failed — likely still in use; investigate before retrying"
+        || die "[$target] docker volume rm failed - likely still in use; investigate before retrying"
     fi
   fi
 
@@ -440,14 +440,14 @@ main() {
   log "Targets:     ${targets[*]}"
   log "VM repo path: $VM_REPO_PATH"
   if $TOTAL_WIPE; then
-    warn "Mode: TOTAL WIPE (down -v) — will drop KC + identity-hub volumes too"
+    warn "Mode: TOTAL WIPE (down -v) - will drop KC + identity-hub volumes too"
   else
     log "Mode:        connector-pg only (KC + identity-hub preserved)"
   fi
   if $DRY_RUN; then
-    warn "DRY-RUN — no destructive action will execute. Add --no-dry-run to commit."
+    warn "DRY-RUN - no destructive action will execute. Add --no-dry-run to commit."
   else
-    warn "LIVE RUN — about to wipe ${#targets[@]} VM(s). Ctrl-C within 5s to abort."
+    warn "LIVE RUN - about to wipe ${#targets[@]} VM(s). Ctrl-C within 5s to abort."
     local i
     for i in 5 4 3 2 1; do
       printf '  %d...\n' "$i"

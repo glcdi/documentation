@@ -10,7 +10,7 @@ This document summarizes the data policy inputs provided by participants during 
 - **Access Policies:** Visible to any verified GLCDI member, researchers, and producers.
 - **Permitted Purposes (Agreement-Backed):** Regional benchmarking, Agronomic model training and calibration, Scientific research and publication, Conservation planning.
 - **Prohibited Uses (Agreement-Backed):** Redistribution to third parties, Commercial use, Use by buyers, food companies, or supply chain actors.
-- **Time Limit (System-Enforced):** Ongoing — no fixed end date.
+- **Time Limit (System-Enforced):** Ongoing - no fixed end date.
 - **Payment (System-Enforced):** No payment required.
 - **Attribution (Agreement-Backed):** Anyone using this data must credit Elijah Goodwin and GLCDI in any publication or report.
 - **Anonymization (Agreement-Backed):** Comfortable with farm-level data being used without anonymization.

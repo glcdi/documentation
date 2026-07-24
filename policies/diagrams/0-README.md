@@ -16,7 +16,7 @@ Install the [PlantUML extension](https://marketplace.visualstudio.com/items?item
 - `Alt+D` to preview the current `.puml` file
 - `Ctrl+Shift+P` → "PlantUML: Export Current Diagram" to export as PNG/SVG
 
-Requires a local renderer — the extension supports either:
+Requires a local renderer - the extension supports either:
 - PlantUML server (default, uses the online server)
 - Local JAR: set `plantuml.jar` path in settings
 - Docker: set `plantuml.render` to `PlantUMLServer` with a local container
@@ -48,7 +48,7 @@ java -jar plantuml.jar -tsvg diagrams/*.puml
 - Use `#E8F5E9` (green) for producers, `#E3F2FD` (blue) for connectors/UI, `#F3E5F5` (purple) for Keycloak, `#FFF3E0` (orange) for corporate/external actors
 - Use `#FFEBEE` / `#FFCDD2` (red tones) for rejected/blocked evaluation groups
 - `note right of` for policy evaluation details, `note over` for user-facing summaries
-- Preview frequently — long notes can overflow in narrow renders
+- Preview frequently - long notes can overflow in narrow renders
 
 ## Diagram Index
 

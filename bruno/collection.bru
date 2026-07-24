@@ -2,16 +2,16 @@ docs {
   Collection-level pre-request script that handles the Tier 1 vs Tier 2 auth
   difference centrally, so individual `.bru` files don't need to know about it.
 
-  - **Tier 1 (default)** — every /management call carries `X-Api-Key` only.
+  - **Tier 1 (default)** - every /management call carries `X-Api-Key` only.
     No Bearer token; oauth2-proxy is removed from the participant compose
     (IMPLEM_PLAN § 1.5.2). The 00-auth/ folder still mints client_credentials
     tokens against the Authority KC for diagnostic claim-shape checks, but
     those tokens are not attached to /management traffic at this tier.
 
-  - **Tier 2** — flip env var `tier` to `tier2`. Adds
+  - **Tier 2** - flip env var `tier` to `tier2`. Adds
     `Authorization: Bearer <token>` to every /management call, on top of the
     `X-Api-Key` floor (IMPLEM_PLAN § 7.2). The token used is the connector
-    SA token already minted by 00-auth/ — Bruno acts as automated test
+    SA token already minted by 00-auth/ - Bruno acts as automated test
     traffic, so it uses SA tokens rather than the per-user OIDC flow that
     real human operators use through the catalogue UI. oauth2-proxy still
     accepts these (it validates "any token signed by Authority KC", not
@@ -32,7 +32,7 @@ script:pre-request {
     return;
   }
 
-  // Tier 2 — inject Bearer for /management calls.
+  // Tier 2 - inject Bearer for /management calls.
   // The 00-auth/ requests target the Authority KC; they must NOT receive a
   // Bearer (they're requesting one). Filter by URL path.
   let url;
@@ -43,7 +43,7 @@ script:pre-request {
   }
 
   if (typeof url !== "string" || !url.includes("/management/")) {
-    // 00-auth/, 99-negative-auth/01 (intentionally no auth) — leave alone.
+    // 00-auth/, 99-negative-auth/01 (intentionally no auth) - leave alone.
     return;
   }
 
@@ -62,11 +62,11 @@ script:pre-request {
 
   const token = bru.getEnvVar(tokenName);
   if (!token) {
-    // Token unset — surface a helpful diagnostic rather than silently sending
+    // Token unset - surface a helpful diagnostic rather than silently sending
     // a bare X-Api-Key request that the test will then misdiagnose as a
     // policy / API-key failure.
     console.warn(
-      `[tier2] ${tokenName} is empty — run 00-auth/ first, or check that ` +
+      `[tier2] ${tokenName} is empty - run 00-auth/ first, or check that ` +
       `${tokenName.replace("_token", "_client_secret")} is populated in the env.`
     );
     return;

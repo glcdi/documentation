@@ -1,8 +1,8 @@
 # GLCDI local-stack orchestrator
 
-`glcdi.sh` brings up the entire GLCDI workspace locally — Authority Keycloak
+`glcdi.sh` brings up the entire GLCDI workspace locally - Authority Keycloak
 plus the three M1 participant connectors (`caney-fork`, `point-blue`,
-`white-buffalo`) — in the right order with secrets rotated from their
+`white-buffalo`) - in the right order with secrets rotated from their
 `changeme-*` placeholders.
 
 It is the scripted form of [`../DEPLOYMENT.md` § 3 (local validation)](../DEPLOYMENT.md).
@@ -10,7 +10,7 @@ It is the scripted form of [`../DEPLOYMENT.md` § 3 (local validation)](../DEPLO
 ## Quick start
 
 ```sh
-# From the workspace root (or anywhere — paths are absolute):
+# From the workspace root (or anywhere - paths are absolute):
 ./management/scripts/glcdi.sh preflight   # verify tools
 ./management/scripts/glcdi.sh build       # edc-connector + participant-ui images
 ./management/scripts/glcdi.sh up          # authority KC + 3 participants
@@ -40,8 +40,8 @@ To reset (destructive):
 | `test [tier]` | `bru run --env local --env-var tier=<tier>` against the local stack. Tier defaults to `$GLCDI_TIER` or `tier1` | yes |
 | `status` | Hits Authority KC discovery + each participant's `/management/v3/assets/request` | yes |
 | `logs <svc>` | `docker compose logs -f --tail=200` for `authority` or one of the 3 participant names | yes |
-| `down` | `docker compose down` for every stack — **preserves volumes** | yes |
-| `reset` | `docker compose down -v` + `rm -rf .glcdi.local/` — **destroys all local state** | yes (terminal) |
+| `down` | `docker compose down` for every stack - **preserves volumes** | yes |
+| `reset` | `docker compose down -v` + `rm -rf .glcdi.local/` - **destroys all local state** | yes (terminal) |
 | `all` | `preflight` → `build` → `up` → `seed` → `test` | yes |
 
 ## Tier toggle
@@ -56,7 +56,7 @@ GLCDI_TIER=tier2 ./glcdi.sh all     # equivalent
 
 The script itself doesn't bring up oauth2-proxy differently between tiers
 (the participant compose has `oauth2-proxy` as a long-running service
-either way today). The tier flag drives Bruno's auth model only — see
+either way today). The tier flag drives Bruno's auth model only - see
 `../bruno/README.md`. **Until [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)
 lands the actual Tier-2 UI changes**, `test tier2` exercises the
 oauth2-proxy validation path but the catalogue UI itself is still in
@@ -100,12 +100,12 @@ The script remaps via `NGINX_PORT` and per-participant `configuration.properties
 
 | Capability | Status | Gated by |
 |---|---|---|
-| Authority KC up + realm imported with rotated client secrets | ✅ | — |
-| 3 participant connectors up with separate ports | ✅ | — |
-| `/management` reachable with rotated `X-Api-Key` | ✅ | — |
-| Bruno's `00-auth/` succeeds — connector SAs mint tokens with the right claims | ✅ post-realm-import | — |
-| Bruno's `10-provider-seeding/` (asset / policy / contract def CRUD) | ✅ | — |
-| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ⚠ partial | [`IMPLEM_PLAN § 3`](../IMPLEM_PLAN.md#phase-3-edc-policy-extension-development) (custom constraint functions) + [`§ 3.5`](../IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) (iam-oauth2 swap) — until both land, `iam-mock` accepts everything and the access policy doesn't filter |
+| Authority KC up + realm imported with rotated client secrets | ✅ | - |
+| 3 participant connectors up with separate ports | ✅ | - |
+| `/management` reachable with rotated `X-Api-Key` | ✅ | - |
+| Bruno's `00-auth/` succeeds - connector SAs mint tokens with the right claims | ✅ post-realm-import | - |
+| Bruno's `10-provider-seeding/` (asset / policy / contract def CRUD) | ✅ | - |
+| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ⚠ partial | [`IMPLEM_PLAN § 3`](../IMPLEM_PLAN.md#phase-3-edc-policy-extension-development) (custom constraint functions) + [`§ 3.5`](../IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) (iam-oauth2 swap) - until both land, `iam-mock` accepts everything and the access policy doesn't filter |
 | Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ⚠ partial | Same as above + EDC async-state-machine polling files |
 | Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 3+4 + transfer state-machine polling |
 | `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
@@ -126,7 +126,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
 ```sh
 ./glcdi.sh build && ./glcdi.sh down && ./glcdi.sh up && ./glcdi.sh test
 # or:
-./glcdi.sh build && ./glcdi.sh up    # `up` is idempotent — re-creates containers
+./glcdi.sh build && ./glcdi.sh up    # `up` is idempotent - re-creates containers
 ./glcdi.sh test
 ```
 
@@ -134,7 +134,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
 
 ```sh
 # Edit governance-services/resources/keycloak/realms/glcdi-realm.json, then:
-./glcdi.sh reset       # full wipe — KC re-imports the realm only on first boot
+./glcdi.sh reset       # full wipe - KC re-imports the realm only on first boot
 ./glcdi.sh up
 ```
 
@@ -158,7 +158,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
   Docker volume name (`glcdi-<participant>_connector-pg-data`). The
   per-participant project name (`name: glcdi-${PARTICIPANT_NAME}` in
   `docker-compose.yml`) keeps them isolated, but `docker volume ls` will
-  show 3 separate volumes — by design.
+  show 3 separate volumes - by design.
 - **The realm JSON is patched at script time, not at compose time.** If
   the script has already brought up Authority KC and you regenerate
   secrets (`rm .glcdi.local/secrets.env`), you must `reset` rather than
@@ -166,7 +166,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
   boot only).
 - **`bru` (Bruno CLI) is required for `seed` and `test`.** Install with
   `npm install -g @usebruno/cli`. The `seed` step has a curl fallback
-  but it's a stub — Phase 4's seeding scripts will land separately.
+  but it's a stub - Phase 4's seeding scripts will land separately.
 - **`participant/` volume mount via override.** The script uses a
   `docker-compose.override.yml` per participant to rebind the
   `./participant:/app/conf:ro` mount to the per-org directory in
@@ -176,7 +176,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
   per [`IMPLEM_PLAN § 1.5.2`](../IMPLEM_PLAN.md#152-remove-per-participant-keycloak-and-oauth2-proxy-from-the-participant-compose-stack)
   removes `oauth2-proxy` from the participant compose. Until that lands
   in `participant-agent-services/docker-compose.yml`, the script brings
-  it up — it just doesn't gate any Bruno path at Tier 1 because the
+  it up - it just doesn't gate any Bruno path at Tier 1 because the
   Bruno tests don't send a Bearer header at that tier (oauth2-proxy
   passes through to the connector, where `X-Api-Key` decides).
 

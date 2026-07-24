@@ -36,7 +36,7 @@ ASSET_BODY=$(jq -nc \
   "@context": {"@vocab":"https://w3id.org/edc/v0.0.1/ns/","glcdi":"https://w3id.org/glcdi/v0.1.0/ns/"},
   "@id": $id, "@type": "Asset",
   "properties": {
-    "name": "Caney Fork — plant inventory (farmOS)",
+    "name": "Caney Fork - plant inventory (farmOS)",
     "description": "JSON:API feed of farmOS asset/plant records, fetched at transfer time via OAuth2 client_credentials (UI-generated creds proof).",
     "contenttype": "application/vnd.api+json",
     "glcdi:assetClass": "plant-inventory",
@@ -61,7 +61,7 @@ post_code=$(curl -sk -o /tmp/seed-plants-post.json -w '%{http_code}' \
   "$HOST/management/v3/assets" -d "$ASSET_BODY")
 case "$post_code" in
   2*)   echo "  + created (HTTP $post_code)" ;;
-  409)  echo "  ~ already exists (HTTP 409) — will converge via PUT" ;;
+  409)  echo "  ~ already exists (HTTP 409) - will converge via PUT" ;;
   *)    echo "FATAL: POST failed (HTTP $post_code)"; cat /tmp/seed-plants-post.json; exit 1 ;;
 esac
 

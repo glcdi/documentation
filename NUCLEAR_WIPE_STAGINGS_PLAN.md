@@ -1,4 +1,4 @@
-# Nuclear Wipe — Staging Participants
+# Nuclear Wipe - Staging Participants
 
 **Audience:** ops / dev triggering a full reset on a staging GLCDI participant VM.
 
@@ -28,7 +28,7 @@ from your laptop. SSH login defaults to `root@<slug>.glcdi.startinblox.com`.
 distrobox enter dev
 cd ~/Workspaces/Dataspaces/glcdi
 
-# Always preview first — default is dry-run.
+# Always preview first - default is dry-run.
 ./management/scripts/nuclear-wipe-stagings.sh --target all-staging
 
 # Commit when the dry-run looks right.
@@ -37,15 +37,15 @@ cd ~/Workspaces/Dataspaces/glcdi
 
 What it does per VM, in order:
 
-1. SSH preflight — verifies `docker` + `docker compose` are reachable.
+1. SSH preflight - verifies `docker` + `docker compose` are reachable.
 2. Identifies the connector pg volume by suffix (`connector-pg-data` or
    `connector_pg`) so it doesn't matter what Compose project prefix the
    VM uses.
-3. `docker compose --profile prod down --remove-orphans` — stops the stack
+3. `docker compose --profile prod down --remove-orphans` - stops the stack
    (volumes survive).
-4. `docker volume rm <connector-pg-volume>` — drops only the connector
+4. `docker volume rm <connector-pg-volume>` - drops only the connector
    data. (KC + identity-hub stay.)
-5. `docker compose --profile prod up -d` — brings it back; empty
+5. `docker compose --profile prod up -d` - brings it back; empty
    connector means no assets / policies / CDs.
 6. Polls the mgmt API on `<vm>/management/v3/assets/request` for up to
    ~3 minutes, requires HTTP 200 to proceed.
@@ -64,7 +64,7 @@ What it does per VM, in order:
 |---|---|
 | `--target T` | `caney-fork` \| `point-blue` \| `white-buffalo` \| `all-staging` (default `all-staging`) |
 | `--no-dry-run` | actually execute (default is dry-run preview) |
-| `--total-wipe` | uses `docker compose down -v` instead — drops **every** volume including participant Keycloak + identity-hub. Lose KC realm config + brokered IdP setup. |
+| `--total-wipe` | uses `docker compose down -v` instead - drops **every** volume including participant Keycloak + identity-hub. Lose KC realm config + brokered IdP setup. |
 
 ### 1.2 SSH overrides
 
@@ -104,7 +104,7 @@ VM_REPO_PATH=/glcdi/participant-agent-services \
 | Vault entries (signing keys) | kept (separate volume) | kept |
 
 `--total-wipe` re-imports the participant KC realm from the JSON on
-next boot (only on first boot — i.e. after a fresh volume). Don't run
+next boot (only on first boot - i.e. after a fresh volume). Don't run
 it unless you've also bumped `glcdi-realm.json` or `edc-realm.json`
 and actually want them re-imported.
 
@@ -145,7 +145,7 @@ For the **`--total-wipe`** equivalent, swap step 3–4 for:
 
 ```bash
 docker compose --profile prod down -v --remove-orphans
-# Skip step 4 — `down -v` already dropped every named volume.
+# Skip step 4 - `down -v` already dropped every named volume.
 docker compose --profile prod up -d
 ```
 
@@ -234,9 +234,9 @@ listing what it actually found.
 
 | Goal | Use instead |
 |---|---|
-| "I just want to drop stale assets/policies/CDs" | `./management/scripts/glcdi.sh wipe --target T --no-dry-run` — pure mgmt-API, no SSH, no volumes touched. |
+| "I just want to drop stale assets/policies/CDs" | `./management/scripts/glcdi.sh wipe --target T --no-dry-run` - pure mgmt-API, no SSH, no volumes touched. |
 | "I want a clean Keycloak too" | `--total-wipe`. Only do this if you've actually changed the realm JSON; otherwise you'll have to manually re-apply admin-console-only changes. |
-| "Local development reset" | `./management/scripts/glcdi.sh reset` — wipes the local stack only, not staging. |
+| "Local development reset" | `./management/scripts/glcdi.sh reset` - wipes the local stack only, not staging. |
 
 ## 8. Known traps
 
@@ -246,9 +246,9 @@ listing what it actually found.
 - **VM repo path.** The script assumes `~/participant-agent-services`
   (matching `glcdi.sh:919`). If your VM has the repo under
   `/glcdi/participant-agent-services` instead, set
-  `VM_REPO_PATH=/glcdi/participant-agent-services` — see [§1.3](#13-vm-path-override).
+  `VM_REPO_PATH=/glcdi/participant-agent-services` - see [§1.3](#13-vm-path-override).
 - **`--total-wipe` against `governance-services`**. The script targets
-  participant VMs only — it derives hosts from
+  participant VMs only - it derives hosts from
   `<slug>.glcdi.startinblox.com`. There is no governance target. Don't
   manually adapt and aim it at `governance.glcdi.startinblox.com`; the
   governance KC realm + onboarding DB are not what you want gone.
@@ -256,7 +256,7 @@ listing what it actually found.
   If `glcdi-realm.json` / `edc-realm.json` have post-init changes you
   made via admin console, those are lost. See `glcdi/CLAUDE.md` →
   "Things that will bite you".
-- **Don't `source` the VM `.env`** when working manually on a VM —
+- **Don't `source` the VM `.env`** when working manually on a VM -
   Compose `.env` allows unquoted spaces (`APP_TITLE=Caney Fork - GLCDI`)
   and `source` chokes on the dash. Use `grep '^VAR=' .env | cut -d= -f2-`
   or an `IFS='=' read` loop. See
@@ -264,10 +264,10 @@ listing what it actually found.
 
 ## 9. References
 
-- `management/scripts/nuclear-wipe-stagings.sh` — orchestrator
-- `management/scripts/glcdi.sh` — `cmd_seed`, `cmd_wipe`,
+- `management/scripts/nuclear-wipe-stagings.sh` - orchestrator
+- `management/scripts/glcdi.sh` - `cmd_seed`, `cmd_wipe`,
   `fetch_staging_api_key`, `expand_target`
-- `glcdi/CLAUDE.md` — VM layout, Keycloak realm import semantics
-- `participant-agent-services/.env.example` — Compose env vars
-- `MEMORY.md` → `reference_glcdi_edc_transfer_diag` —
+- `glcdi/CLAUDE.md` - VM layout, Keycloak realm import semantics
+- `participant-agent-services/.env.example` - Compose env vars
+- `MEMORY.md` → `reference_glcdi_edc_transfer_diag` -
   diagnose post-reseed transfer failures

@@ -18,7 +18,7 @@ docs {
   already be deleted, otherwise EDC will refuse to drop the asset.
 
   After this comes back empty, the connector is in the same state as a
-  freshly-provisioned participant — re-seed with `10-provider-seeding/`.
+  freshly-provisioned participant - re-seed with `10-provider-seeding/`.
 }
 
 headers {
@@ -28,7 +28,7 @@ headers {
 script:pre-request {
   const nextId = bru.getVar("asset_next_id");
   if (!nextId) {
-    console.warn("asset_next_id is empty — run 05-list-assets first, or the list is already empty.");
+    console.warn("asset_next_id is empty - run 05-list-assets first, or the list is already empty.");
   }
 }
 

@@ -1,44 +1,44 @@
 #!/usr/bin/env bash
 #
-# glcdi.sh — local-stack orchestrator for the GLCDI workspace.
+# glcdi.sh - local-stack orchestrator for the GLCDI workspace.
 #
 # Brings up the Authority Keycloak + 3 participant connectors (caney-fork,
 # point-blue, white-buffalo) in the right order with the right config, seeds
 # the M1 fixtures, and runs the Bruno collection. Idempotent: re-running
 # `up` is safe; `reset` is the destructive nuclear option.
 #
-# Run from anywhere — paths are resolved relative to the workspace root
+# Run from anywhere - paths are resolved relative to the workspace root
 # (the directory holding governance-services/, participant-agent-services/,
 # edc-connector/, edc-glcdi-extension/, participant-ui/, management/).
 #
 # Subcommands:
-#   preflight                       — verify required tools are installed
-#   secrets                         — generate (once) and print local secrets
-#   build                           — build edc-connector + participant-ui images
-#   up                              — bring up authority + 3 participants
-#   seed [--target T]               — seed M1 fixtures via Bruno (default T=local)
-#   seed-ldp                        — Phase-2: seed Farm/Plot/Metric in each
+#   preflight                       - verify required tools are installed
+#   secrets                         - generate (once) and print local secrets
+#   build                           - build edc-connector + participant-ui images
+#   up                              - bring up authority + 3 participants
+#   seed [--target T]               - seed M1 fixtures via Bruno (default T=local)
+#   seed-ldp                        - Phase-2: seed Farm/Plot/Metric in each
 #                                     participant's djangoldp-backend (local
 #                                     only). Must run BEFORE `seed`, because
 #                                     it writes the Farm urlid that `seed`
 #                                     bakes into the M1 asset's baseUrl.
-#   wipe [--target T] [--no-dry-run] — delete contract-defs + policies + assets
+#   wipe [--target T] [--no-dry-run] - delete contract-defs + policies + assets
 #                                     (dry-run by default; --no-dry-run actually deletes)
-#   test [tier]                     — run the Bruno collection (tier1 default; tier2 anticipated)
-#   status                          — quick health check on every service
-#   logs <svc>                      — tail logs for a service (svc = authority|onboarding|caney-fork|point-blue|white-buffalo)
-#   down                            — bring down stacks (preserves volumes)
-#   reset                           — bring down + remove volumes + delete .glcdi.local/
-#   all                             — preflight + build + up + seed + test (the happy path)
-#   bruno-cmd                       — print the `bru run` command line (with secrets baked in)
-#   farmos-install                  — one-shot composer+drush install inside caney-fork's
+#   test [tier]                     - run the Bruno collection (tier1 default; tier2 anticipated)
+#   status                          - quick health check on every service
+#   logs <svc>                      - tail logs for a service (svc = authority|onboarding|caney-fork|point-blue|white-buffalo)
+#   down                            - bring down stacks (preserves volumes)
+#   reset                           - bring down + remove volumes + delete .glcdi.local/
+#   all                             - preflight + build + up + seed + test (the happy path)
+#   bruno-cmd                       - print the `bru run` command line (with secrets baked in)
+#   farmos-install                  - one-shot composer+drush install inside caney-fork's
 #                                     farmos container (requires GLCDI_FARMOS=1)
-#   test-farmos [--target T]        — end-to-end OAuth2 transfer test: drives point-blue
+#   test-farmos [--target T]        - end-to-end OAuth2 transfer test: drives point-blue
 #                                     through catalog → negotiate → transfer → EDR fetch
 #                                     against caney-fork's farmOS asset. Proves that
 #                                     glcdi-dataplane-oauth2-inline performs the token
 #                                     exchange at transfer-time.
-#   help                            — show this list
+#   help                            - show this list
 #
 # --target values: local | caney-fork | point-blue | white-buffalo | all-staging
 #   For staging targets, EDC_API_KEY is fetched at runtime via SSH against the
@@ -49,8 +49,8 @@
 #     white-buffalo → SSH_USER_WB        / SSH_HOST_WB
 #
 # Config:
-#   GLCDI_TIER   (default tier1) — switches Bruno test mode.
-#   GLCDI_FARMOS (default 0)     — when =1, caney-fork additionally brings up
+#   GLCDI_TIER   (default tier1) - switches Bruno test mode.
+#   GLCDI_FARMOS (default 0)     - when =1, caney-fork additionally brings up
 #                                  the optional farmOS site (port 8091).
 #                                  Run `glcdi.sh farmos-install` once after the
 #                                  first `up` to seed the Drupal site.
@@ -69,7 +69,7 @@ LOCAL_DIR="$SCRIPT_DIR/.glcdi.local"
 SECRETS_FILE="$LOCAL_DIR/secrets.env"
 
 # The governance-services dir is renamed to authority-services in the in-flight
-# AUTHORITY_MIGRATION.md cutover. Support both — the local script picks whichever
+# AUTHORITY_MIGRATION.md cutover. Support both - the local script picks whichever
 # exists.
 if [[ -d "$WORKSPACE_ROOT/authority-services" ]]; then
   AUTHORITY_DIR="$WORKSPACE_ROOT/authority-services"
@@ -87,7 +87,7 @@ BRUNO_DIR="$WORKSPACE_ROOT/management/bruno"
 
 # Participants. M1 trio runs locally + staging; demo is staging-only
 # (a workshop showcase VM colocating Stone Barns / Sonoma / UFL / Pasa
-# fixtures — see OTHER_PARTICIPANTS.md).
+# fixtures - see OTHER_PARTICIPANTS.md).
 ORGS=(caney-fork point-blue white-buffalo demo)
 LOCAL_ORGS=(caney-fork point-blue white-buffalo)
 declare -A ORG_PORTS=(
@@ -102,7 +102,7 @@ declare -A ORG_COLORS=(
   [white-buffalo]="#C0392B"
   [demo]="#7B1FA2"
 )
-# Secondary/accent shades — mirror configurations/<org>.env so local dev matches staging.
+# Secondary/accent shades - mirror configurations/<org>.env so local dev matches staging.
 declare -A ORG_SECONDARY_COLORS=(
   [caney-fork]="#1B5E20"
   [point-blue]="#0D47A1"
@@ -139,10 +139,10 @@ AUTHORITY_ONBOARDING_PORT=8083
 TIER="${GLCDI_TIER:-tier1}"
 FARMOS_ENABLED="${GLCDI_FARMOS:-0}"
 
-# Returns extra `docker compose` args (a flat space-separated string —
+# Returns extra `docker compose` args (a flat space-separated string -
 # eval-safe and array-friendly) for the org's farmOS profile, when
 # applicable. Empty for non-caney-fork orgs or when GLCDI_FARMOS isn't 1.
-# Locally we don't stack docker-compose.farmos.yml — that override only
+# Locally we don't stack docker-compose.farmos.yml - that override only
 # matters for nginx-prod, which the dev profile doesn't use.
 farmos_profile_args() {
   local org="$1"
@@ -209,11 +209,11 @@ cmd_preflight() {
     die "Docker daemon is not running or current user lacks access."
   fi
 
-  # Bruno CLI is optional — only needed for `test`.
+  # Bruno CLI is optional - only needed for `test`.
   if command -v bru >/dev/null 2>&1; then
-    ok "bru (Bruno CLI) found — $(bru --version 2>/dev/null | head -1 || echo 'unknown version')"
+    ok "bru (Bruno CLI) found - $(bru --version 2>/dev/null | head -1 || echo 'unknown version')"
   else
-    warn "bru (Bruno CLI) not installed — \`test\` subcommand will be unavailable. Install with: npm install -g @usebruno/cli"
+    warn "bru (Bruno CLI) not installed - \`test\` subcommand will be unavailable. Install with: npm install -g @usebruno/cli"
   fi
 
   if [[ -z "$AUTHORITY_DIR" ]]; then
@@ -226,10 +226,10 @@ cmd_preflight() {
     fi
   done
 
-  # Port availability — warn only (some users intentionally remap).
+  # Port availability - warn only (some users intentionally remap).
   for port in "$AUTHORITY_KC_PORT" "${ORG_PORTS[@]}"; do
     if ss -tln 2>/dev/null | awk '{print $4}' | grep -qE ":${port}$"; then
-      warn "Port $port appears already in use — local stack will fail to bind."
+      warn "Port $port appears already in use - local stack will fail to bind."
     fi
   done
 
@@ -241,7 +241,7 @@ cmd_preflight() {
 }
 
 # -----------------------------------------------------------------------------
-# Secrets — generate once, reuse on subsequent runs
+# Secrets - generate once, reuse on subsequent runs
 # -----------------------------------------------------------------------------
 
 cmd_secrets() {
@@ -252,7 +252,7 @@ cmd_secrets() {
   else
     log "Generating local secrets at $SECRETS_FILE"
     {
-      echo "# GLCDI local-stack secrets — generated $(date -Iseconds)"
+      echo "# GLCDI local-stack secrets - generated $(date -Iseconds)"
       echo "# Regenerate with: rm $SECRETS_FILE && $0 secrets"
       echo
       echo "KC_ADMIN_PASSWORD=$(openssl rand -hex 16)"
@@ -269,7 +269,7 @@ cmd_secrets() {
         echo "${upper}_DB_PASSWORD=$(openssl rand -hex 16)"
       done
       echo
-      # farmOS M2M consumer creds — provisioned by install.sh, read by bruno_env_flags + test-farmos-transfer.sh.
+      # farmOS M2M consumer creds - provisioned by install.sh, read by bruno_env_flags + test-farmos-transfer.sh.
       echo "FARMOS_ANIMAL_CLIENT_ID=farm_m2m_$(openssl rand -hex 8)"
       echo "FARMOS_ANIMAL_CLIENT_SECRET=$(openssl rand -hex 32)"
     } > "$SECRETS_FILE"
@@ -292,7 +292,7 @@ cmd_secrets_show() {
 }
 
 # -----------------------------------------------------------------------------
-# Realm JSON patching — replace `changeme-*` secrets with rotated values
+# Realm JSON patching - replace `changeme-*` secrets with rotated values
 # -----------------------------------------------------------------------------
 
 # Generates .glcdi.local/glcdi-realm.json with the live secrets, then
@@ -327,7 +327,7 @@ patch_realm_json() {
 }
 
 # -----------------------------------------------------------------------------
-# Authority Keycloak — bring up
+# Authority Keycloak - bring up
 # -----------------------------------------------------------------------------
 
 up_authority() {
@@ -335,14 +335,14 @@ up_authority() {
   cmd_secrets
   patch_realm_json
 
-  # init-secrets.sh skips files that already exist — so on re-runs the
+  # init-secrets.sh skips files that already exist - so on re-runs the
   # populated files would keep their first-run substituted values while
   # secrets.env carries the rotated current values. We bypass it entirely
   # and re-copy from the .template files ourselves on every up.
   substitute_authority_secrets
 
   # Stage a per-run .env with our rotated values. KC_GOVERNANCE_CLIENT_SECRET
-  # is the single source of truth — the realm JSON patcher above already
+  # is the single source of truth - the realm JSON patcher above already
   # substituted it into the bind-mounted realm, and the onboarding-backend
   # reads it as KEYCLOAK_CLIENT_SECRET via the compose env block. The compose
   # file also `:?`-requires it, so leaving it unset would fail fast.
@@ -350,7 +350,7 @@ up_authority() {
   # We write to BOTH the script-private location (passed via --env-file in
   # the up/down/reset paths) AND $AUTHORITY_DIR/.env (compose's auto-loaded
   # default). The second copy means bare `docker compose ...` invocations
-  # from the governance-services dir also pick up the secret — no more
+  # from the governance-services dir also pick up the secret - no more
   # cryptic ":? must be set" parse errors when you're poking at the stack
   # by hand.
   # Dev URLs follow the symmetric "each service on its own host port" model:
@@ -386,20 +386,20 @@ EOF
   #
   # `ports: !override` REPLACES the in-repo `ports` list instead of merging
   # with it. Without this, the in-repo `8080:8080` mapping stays AND our
-  # `8090:8080` is appended — KC ends up on both ports and we hog the
+  # `8090:8080` is appended - KC ends up on both ports and we hog the
   # caney-fork nginx port.
   # The override bind-mounts our pre-patched realm over the template that
   # gets fed to resources/keycloak/entrypoint.sh. The entrypoint will run
   # its sed pass on it, but jq already substituted ${KC_GOVERNANCE_CLIENT_SECRET}
-  # with the live value — so the sed is a no-op. This keeps dev and prod on
+  # with the live value - so the sed is a no-op. This keeps dev and prod on
   # the same code path.
   # Override yaml: remaps KC to AUTHORITY_KC_PORT, publishes onboarding on
   # AUTHORITY_ONBOARDING_PORT, bind-mounts the patched realm. Neither port
-  # mapping leaks into prod — prod runs the base compose only (with
+  # mapping leaks into prod - prod runs the base compose only (with
   # --profile prod for nginx-prod + certbot).
   local override="$LOCAL_DIR/authority.override.yml"
   cat > "$override" <<EOF
-# Auto-generated by glcdi.sh — do not edit by hand.
+# Auto-generated by glcdi.sh - do not edit by hand.
 services:
   keycloak:
     ports: !override
@@ -435,7 +435,7 @@ EOF
 
 # Substitutes {{POSTGRES_USER}}, {{POSTGRES_PASSWORD}}, {{KC_DB_USERNAME}},
 # {{KC_DB_PASSWORD}}, {{KC_ADMIN_USERNAME}}, {{KC_BOOTSTRAP_ADMIN_PASSWORD}}
-# in the secret files written by init-secrets.sh. Idempotent — re-running on
+# in the secret files written by init-secrets.sh. Idempotent - re-running on
 # already-substituted files is a no-op.
 substitute_authority_secrets() {
   local kc_db_user="keycloak"
@@ -451,11 +451,11 @@ substitute_authority_secrets() {
   for f in "${files[@]}"; do
     local template="${f}.template"
     if [[ ! -f "$template" ]]; then
-      warn "Template missing — skipping: $template"
+      warn "Template missing - skipping: $template"
       continue
     fi
     # Always re-copy from .template, then substitute. This is what fixes the
-    # "first-run password sticks across resets" bug — the populated file
+    # "first-run password sticks across resets" bug - the populated file
     # gets whatever values are CURRENTLY in secrets.env, not the first-ever
     # generated ones.
     sed \
@@ -468,13 +468,13 @@ substitute_authority_secrets() {
       "$template" > "$f"
   done
 
-  # Sanity-check leftovers — only the populated files matter; .template
+  # Sanity-check leftovers - only the populated files matter; .template
   # originals are expected to keep their {{...}} markers.
   local leftover
   leftover=$(grep -rE '\{\{[A-Z_]+\}\}' "$AUTHORITY_DIR/secrets" \
                --exclude='*.template' 2>/dev/null || true)
   if [[ -n "$leftover" ]]; then
-    warn "Unsubstituted placeholders remain in populated secrets — KC may fail to start:"
+    warn "Unsubstituted placeholders remain in populated secrets - KC may fail to start:"
     printf '%s\n' "$leftover" >&2
   fi
 }
@@ -494,8 +494,8 @@ wait_for_authority() {
 }
 
 # Onboarding-backend is published directly on AUTHORITY_ONBOARDING_PORT in
-# dev (no nginx in front). First-boot work — djangoldp install + migrate +
-# collectstatic — can take a minute. Subsequent boots are quick.
+# dev (no nginx in front). First-boot work - djangoldp install + migrate +
+# collectstatic - can take a minute. Subsequent boots are quick.
 wait_for_onboarding() {
   local url="http://localhost:${AUTHORITY_ONBOARDING_PORT}/registration/"
   log "Waiting for onboarding backend to serve $url"
@@ -541,10 +541,10 @@ write_participant_configs() {
 
     log "Writing config for $org (port $nginx_port)"
 
-    # .env — consumed by docker compose and the catalogue-ui image entrypoint.
+    # .env - consumed by docker compose and the catalogue-ui image entrypoint.
     # Tier 1 (IMPLEM_PLAN.md § 1.5): X-Api-Key only on the UI, connector
     # client_credentials against Authority KC for DSP. No OIDC envvars at
-    # this tier — they (KEYCLOAK_URL / OIDC_CLIENT_ID / KC_IDP_HINT /
+    # this tier - they (KEYCLOAK_URL / OIDC_CLIENT_ID / KC_IDP_HINT /
     # LINKED_PROVIDER_* / oauth2-proxy/GLCDI_UI_CLIENT_SECRET) come back
     # under § 7.2 along with the user-OIDC layer.
     cat > "$org_dir/.env" <<EOF
@@ -571,7 +571,7 @@ DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
 LDP_DB_PASSWORD=ldp-${org}
 LDP_DB_BOOTSTRAP_PASSWORD=postgres
 
-# EDC base URL — no trailing /management; djangoldp_edc appends it itself.
+# EDC base URL - no trailing /management; djangoldp_edc appends it itself.
 EDC_URL=http://edc-connector:9193
 EDC_PARTICIPANT_ID=glcdi-connector-$org
 EDC_ASSET_ID_STRATEGY=full_url
@@ -582,12 +582,12 @@ EDC_POLICY_DISCOVERY_ENABLED=False
 # Local-package iteration (mirrors TEMS catalogue-ui pattern):
 # Set GLCDI_USE_LOCAL_PACKAGES=true on the glcdi.sh invocation to toggle
 # the catalogue-ui's npm[] paths from jsdelivr to localhost Vite dev-server
-# URLs. Defaults to false — production-style CDN loading.
+# URLs. Defaults to false - production-style CDN loading.
 USE_LOCAL_PACKAGES=${GLCDI_USE_LOCAL_PACKAGES:-false}
 SIB_CORE_PATH=${GLCDI_SIB_CORE_PATH:-}
 SOLID_TEMS_UI_PATH=${GLCDI_SOLID_TEMS_UI_PATH:-}
 SOLID_TEMS_PATH=${GLCDI_SOLID_TEMS_PATH:-}
-# Pin the version — @latest is cached forever by the participant-ui SW. Bump when a release is verified.
+# Pin the version - @latest is cached forever by the participant-ui SW. Bump when a release is verified.
 GLCDI_PATH=${GLCDI_PKG_PATH:-https://cdn.jsdelivr.net/npm/@startinblox/glcdi@1.0.5/+esm}
 
 APP_TITLE=$(echo "$org" | sed 's/.*/\u&/' | tr - ' ') - GLCDI
@@ -598,17 +598,17 @@ ACCENT_COLOR=${ORG_ACCENT_COLORS[$org]:-#66BB6A}
 DSP_PROVIDERS=$(other_dsp_providers_json "$org")
 
 # OAuth2 token endpoint for the participant's bound farmOS instance
-# (caney-fork + GLCDI_FARMOS=1 only). Empty otherwise — the asset-create
+# (caney-fork + GLCDI_FARMOS=1 only). Empty otherwise - the asset-create
 # form just shows a placeholder.
 FARMOS_TOKEN_URL=$([[ "$FARMOS_ENABLED" == "1" && "$org" == "caney-fork" ]] && echo "http://localhost:${FARMOS_PORT:-8091}/oauth/token" || echo "")
 EOF
 
-    # Per-org configuration.properties — patched from the example.
+    # Per-org configuration.properties - patched from the example.
     # The DB triple (url/user/password) must match what the compose's
     # `db-connector` postgres is created with. Compose sets POSTGRES_DB and
     # POSTGRES_USER to ${PARTICIPANT_NAME} and POSTGRES_PASSWORD to
     # ${CONNECTOR_DB_PASSWORD}. The example properties hardcode `participant`
-    # for all three — that mismatch is the root cause of "password
+    # for all three - that mismatch is the root cause of "password
     # authentication failed for user participant" on first boot.
     sed -e "s|web.http.management.auth.key=.*|web.http.management.auth.key=$api_key|" \
         -e "s|edc.api.auth.key=.*|edc.api.auth.key=$api_key|" \
@@ -625,24 +625,24 @@ EOF
         "$PARTICIPANT_DIR/participant/configuration.properties.example" \
         > "$org_dir/participant/configuration.properties"
 
-    # idh-configuration.properties — copy if example exists.
+    # idh-configuration.properties - copy if example exists.
     if [[ -f "$PARTICIPANT_DIR/participant/idh-configuration.properties.example" ]]; then
       cp "$PARTICIPANT_DIR/participant/idh-configuration.properties.example" \
          "$org_dir/participant/idh-configuration.properties"
     fi
 
-    # Tier-1 nginx config — drops every route that depends on services we
+    # Tier-1 nginx config - drops every route that depends on services we
     # disable at this tier (per-participant Keycloak, oauth2-proxy, identity-hub).
     # Adds an /auth/ proxy to the Authority KC on the host (via host.docker.internal,
     # which the nginx container CAN resolve via its extra_hosts entry) so the
     # browser-side UI hits same-origin (localhost:NGINX_PORT/auth/*) instead
     # of cross-origin to the KC's port.
-    # Open CORS (Access-Control-Allow-Origin *) on every route — local dev
+    # Open CORS (Access-Control-Allow-Origin *) on every route - local dev
     # only; production deployments narrow this to specific origins.
     # Mounted into the nginx container via the override below in place of the
     # in-repo nginx-dev.conf.
     cat > "$org_dir/participant/nginx-dev.conf" <<EOF
-# Auto-generated by glcdi.sh (Tier 1) — do not edit by hand.
+# Auto-generated by glcdi.sh (Tier 1) - do not edit by hand.
 
 # Reusable CORS handler. Responds to OPTIONS preflight + sets ACAO on every
 # response. * is fine for local dev; tighten in prod.
@@ -655,7 +655,7 @@ server {
     listen 8080;
     server_name _;
 
-    # Keep Location headers relative — the container listens on 8080 but the host
+    # Keep Location headers relative - the container listens on 8080 but the host
     # maps each org to its own port (8080/8081/8082), so absolute redirects would
     # collapse every participant onto caney-fork's port.
     absolute_redirect off;
@@ -710,7 +710,7 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
-    # Participant DjangoLDP backend — strip /ldp prefix; permission class is djangoldp_edc V3.
+    # Participant DjangoLDP backend - strip /ldp prefix; permission class is djangoldp_edc V3.
     location /ldp/ {
         proxy_pass http://djangoldp-backend:8083/;
         proxy_set_header Host \$host;
@@ -730,7 +730,7 @@ server {
 }
 EOF
 
-    # Override file — Tier-1 stack:
+    # Override file - Tier-1 stack:
     #   - edc-connector: locally-built image (fastest iteration when changing
     #                    extension code) + re-bound config dir + JVM heap cap
     #   - nginx:         dev nginx config from the local org dir
@@ -738,7 +738,7 @@ EOF
     #                    orbit/solid-glcdi/config). Since the new self-contained
     #                    Dockerfile clones the same hubl branch as CI, the
     #                    :local image is functionally identical to the
-    #                    published :latest — this override is purely a build-
+    #                    published :latest - this override is purely a build-
     #                    speed optimisation; you can omit it without breaking
     #                    Tier-1 behaviour, at the cost of pulling on every up.
     #
@@ -746,7 +746,7 @@ EOF
     # they appeared in the upstream compose; they were removed from
     # docker-compose.yml at Tier 1, so no stub is needed anymore.
     cat > "$org_dir/docker-compose.override.yml" <<EOF
-# Auto-generated by glcdi.sh — do not edit by hand.
+# Auto-generated by glcdi.sh - do not edit by hand.
 services:
   edc-connector:
     # Use the locally-built controlplane image (produced by
@@ -865,7 +865,7 @@ cmd_up() {
     printf '  %-15s http://localhost:%s/  (UI)  +  /management/* with X-Api-Key\n' "$org" "${ORG_PORTS[$org]}"
   done
   if [[ "$FARMOS_ENABLED" == "1" ]]; then
-    printf '  %-15s http://localhost:8091/  (Drupal — run \`%s farmos-install\` first time)\n' "farmos" "$0"
+    printf '  %-15s http://localhost:8091/  (Drupal - run \`%s farmos-install\` first time)\n' "farmos" "$0"
   fi
   hr
   if [[ "$FARMOS_ENABLED" == "1" ]]; then
@@ -885,7 +885,7 @@ cmd_build() {
     ( cd "$EDC_CONNECTOR_DIR" && ./scripts/sync-glcdi-extensions.sh ) \
       || die "sync-glcdi-extensions.sh failed"
   else
-    warn "scripts/sync-glcdi-extensions.sh not found — skipping extension sync"
+    warn "scripts/sync-glcdi-extensions.sh not found - skipping extension sync"
   fi
 
   if [[ -x "$EDC_CONNECTOR_DIR/gradlew" ]]; then
@@ -893,12 +893,12 @@ cmd_build() {
       || die "Gradle build failed"
     ok "edc-connector image built"
   else
-    warn "$EDC_CONNECTOR_DIR/gradlew not found — bootstrap with: gradle wrapper, then re-run"
+    warn "$EDC_CONNECTOR_DIR/gradlew not found - bootstrap with: gradle wrapper, then re-run"
   fi
 
   log "Building participant-ui image (clones hubl branch at build time)"
   if [[ -f "$PARTICIPANT_UI_DIR/Dockerfile" ]]; then
-    # Build context is participant-ui/ itself — the Dockerfile clones
+    # Build context is participant-ui/ itself - the Dockerfile clones
     # the hubl/orbit source at build time, so it no longer needs the
     # workspace-root layout. Local image is byte-equivalent to what CI
     # publishes to registry.startinblox.com.
@@ -909,16 +909,16 @@ cmd_build() {
     ) || die "participant-ui build failed"
     ok "participant-ui image built (glcdi-participant-ui:local)"
   else
-    warn "$PARTICIPANT_UI_DIR/Dockerfile not found — UI image not built"
+    warn "$PARTICIPANT_UI_DIR/Dockerfile not found - UI image not built"
   fi
 
   # djangoldp-backend (participant LDP server, Tier-2 / Phase-7.6).
   # Built explicitly to a known tag so the per-org override.yml can pin it
-  # with pull_policy: never — same pattern as controlplane:latest and
+  # with pull_policy: never - same pattern as controlplane:latest and
   # glcdi-participant-ui:local above. Without this step, `docker compose
   # up` would do an implicit build on first run and silently reuse a stale
   # image on subsequent runs after Dockerfile / runserver.sh / template
-  # edits — exactly the iteration trap we want to avoid.
+  # edits - exactly the iteration trap we want to avoid.
   log "Building djangoldp-backend image (participant LDP server)"
   if [[ -f "$PARTICIPANT_DIR/djangoldp/Dockerfile" ]]; then
     ( cd "$PARTICIPANT_DIR/djangoldp" \
@@ -928,7 +928,7 @@ cmd_build() {
     ) || die "djangoldp-backend build failed"
     ok "djangoldp-backend image built (glcdi-djangoldp-backend:local)"
   else
-    warn "$PARTICIPANT_DIR/djangoldp/Dockerfile not found — djangoldp-backend image not built"
+    warn "$PARTICIPANT_DIR/djangoldp/Dockerfile not found - djangoldp-backend image not built"
   fi
 }
 
@@ -971,7 +971,7 @@ expand_target() {
 target_host() {
   local target="$1"
   case "$target" in
-    local) die "target_host called with 'local' — caller should iterate ORGS" ;;
+    local) die "target_host called with 'local' - caller should iterate ORGS" ;;
     caney-fork|point-blue|white-buffalo)
       printf 'https://%s.glcdi.startinblox.com' "$target"
       ;;
@@ -998,7 +998,7 @@ fetch_staging_api_key() {
 }
 
 # Fetch any .env variable from a staging target's ~/participant-agent-services/.env over SSH.
-# Returns empty string (not fatal) if the var isn't set — callers decide whether absence is OK.
+# Returns empty string (not fatal) if the var isn't set - callers decide whether absence is OK.
 fetch_staging_env_value() {
   local target="$1" key="$2"
   local user_var="${SSH_USER_VAR[$target]:-}"
@@ -1011,12 +1011,12 @@ fetch_staging_env_value() {
   local val
   val=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "${user}@${host}" \
           "grep '^${key}=' ~/participant-agent-services/.env | cut -d= -f2-" \
-        2>/dev/null) || die "SSH to ${user}@${host} failed for $target — check connectivity and ~/participant-agent-services/.env on the VM."
+        2>/dev/null) || die "SSH to ${user}@${host} failed for $target - check connectivity and ~/participant-agent-services/.env on the VM."
   val="${val//$'\r'/}"
   val="${val%$'\n'}"
-  # Critical-var sentinel — EDC_API_KEY's absence is fatal; everything else returns "".
+  # Critical-var sentinel - EDC_API_KEY's absence is fatal; everything else returns "".
   if [[ -z "$val" && "$key" == "EDC_API_KEY" ]]; then
-    die "Empty $key fetched from ${user}@${host} for $target — does ~/participant-agent-services/.env exist on the VM?"
+    die "Empty $key fetched from ${user}@${host} for $target - does ~/participant-agent-services/.env exist on the VM?"
   fi
   printf '%s' "$val"
 }
@@ -1033,7 +1033,7 @@ org_display_name() {
 
 # Run the bruno 10-provider-seeding folder against one org-host pair. The
 # bruno files use {{caney_fork_host}} / {{caney_fork_api_key}} placeholders
-# regardless of which org is being seeded — overrides rebind them per call.
+# regardless of which org is being seeded - overrides rebind them per call.
 #
 # Demo dispatches to 12-provider-seeding-demo instead: 4 contributor-specific
 # assets + atomic obligation policies, not the M1 3-asset triple.
@@ -1058,7 +1058,7 @@ seed_one() {
   #   09-create-asset-research-only (grazing-raw-observations) → Metric urlid
   # If urlids are missing (staging today, or local pre-seed-ldp), Bruno
   # falls back to the legacy http://provider-data-source/... defaults in
-  # environments/<env>.bru — the asset still gets created, contract negotiation
+  # environments/<env>.bru - the asset still gets created, contract negotiation
   # still works, but the data path doesn't end at a real protected resource.
   local farm_file="$LOCAL_DIR/$org/ldp-farm-urlid.txt"
   local plot_file="$LOCAL_DIR/$org/ldp-plot-urlid.txt"
@@ -1068,7 +1068,7 @@ seed_one() {
 
   # Staging: each participant owns an external djangoldp instance at
   # api.stg.<org>.glcdi.startinblox.com. Asset baseUrls point at the LDP
-  # containers exposed by that org's djangoldp package — caney-fork uses the
+  # containers exposed by that org's djangoldp package - caney-fork uses the
   # baseline (farms/plots/metrics); point-blue adds biomass + soil-sample;
   # white-buffalo adds cattle-rotation.
   if [[ "$bruno_env" == "staging" || "$bruno_env" == "caney-fork" || "$bruno_env" == "point-blue" || "$bruno_env" == "white-buffalo" ]]; then
@@ -1078,25 +1078,25 @@ seed_one() {
         m1_url="https://api.stg.caneyfork.glcdi.startinblox.com/metrics/"
         m1_research_url="https://api.stg.caneyfork.glcdi.startinblox.com/plots/"
         m1_researcher_url="https://api.stg.caneyfork.glcdi.startinblox.com/farms/"
-        m1_desc="Soil organic carbon Metric records from Caney Fork's /metrics/ container (djangoldp_glcdi baseline), 2024 season — restricted to producers (M1 fixture)."
-        m1_research_desc="Plot-level grazing summary from Caney Fork's /plots/ container (djangoldp_glcdi baseline), aggregated 2024 — open to any active dataspace member (M1 fixture)."
-        m1_researcher_desc="Farm-level raw observations from Caney Fork's /farms/ container (djangoldp_glcdi baseline), 2024 — restricted to researcher participants (M1 fixture)."
+        m1_desc="Soil organic carbon Metric records from Caney Fork's /metrics/ container (djangoldp_glcdi baseline), 2024 season - restricted to producers (M1 fixture)."
+        m1_research_desc="Plot-level grazing summary from Caney Fork's /plots/ container (djangoldp_glcdi baseline), aggregated 2024 - open to any active dataspace member (M1 fixture)."
+        m1_researcher_desc="Farm-level raw observations from Caney Fork's /farms/ container (djangoldp_glcdi baseline), 2024 - restricted to researcher participants (M1 fixture)."
         ;;
       point-blue)
         m1_url="https://api.stg.pointblue.glcdi.startinblox.com/soil-samples/"
         m1_research_url="https://api.stg.pointblue.glcdi.startinblox.com/biomass-plots/"
         m1_researcher_url="https://api.stg.pointblue.glcdi.startinblox.com/biomass-points/"
-        m1_desc="SoilSample records from Point Blue's /soil-samples/ container (djangoldp_glcdi_pointblue), 2024 season — restricted to producers (M1 fixture)."
-        m1_research_desc="BiomassPlot aggregates from Point Blue's /biomass-plots/ container (djangoldp_glcdi_pointblue), 2024 — open to any active dataspace member (M1 fixture)."
-        m1_researcher_desc="Raw BiomassPoint observations from Point Blue's /biomass-points/ container (djangoldp_glcdi_pointblue), 2024 — restricted to researcher participants (M1 fixture)."
+        m1_desc="SoilSample records from Point Blue's /soil-samples/ container (djangoldp_glcdi_pointblue), 2024 season - restricted to producers (M1 fixture)."
+        m1_research_desc="BiomassPlot aggregates from Point Blue's /biomass-plots/ container (djangoldp_glcdi_pointblue), 2024 - open to any active dataspace member (M1 fixture)."
+        m1_researcher_desc="Raw BiomassPoint observations from Point Blue's /biomass-points/ container (djangoldp_glcdi_pointblue), 2024 - restricted to researcher participants (M1 fixture)."
         ;;
       white-buffalo)
         m1_url="https://api.stg.whitebuffalo.glcdi.startinblox.com/metrics/"
         m1_research_url="https://api.stg.whitebuffalo.glcdi.startinblox.com/plots/"
         m1_researcher_url="https://api.stg.whitebuffalo.glcdi.startinblox.com/cattle-rotations/"
-        m1_desc="Soil organic carbon Metric records from White Buffalo's /metrics/ container (djangoldp_glcdi_whitebuffalo), 2024 season — restricted to producers (M1 fixture)."
-        m1_research_desc="Plot-level grazing summary from White Buffalo's /plots/ container (djangoldp_glcdi_whitebuffalo), aggregated 2024 — open to any active dataspace member (M1 fixture)."
-        m1_researcher_desc="CattleRotation rotation log from White Buffalo's /cattle-rotations/ container (djangoldp_glcdi_whitebuffalo), 2024 — restricted to researcher participants (M1 fixture)."
+        m1_desc="Soil organic carbon Metric records from White Buffalo's /metrics/ container (djangoldp_glcdi_whitebuffalo), 2024 season - restricted to producers (M1 fixture)."
+        m1_research_desc="Plot-level grazing summary from White Buffalo's /plots/ container (djangoldp_glcdi_whitebuffalo), aggregated 2024 - open to any active dataspace member (M1 fixture)."
+        m1_researcher_desc="CattleRotation rotation log from White Buffalo's /cattle-rotations/ container (djangoldp_glcdi_whitebuffalo), 2024 - restricted to researcher participants (M1 fixture)."
         ;;
       *)
         die "seed_one: unknown org '$org' for staging URL mapping"
@@ -1120,7 +1120,7 @@ seed_one() {
     log "    research-summary:   $plot_urlid"
     log "    researcher-only:    $metric_urlid"
   else
-    log "  No complete set of LDP urlids in $LOCAL_DIR/$org/ — keeping Bruno defaults. Run \`$0 seed-ldp\` first for end-to-end LDP gating."
+    log "  No complete set of LDP urlids in $LOCAL_DIR/$org/ - keeping Bruno defaults. Run \`$0 seed-ldp\` first for end-to-end LDP gating."
   fi
 
   log "Seeding M1 fixtures on $org ($host) via Bruno [env=$bruno_env]"
@@ -1135,14 +1135,14 @@ seed_one() {
       --env-var "m1_research_contract_definition_id=${org}-grazing-summary-2024-cd" \
       --env-var "m1_researcher_only_asset_id=urn:glcdi:asset:${org}:grazing-raw-observations-2024" \
       --env-var "m1_researcher_only_contract_definition_id=${org}-grazing-raw-observations-2024-cd" \
-  ) || die "Bruno seeding folder failed for $org — see output above"
+  ) || die "Bruno seeding folder failed for $org - see output above"
 }
 
 # Caney-fork-only extension: drops the farmOS-backed asset + its CD onto the
 # connector and runs the consumer-side catalog leak check. Pre-req: 10-... must
 # have run first (members-policy + internal-use-only-policy already exist).
 #
-# Gated on FARMOS_ENABLED — without GLCDI_FARMOS=1 the locally-running
+# Gated on FARMOS_ENABLED - without GLCDI_FARMOS=1 the locally-running
 # connector has no farmOS service to fetch from, and on staging this implies
 # the operator hasn't set up the farmOS consumer either, so seeding the asset
 # would be a half-broken contract definition. cmd_seed calls this only when
@@ -1169,9 +1169,9 @@ seed_farmos_one() {
       compose_for caney-fork exec -T --user root \
         -e FARMOS_OAUTH_CLIENT_ID="${FARMOS_ANIMAL_CLIENT_ID:-}" \
         farmos bash /opt/drupal/seed-dummy-data.sh >/dev/null \
-        || warn "seed-dummy-data.sh exited non-zero (consumer-repair errors are non-fatal — install.sh already provisions)"
+        || warn "seed-dummy-data.sh exited non-zero (consumer-repair errors are non-fatal - install.sh already provisions)"
     else
-      warn "farmos container not running — skipping dummy-data seed"
+      warn "farmos container not running - skipping dummy-data seed"
     fi
   fi
 
@@ -1206,7 +1206,7 @@ seed_farmos_one() {
     farmos_cid=$(fetch_staging_env_value "$org" FARMOS_ANIMAL_CLIENT_ID)
     farmos_secret=$(fetch_staging_env_value "$org" FARMOS_ANIMAL_CLIENT_SECRET)
     if [[ -z "$farmos_cid" || -z "$farmos_secret" ]]; then
-      die "FARMOS_ANIMAL_CLIENT_ID/SECRET missing from ${org}'s VM .env — set them, pass --farmos-client-id/--farmos-client-secret, or see README §farmOS staging step 4."
+      die "FARMOS_ANIMAL_CLIENT_ID/SECRET missing from ${org}'s VM .env - set them, pass --farmos-client-id/--farmos-client-secret, or see README §farmOS staging step 4."
     fi
   fi
 
@@ -1235,9 +1235,9 @@ seed_farmos_one() {
       --env-var "org_display_name=$(org_display_name "$org")" \
       --env-var "farmos_animal_client_id=${farmos_cid}" \
       --env-var "farmos_animal_client_secret=${farmos_secret}" \
-  ) || die "Bruno farmOS seeding folder failed for $org — see output above"
+  ) || die "Bruno farmOS seeding folder failed for $org - see output above"
 
-  # Bruno step 01 uses POST, which 409s if the asset already exists — so re-seeding
+  # Bruno step 01 uses POST, which 409s if the asset already exists - so re-seeding
   # an existing asset is otherwise a no-op for the dataAddress + privateProperties.
   # PUT here ensures the on-disk creds (+ URLs + scope) always converge to the
   # values resolved above. Safe wrt existing contract agreements: they reference
@@ -1247,7 +1247,7 @@ seed_farmos_one() {
   local put_body
   put_body=$(jq -nc \
     --arg id "urn:glcdi:asset:caney-fork:farmos-animals-2024" \
-    --arg name "${org_display} — live animal census (farmOS)" \
+    --arg name "${org_display} - live animal census (farmOS)" \
     --arg base "$farmos_base_url" \
     --arg tok  "$farmos_token_url" \
     --arg cid  "$farmos_cid" \
@@ -1280,7 +1280,7 @@ seed_farmos_one() {
     "$host/management/v3/assets" -d "$put_body" 2>/dev/null || echo "000")
   case "$put_code" in
     2*) ok "PUT-updated $org's farmos-animals asset (HTTP $put_code)" ;;
-    404) warn "PUT returned 404 — Bruno step 01 should have created the asset; check that output." ;;
+    404) warn "PUT returned 404 - Bruno step 01 should have created the asset; check that output." ;;
     *)  die "PUT-update of farmos-animals asset on $org failed (HTTP $put_code)" ;;
   esac
 }
@@ -1302,7 +1302,7 @@ seed_demo() {
       --env-var "demo_host=${host}" \
       --env-var "demo_api_key=${api_key}" \
       --env-var "demo_data_root=${data_root}" \
-  ) || die "Bruno seeding folder failed for demo — see output above"
+  ) || die "Bruno seeding folder failed for demo - see output above"
 }
 
 ###############################################################################
@@ -1311,7 +1311,7 @@ seed_demo() {
 # Each participant's djangoldp-backend exposes Farm / Plot / Metric models
 # behind djangoldp_edc.EdcContractPermissionV3. The LDP fixture must exist
 # BEFORE the EDC asset is created, because the asset's dataAddress.baseUrl
-# must point at the Farm's urlid — and Bruno's `seed` then bakes that URL
+# must point at the Farm's urlid - and Bruno's `seed` then bakes that URL
 # into the asset + the downstream contract definition references it.
 #
 # Therefore `seed-ldp` runs strictly before `seed`:
@@ -1322,7 +1322,7 @@ seed_demo() {
 #                 baseUrl, so contract negotiation maps consumer → that URL
 #                 → djangoldp_edc V3 perm validates the agreement → 200.
 #
-# `cmd_all` enforces this order. Idempotent — Farm.get_or_create is keyed by
+# `cmd_all` enforces this order. Idempotent - Farm.get_or_create is keyed by
 # name. Use `glcdi.sh reset` to wipe everything.
 ###############################################################################
 
@@ -1359,7 +1359,7 @@ ldp_shell() {
 }
 
 # Poll djangoldp-backend over HTTP until it answers anything (200, 302, 403
-# — all mean Django is serving). Earlier versions cold-started `manage.py
+# - all mean Django is serving). Earlier versions cold-started `manage.py
 # shell` per iteration, which takes 2-5s each, made the loop drift, and
 # failed silently when Django emitted a banner that pushed our sentinel
 # off `tail -n1`. HTTP polling via the participant nginx is fast and
@@ -1373,7 +1373,7 @@ wait_for_ldp_backend() {
   for i in {1..180}; do
     status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 "$url" || echo "000")
     # Any non-zero HTTP code from nginx → upstream is responding. 502 / 504
-    # means nginx is up but Django isn't yet — keep waiting.
+    # means nginx is up but Django isn't yet - keep waiting.
     case "$status" in
       000|502|503|504)
         # not ready yet
@@ -1399,7 +1399,7 @@ wait_for_ldp_backend() {
 
 # Create one Farm + Plot + Metric in the participant's LDP backend, then
 # write the Farm urlid to .glcdi.local/<org>/ldp-farm-urlid.txt for the
-# downstream Bruno seed to pick up. No stdout return value — earlier
+# downstream Bruno seed to pick up. No stdout return value - earlier
 # versions used `farm_urlid=$(seed_ldp_one "$org")` which swallowed every
 # log line into the captured subshell and made the script look frozen.
 seed_ldp_one() {
@@ -1415,7 +1415,7 @@ seed_ldp_one() {
   # Idempotent get_or_create so re-running doesn't pile up rows. Three
   # FARM_URLID / PLOT_URLID / METRIC_URLID prefixes keep Django banners
   # out of the captured values and let each asset target a distinct
-  # protected resource — Farm (V3 directly), Plot (inherits from Farm),
+  # protected resource - Farm (V3 directly), Plot (inherits from Farm),
   # Metric (inherits from Plot).
   local py
   py=$(cat <<PY
@@ -1447,7 +1447,7 @@ PY
 
   # The LDP server mints urlids from BASE_URL=http://localhost:<host-port>/ldp,
   # which is the URL a browser on the host uses. The EDC connector container
-  # cannot reach that URL — inside the container "localhost" is the connector
+  # cannot reach that URL - inside the container "localhost" is the connector
   # itself, not the participant nginx. Rewrite the host-facing prefix to a
   # container-internal one that ALSO matches what django sees via
   # request.build_absolute_uri(). Going via nginx (http://nginx:8080/ldp/...)
@@ -1484,7 +1484,7 @@ cmd_seed_ldp() {
 
 cmd_seed() {
   local target="local"
-  # Optional CLI overrides — when set, bypass both secrets.env (local) and
+  # Optional CLI overrides - when set, bypass both secrets.env (local) and
   # the staging VM .env fetch in seed_farmos_one. Useful when the operator
   # has provisioned the farmOS consumer out-of-band and wants the seeded
   # asset to carry those exact creds without touching either env file.
@@ -1558,7 +1558,7 @@ EOF
 # (Bruno's vars:secret declarations are empty by default; the CLI reads
 # values from --env-var flags or the Bruno UI's secret store).
 #
-# Echoes the flags as one line — caller does:
+# Echoes the flags as one line - caller does:
 #   bru run --env local $(bruno_env_flags) ...
 bruno_env_flags() {
   printf -- '--env-var caney_fork_api_key=%s ' "${CANEY_FORK_API_KEY:-}"
@@ -1584,7 +1584,7 @@ bruno_env_flags() {
 # assets, so they go first; policies are referenced by contract-defs only, so
 # they go next; assets go last.
 #
-# Defaults to dry-run — prints the curl commands + IDs that would be deleted.
+# Defaults to dry-run - prints the curl commands + IDs that would be deleted.
 # Pass --no-dry-run to actually issue DELETEs.
 
 wipe_one() {
@@ -1670,7 +1670,7 @@ EOF
       wipe_one "$org" "http://localhost:${port}" "${!api_key_var}" "$dry_run"
     done
     if [[ "$dry_run" == "true" ]]; then
-      warn "Dry-run only — re-run with --no-dry-run to actually delete."
+      warn "Dry-run only - re-run with --no-dry-run to actually delete."
     else
       ok "Wipe complete on local orgs (${LOCAL_ORGS[*]})"
     fi
@@ -1687,7 +1687,7 @@ EOF
     wipe_one "$t" "$host" "$key" "$dry_run"
   done
   if [[ "$dry_run" == "true" ]]; then
-    warn "Dry-run only — re-run with --no-dry-run to actually delete."
+    warn "Dry-run only - re-run with --no-dry-run to actually delete."
   else
     ok "Wipe complete on staging targets: ${targets[*]}"
   fi
@@ -1704,7 +1704,7 @@ cmd_test() {
   fi
   cmd_secrets
 
-  # Verification folders only — exclude seeders (10/12/13) and the destructive 09-wipe.
+  # Verification folders only - exclude seeders (10/12/13) and the destructive 09-wipe.
   local pre_folders=(00-auth 20-catalog-discovery 30-negotiation)
   local post_folders=(99-negative-auth)
 
@@ -1713,14 +1713,14 @@ cmd_test() {
     # shellcheck disable=SC2046
     ( cd "$BRUNO_DIR" \
       && bru run "$folder" --env local --env-var "tier=$tier" $(bruno_env_flags) \
-    ) || die "Bruno folder $folder failed — see output above"
+    ) || die "Bruno folder $folder failed - see output above"
   done
 
   # 30→40 bridge: Bruno bru-files can't carry env vars across `bru run` processes,
   # and 30-negotiation/01 sends a synthetic offer @id that EDC rejects. Do a real
   # catalog→negotiate→finalize roundtrip here and inject the agreement id into 40-transfer.
   local agreement_id
-  agreement_id=$(m1_negotiate_bridge) || die "M1 negotiation bridge failed — see logs above"
+  agreement_id=$(m1_negotiate_bridge) || die "M1 negotiation bridge failed - see logs above"
   ok "M1 contract agreement: $agreement_id"
 
   # shellcheck disable=SC2046
@@ -1728,13 +1728,13 @@ cmd_test() {
     && bru run 40-transfer --env local --env-var "tier=$tier" \
        --env-var "m1_contract_agreement_id=$agreement_id" \
        $(bruno_env_flags) \
-  ) || die "Bruno folder 40-transfer failed — see output above"
+  ) || die "Bruno folder 40-transfer failed - see output above"
 
   for folder in "${post_folders[@]}"; do
     # shellcheck disable=SC2046
     ( cd "$BRUNO_DIR" \
       && bru run "$folder" --env local --env-var "tier=$tier" $(bruno_env_flags) \
-    ) || die "Bruno folder $folder failed — see output above"
+    ) || die "Bruno folder $folder failed - see output above"
   done
 
   ok "Bruno run green at $tier"
@@ -1782,7 +1782,7 @@ m1_negotiate_bridge() {
   neg_id=$(curl -fsS -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $api_key" \
     "$wb/management/v3/contractnegotiations" -d "$cr_body" | jq -r '."@id" // empty')
   [[ -z "$neg_id" ]] && { log "  negotiation POST returned no id" >&2; return 1; }
-  log "  negotiation $neg_id — polling for FINALIZED" >&2
+  log "  negotiation $neg_id - polling for FINALIZED" >&2
 
   local state agreement_id body
   for _ in $(seq 1 30); do
@@ -1815,7 +1815,7 @@ cmd_print_bruno_cmd() {
 }
 
 # -----------------------------------------------------------------------------
-# farmOS — one-shot site install inside caney-fork's farmos container
+# farmOS - one-shot site install inside caney-fork's farmos container
 # -----------------------------------------------------------------------------
 #
 # Runs participant-agent-services/farmos/install.sh inside the caney-fork
@@ -1824,10 +1824,10 @@ cmd_print_bruno_cmd() {
 # the farmos image or module repo has changed.
 cmd_farmos_install() {
   [[ "$FARMOS_ENABLED" == "1" ]] \
-    || die "GLCDI_FARMOS=1 not set — farmOS isn't enabled, so there's no container to install into."
+    || die "GLCDI_FARMOS=1 not set - farmOS isn't enabled, so there's no container to install into."
   local org_dir="$LOCAL_DIR/caney-fork"
   [[ -f "$org_dir/.env" ]] \
-    || die "caney-fork not started yet — run \`$0 up\` first (with GLCDI_FARMOS=1)."
+    || die "caney-fork not started yet - run \`$0 up\` first (with GLCDI_FARMOS=1)."
   local container
   container=$(compose_for caney-fork ps -q farmos 2>/dev/null || true)
   [[ -n "$container" ]] \
@@ -1840,15 +1840,15 @@ cmd_farmos_install() {
     -e FARMOS_OAUTH_CLIENT_ID="${FARMOS_ANIMAL_CLIENT_ID:-}" \
     -e FARMOS_OAUTH_CLIENT_SECRET="${FARMOS_ANIMAL_CLIENT_SECRET:-}" \
     farmos bash /opt/drupal/install.sh \
-    || die "farmOS install failed — check the container logs: $0 logs caney-fork"
+    || die "farmOS install failed - check the container logs: $0 logs caney-fork"
   ok "farmOS ready at http://localhost:8091/admin/api-urls"
 }
 
 # -----------------------------------------------------------------------------
-# farmOS — end-to-end OAuth2 transfer test
+# farmOS - end-to-end OAuth2 transfer test
 # -----------------------------------------------------------------------------
 #
-# Thin wrapper around scripts/test-farmos-transfer.sh — passes the same
+# Thin wrapper around scripts/test-farmos-transfer.sh - passes the same
 # secrets.env env vars in scope and forwards any --target etc. arg.
 cmd_test_farmos() {
   cmd_secrets
@@ -1920,7 +1920,7 @@ cmd_logs() {
     ( cd "$AUTHORITY_DIR" && docker compose logs -f --tail=200 onboarding-backend )
   elif [[ -n "${ORG_PORTS[$svc]:-}" ]]; then
     local org_dir="$LOCAL_DIR/$svc"
-    [[ -f "$org_dir/.env" ]] || die "Participant $svc not started — no .env at $org_dir"
+    [[ -f "$org_dir/.env" ]] || die "Participant $svc not started - no .env at $org_dir"
     ( cd "$PARTICIPANT_DIR" \
       && docker compose \
            --env-file "$org_dir/.env" \
@@ -1964,7 +1964,7 @@ cmd_down() {
 }
 
 cmd_reset() {
-  log "RESET — bringing down + removing volumes + deleting $LOCAL_DIR"
+  log "RESET - bringing down + removing volumes + deleting $LOCAL_DIR"
   for org in "${LOCAL_ORGS[@]}"; do
     local org_dir="$LOCAL_DIR/$org"
     if [[ -f "$org_dir/.env" ]]; then
@@ -1992,7 +1992,7 @@ cmd_reset() {
   # Always also issue a base-only down -v across all profiles. Covers:
   # (a) authority.env was wiped previously, the override-aware path above did
   #     nothing, and the named volume + containers from the prior run linger
-  #     — the next `up` would then hit a stale password on the keycloak DB.
+  #     - the next `up` would then hit a stale password on the keycloak DB.
   # (b) orphan containers from earlier compose versions (e.g. the removed
   #     onboarding-approval service, the now-unused dev nginx) need cleanup.
   ( cd "$AUTHORITY_DIR" \
@@ -2008,7 +2008,7 @@ cmd_reset() {
 }
 
 # -----------------------------------------------------------------------------
-# `all` — happy path
+# `all` - happy path
 # -----------------------------------------------------------------------------
 
 cmd_all() {
@@ -2016,7 +2016,7 @@ cmd_all() {
   cmd_build
   cmd_up
   # Seed the LDP Farm first so its urlid is on disk before Bruno builds the
-  # M1 asset that points at it. Order is load-bearing — see seed-ldp header.
+  # M1 asset that points at it. Order is load-bearing - see seed-ldp header.
   cmd_seed_ldp
   # Bootstrap farmOS (site install + OAuth2 keys/scope/consumer) before seed,
   # so the asset PUT and the dataplane OAuth2 exchange both find what they need.
@@ -2030,7 +2030,7 @@ cmd_all() {
 # -----------------------------------------------------------------------------
 
 cmd_help() {
-  sed -n '/^# glcdi\.sh —/,/^set -euo/p' "${BASH_SOURCE[0]}" \
+  sed -n '/^# glcdi\.sh -/,/^set -euo/p' "${BASH_SOURCE[0]}" \
     | sed -e '1,2d;$d' -e 's/^# \?//'
 }
 

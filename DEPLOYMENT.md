@@ -4,7 +4,7 @@ Operator runbook for applying [Phase 1.5 (Identity Tier 1)](IMPLEM_PLAN.md#phase
 
 This document complements [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (which is focused narrowly on the `governance → authority` rename) by covering the Phase 1.5 topology cuts: **removing the per-participant Keycloak and oauth2-proxy** from the participant compose, provisioning the **3 connector service-account clients** in the Authority KC, switching the participant UI to **API-key-only login**, and rotating the API keys + connector secrets out of their `changeme-*` defaults. Everything below is put forward as a proposal for the project team and Dataspace Authority to validate; nothing here is a decided commitment.
 
-> **Tier scope.** This runbook covers the **Tier 1** cutover only — no end-user OIDC, no `oauth2-proxy`, no `glcdi-ui` client validation. Tier 2 ([`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)) layers user OIDC back on top of the Tier-1 cluster as a separate, post-M1 cutover; the Tier-2 follow-up appendix in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) lists the additional operator steps for that phase.
+> **Tier scope.** This runbook covers the **Tier 1** cutover only - no end-user OIDC, no `oauth2-proxy`, no `glcdi-ui` client validation. Tier 2 ([`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)) layers user OIDC back on top of the Tier-1 cluster as a separate, post-M1 cutover; the Tier-2 follow-up appendix in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) lists the additional operator steps for that phase.
 
 ## TL;DR
 
@@ -12,17 +12,80 @@ This document complements [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (wh
 - **Local validation** spins up Authority KC + two participant stacks (one provider, one consumer) on the developer's laptop, seeds the M1 fixtures, and runs the Bruno collection (`management/bruno/`) end-to-end with `X-Api-Key` only. The two acceptance signals are (1) a green Bruno run and (2) the participant UI surfaces the asset / policy / contract / negotiation / transfer-process components correctly under API-key login.
 - **The rename runbook in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) only matters if your environment hasn't already migrated DNS/TLS/`.env`/nginx.** Current GLCDI staging is past that point; this doc is the simpler restart-and-verify procedure that follows.
 
+### Fast local bootstrap via `scripts/glcdi.sh`
+
+**Workspace prerequisites.** `scripts/glcdi.sh` orchestrates the whole GLCDI stack, so it needs the sibling repos checked out **next to** the `management/` repo (this documentation lives in its own git repo; the code lives in others). From a clean workspace root:
+
+```sh
+git clone git@git.startinblox.com:applications/glcdi/management.git             # this repo
+git clone git@git.startinblox.com:applications/glcdi/authority-services.git     # Authority KC + onboarding portal (formerly governance-services/ - see AUTHORITY_MIGRATION.md)
+git clone git@git.startinblox.com:applications/glcdi/participant-agent-services.git   # Per-participant Compose stack
+git clone git@git.startinblox.com:applications/glcdi/edc-connector.git          # EDC control-plane / data-plane distribution
+git clone git@git.startinblox.com:applications/glcdi/edc-glcdi-extension.git    # GLCDI-specific EDC extensions (copy-merged into edc-connector/ at build time)
+git clone git@git.startinblox.com:applications/glcdi/participant-ui.git         # Catalogue UI image
+```
+
+Resulting layout:
+
+```
+<workspace-root>/
+├── authority-services/         (or governance-services/ - the script accepts either)
+├── edc-connector/
+├── edc-glcdi-extension/
+├── management/                 ← this repo - runs the script from here
+├── participant-agent-services/
+└── participant-ui/
+```
+
+The script resolves every path relative to its own location (`SCRIPT_DIR/../..`) so it does not care where the workspace root lives, only that the sibling directories are there. `preflight` fails fast with a clear message if any of them is missing.
+
+Everything in § 3 (Authority Keycloak + provider participant + consumer participant + seeding + Bruno) then collapses to one command from the workspace root:
+
+```sh
+./management/scripts/glcdi.sh all         # preflight → build → up → seed → test
+```
+
+Or, step by step (so you can iterate on any single stage):
+
+```sh
+./management/scripts/glcdi.sh preflight   # docker / openssl / curl / jq / bru
+./management/scripts/glcdi.sh build       # controlplane + participant-ui + djangoldp-backend images
+./management/scripts/glcdi.sh up          # Authority KC on :8090 + 3 participant stacks on :8080/:8081/:8082
+./management/scripts/glcdi.sh seed        # Bruno 10-provider-seeding against caney-fork
+./management/scripts/glcdi.sh test        # Bruno run (tier1 by default)
+./management/scripts/glcdi.sh reset       # docker compose down -v + wipe .glcdi.local/
+```
+
+The three participant stacks are one provider, one consumer, and one third-party (see § 3.3 for the role split); any two of the three demonstrate the M1 catalog / negotiation / transfer flow.
+
+**Env files: nothing to edit by hand for the default flow.** The script generates and rotates every secret and config file under `management/scripts/.glcdi.local/` on first `up`:
+
+| Generated file | What's in it |
+|---|---|
+| `.glcdi.local/secrets.env` (mode 600) | Per-org API keys + `glcdi-connector-<org>` client secrets + KC admin password + DB passwords, all `openssl rand`. Regenerate with `rm .glcdi.local/secrets.env` (then run `reset` before the next `up` - realm JSON only re-imports on a KC first boot). |
+| `.glcdi.local/glcdi-realm.json` | Copy of `authority-services/resources/keycloak/realms/glcdi-realm.json` with `changeme-*` client secrets patched to the rotated values, bind-mounted over the in-repo original. |
+| `.glcdi.local/authority.env` + `authority.override.yml` | Authority KC + onboarding-backend compose config (KC on `:8090`, onboarding on `:8083`, admin password from secrets). |
+| `.glcdi.local/<org>/.env` + `docker-compose.override.yml` + `participant/configuration.properties` | Per-participant compose config for `caney-fork` / `point-blue` / `white-buffalo`, pointed at the Authority KC via `host.docker.internal:8090`, with `edc.dsp.callback.address` matched to each org's external port. |
+
+The only inputs you might override are environment variables on the invocation itself:
+
+- `GLCDI_TIER=tier2` - switches Bruno's auth model (post-§ 7.2 only; the script itself doesn't currently re-shape the compose per tier).
+- `GLCDI_FARMOS=1` - additionally brings up the optional caney-fork farmOS site on `:8091`; run `./glcdi.sh farmos-install` once after the first `up`.
+- `GLCDI_USE_LOCAL_PACKAGES=true` (+ `GLCDI_SIB_CORE_PATH=…`, `GLCDI_PKG_PATH=…`, etc.) - swap the participant UI's CDN-loaded `@startinblox/glcdi` bundle for a local Vite dev-server URL.
+
+Full subcommand reference, iteration workflows, and capability-vs-gated matrix in [`scripts/README.md`](scripts/README.md).
+
 ---
 
 ## 1. Pre-flight (before touching any deployed environment)
 
-In the current GLCDI staging environment, the heavy infrastructure pieces are **already in place** — the Tier-1 cutover is mostly container restarts plus the Authority Keycloak realm-import refresh. Quick confirmation list:
+In the current GLCDI staging environment, the heavy infrastructure pieces are **already in place** - the Tier-1 cutover is mostly container restarts plus the Authority Keycloak realm-import refresh. Quick confirmation list:
 
 | Item | Status (current GLCDI staging) | Action if not in this state |
 |------|-------------------------------|----------------------------|
 | DNS for `authority.glcdi.startinblox.com` and per-participant hosts | ✅ already resolving | Add records per [`AUTHORITY_MIGRATION.md` § 1](AUTHORITY_MIGRATION.md) |
 | Nginx config on each VM | Tier-1 update: `/management/*` proxied **directly** to the connector (no oauth2-proxy hop); `/oauth2/*` route removed | Update per `participant-agent-services/nginx/` |
-| `.env` on each VM | Tier-1 envvars: `AUTHORITY_KEYCLOAK_URL`, per-org `EDC_OAUTH_CLIENT_ID=glcdi-connector-<org>`, `EDC_OAUTH_CLIENT_SECRET`, `EDC_API_KEY` (rotated). **No `OIDC_CLIENT_ID`, no `GLCDI_UI_CLIENT_SECRET`, no `LOCAL_KEYCLOAK_*`** — those return at Tier 2. | Apply the Tier-1 changes; re-deploy |
+| `.env` on each VM | Tier-1 envvars: `AUTHORITY_KEYCLOAK_URL`, per-org `EDC_OAUTH_CLIENT_ID=glcdi-connector-<org>`, `EDC_OAUTH_CLIENT_SECRET`, `EDC_API_KEY` (rotated). **No `OIDC_CLIENT_ID`, no `GLCDI_UI_CLIENT_SECRET`, no `LOCAL_KEYCLOAK_*`** - those return at Tier 2. | Apply the Tier-1 changes; re-deploy |
 | Certbot / TLS certs | ✅ already issued and renewing | Issue per `AUTHORITY_MIGRATION.md` § 2 |
 | In-repo changes merged across the four sibling repos | Verify with `git log` on `main` | Land the per-repo Phase 1.5 commits |
 | Container images rebuilt and published | Verify image digests; specifically the `participant-ui` image with **OIDC envvars stripped** (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)) | CI rebuild |
@@ -42,32 +105,32 @@ The Phase 1.5 cutover for the current GLCDI staging is **mostly a container-rest
 Announce ≥ 24 hours ahead. During the window: management API, catalog queries, and contract negotiations are unavailable across the dataspace.
 
 Before any destructive change:
-- **Authority Keycloak Postgres volume** — full snapshot (live admin-console edits live only there).
-- **Each participant connector's Postgres volume** — full snapshot.
-- **Live `glcdi-realm.json`** — export via Admin API, store next to the in-repo version. Lets you compare what's in production vs. what the in-repo JSON will import.
+- **Authority Keycloak Postgres volume** - full snapshot (live admin-console edits live only there).
+- **Each participant connector's Postgres volume** - full snapshot.
+- **Live `glcdi-realm.json`** - export via Admin API, store next to the in-repo version. Lets you compare what's in production vs. what the in-repo JSON will import.
 - **VM filesystem snapshots** if the cloud provider supports them.
 
-### 2.2 Authority Keycloak — refresh the realm
+### 2.2 Authority Keycloak - refresh the realm
 
 The in-repo `authority-services/resources/keycloak/realms/glcdi-realm.json` declares the realm content used by **both Tier 1 (load-bearing for M1)** and **Tier 2 (inert at Tier 1, becomes load-bearing in [`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui))**:
 
-**Tier 1 — load-bearing for M1:**
+**Tier 1 - load-bearing for M1:**
 - 12 realm roles (`user`, `admin`, plus `glcdi_member`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, and 6 future participant types).
 - 1 client scope `glcdi-claims` carrying the 5 protocol mappers (realm-roles → `glcdi_roles`; user-attribute → `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`).
 - **3 `glcdi-connector-<org>` service-account clients** (`caney-fork`, `point-blue`, `white-buffalo`) with `serviceAccountsEnabled: true`, `glcdi-claims` in default scopes.
 - **3 service-account users** (one per connector client, auto-created from each client) with `glcdi_*` realm roles + per-user attributes set per [`IMPLEM_PLAN § 1.5.4`](IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
 - Empty `identityProviders` (no federation).
 
-**Tier 2 — declared but inert at Tier 1:**
+**Tier 2 - declared but inert at Tier 1:**
 - `glcdi-ui` client (will be activated when Tier-2 oauth2-proxy is reintroduced).
 - 3 groups (`caney-fork-team`, `white-buffalo-team`, `point-blue-team`).
-- 3 starter human users (`caney-fork`, `white-buffalo`, `point-blue`) — added to their team groups with attributes set.
+- 3 starter human users (`caney-fork`, `white-buffalo`, `point-blue`) - added to their team groups with attributes set.
 
-> **Tier-1 carryover (kept by design):** the Tier-2 content imports alongside the Tier-1 content but does no harm at Tier 1 — there's no oauth2-proxy validating those users' tokens, no UI redirecting to KC. **The chosen approach is to keep them in** the realm JSON throughout: it makes the Tier-2 cutover a flag-flip (turn oauth2-proxy back on, restore UI envvars) rather than a re-import. The handful of inert KC rows at Tier 1 is the right trade-off.
+> **Tier-1 carryover (kept by design):** the Tier-2 content imports alongside the Tier-1 content but does no harm at Tier 1 - there's no oauth2-proxy validating those users' tokens, no UI redirecting to KC. **The chosen approach is to keep them in** the realm JSON throughout: it makes the Tier-2 cutover a flag-flip (turn oauth2-proxy back on, restore UI envvars) rather than a re-import. The handful of inert KC rows at Tier 1 is the right trade-off.
 
 Three options to get this content into the live Authority KC, in order of recommendation:
 
-#### Option 1 — Full re-import (destructive, simplest for the cutover)
+#### Option 1 - Full re-import (destructive, simplest for the cutover)
 
 Wipe the Authority KC's Postgres volume and let KC re-import the realm JSON on first boot. Recommended for the Phase 1.5 cutover when there are no console-side edits to preserve.
 
@@ -81,7 +144,7 @@ docker compose down
 docker volume ls | grep -i authority
 docker volume rm authority-services_authority-pg-data
 
-# Bring the stack back up — KC re-imports glcdi-realm.json on first boot
+# Bring the stack back up - KC re-imports glcdi-realm.json on first boot
 docker compose up -d
 
 # Wait ~30s for the import to complete, then verify
@@ -98,9 +161,9 @@ Smoke check via admin console (`https://authority.glcdi.startinblox.com/auth/adm
 - **Groups** list contains `caney-fork-team`, `point-blue-team`, `white-buffalo-team` (Tier 2 carryover).
 - **Identity Providers** list is empty.
 
-Any subsequent admin-console edits made before the next re-import will live only in Postgres — keep the in-repo JSON in sync (or re-export with `kc.sh export ...` periodically).
+Any subsequent admin-console edits made before the next re-import will live only in Postgres - keep the in-repo JSON in sync (or re-export with `kc.sh export ...` periodically).
 
-#### Option 2 — Partial import via Admin REST API (non-destructive, scriptable, recommended for incremental updates)
+#### Option 2 - Partial import via Admin REST API (non-destructive, scriptable, recommended for incremental updates)
 
 Use this when the live KC has manual admin-console state to preserve, or when applying incremental changes (e.g. adding a fourth participant later) without a full restart. Not ideal for the Phase 1.5 cutover itself because client-scope and protocol-mapper handling in `partialImport` varies by KC version.
 
@@ -141,7 +204,7 @@ The response lists how many of each resource type were `ADDED`, `OVERWRITTEN`, o
 - Protocol mappers nested inside a client are imported when the client itself is `OVERWRITTEN`, but mappers added at realm-level (in the client scope) need a separate `POST /admin/realms/glcdi/client-scopes/{id}/protocol-mappers/models` for each mapper.
 - Service-account users (`service-account-glcdi-connector-<org>`) are auto-created when their client has `serviceAccountsEnabled=true`, but the per-user attributes + group membership in the realm JSON only land if the user records are imported via partialImport's `users` field.
 
-#### Option 3 — Admin Console manual edits (last resort, when partial-import support is patchy)
+#### Option 3 - Admin Console manual edits (last resort, when partial-import support is patchy)
 
 Walk the admin console step by step. Useful when KC version doesn't support partialImport for some resource type, or for one-off fixes. The detailed checklist is in [`AUTHORITY_MIGRATION.md` § 3 Path B](AUTHORITY_MIGRATION.md). Phase 1.5 (Tier 1) specifically adds:
 
@@ -155,7 +218,7 @@ Path A in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (wipe + re-import) 
 
 #### About the per-user attributes
 
-At Tier 1, the realm JSON sets `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status` on each **service-account user** directly. This is the *only* place those attributes need to live for connector ↔ connector policy evaluation. (At Tier 2, the same attributes get set on the per-org *human* users, again on the user record — stock Keycloak's `oidc-usermodel-attribute-mapper` reads user attributes only, there's no built-in mapper for group attributes.) Adding a new participant at Tier 1 = create a new connector client + SA user with the same attribute shape (the `EXTENSIONS=(...)` array pattern in [`IMPLEM_PLAN § 2.7`](IMPLEM_PLAN.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band)).
+At Tier 1, the realm JSON sets `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status` on each **service-account user** directly. This is the *only* place those attributes need to live for connector ↔ connector policy evaluation. (At Tier 2, the same attributes get set on the per-org *human* users, again on the user record - stock Keycloak's `oidc-usermodel-attribute-mapper` reads user attributes only, there's no built-in mapper for group attributes.) Adding a new participant at Tier 1 = create a new connector client + SA user with the same attribute shape (the `EXTENSIONS=(...)` array pattern in [`IMPLEM_PLAN § 2.7`](IMPLEM_PLAN.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band)).
 
 #### Rotating client secrets after import
 
@@ -169,24 +232,24 @@ curl -fsSL -X PUT "$KC_BASE/admin/realms/glcdi/clients/$CLIENT_INTERNAL_ID" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"secret\": \"$NEW_SECRET\"}"
-echo "New secret: $NEW_SECRET — store in GLCDI_CONNECTOR_CANEY_FORK_SECRET on the participant VM"
+echo "New secret: $NEW_SECRET - store in GLCDI_CONNECTOR_CANEY_FORK_SECRET on the participant VM"
 ```
 
 Repeat for each of the 3 connector clients (`caney-fork`, `point-blue`, `white-buffalo`). The `glcdi-ui` client is **not used at Tier 1**; rotating its secret can be deferred to the Tier-2 follow-up.
 
-### 2.3 Participant stacks — restart against the post-1.5 images
+### 2.3 Participant stacks - restart against the post-1.5 images
 
 For each participant VM (`caney-fork`, `point-blue`, `white-buffalo`), in sequence:
 
 1. `cd /glcdi/participant-agent-services && git pull` (lands the Tier-1 compose with `keycloak`, `postgres-kc`, **and `oauth2-proxy`** services removed).
 2. `docker compose pull` to get any newly-published `participant-ui` image with the Tier-1 entrypoint defaults (no OIDC envvars, API-key login).
-3. `docker compose down` — brings down the existing stack including the now-orphan `keycloak`, `postgres-kc`, and `oauth2-proxy` services from the old compose.
-4. (Optional, recoverable from § 2.1 snapshot) `docker volume rm <stack>_keycloak-pg-data` — the per-participant Keycloak data is no longer used.
+3. `docker compose down` - brings down the existing stack including the now-orphan `keycloak`, `postgres-kc`, and `oauth2-proxy` services from the old compose.
+4. (Optional, recoverable from § 2.1 snapshot) `docker volume rm <stack>_keycloak-pg-data` - the per-participant Keycloak data is no longer used.
 5. `docker compose up -d`.
-6. `docker compose ps` — expected services: `db-connector`, `edc-connector`, `catalogue-ui`, `identity-hub`, `nginx`. **No** `keycloak`, `postgres-kc`, or `oauth2-proxy`.
-7. Quick smoke: `curl -fsSL https://<participant-host>/management/v3/assets/request -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $EDC_API_KEY" -d '{"@context":{"@vocab":"https://w3id.org/edc/v0.0.1/ns/"},"@type":"QuerySpec"}'` — returns 200 with a JSON list (assets list, possibly empty pre-Phase-4 seeding).
+6. `docker compose ps` - expected services: `db-connector`, `edc-connector`, `catalogue-ui`, `identity-hub`, `nginx`. **No** `keycloak`, `postgres-kc`, or `oauth2-proxy`.
+7. Quick smoke: `curl -fsSL https://<participant-host>/management/v3/assets/request -X POST -H 'Content-Type: application/json' -H "X-Api-Key: $EDC_API_KEY" -d '{"@context":{"@vocab":"https://w3id.org/edc/v0.0.1/ns/"},"@type":"QuerySpec"}'` - returns 200 with a JSON list (assets list, possibly empty pre-Phase-4 seeding).
 
-The `.env` on the VM doesn't need editing during the cutover (already done out-of-band). If something is wrong with `.env`, fix it before restarting — `docker compose up -d` will pick it up.
+The `.env` on the VM doesn't need editing during the cutover (already done out-of-band). If something is wrong with `.env`, fix it before restarting - `docker compose up -d` will pick it up.
 
 ### 2.5 Post-cutover verification
 
@@ -198,16 +261,16 @@ bru run --env staging
 ```
 
 Expected: green run. Specifically:
-- `00-auth/*` — connector `client_credentials` tokens fetched cleanly from Authority KC; JWTs decoded by Bruno carry the expected `glcdi_*` claims.
-- `10-provider-seeding/*` — caney-fork connector accepts the asset/policy/contract-definition POSTs with `X-Api-Key` only.
-- `20-catalog-discovery/01-catalog-as-regen-producer.bru` — white-buffalo sees the M1 fixture asset.
-- `20-catalog-discovery/02-catalog-as-researcher.bru` — point-blue does NOT see it (filtered).
-- `30-negotiation/01` — internal-purpose negotiation reaches FINALIZED.
-- `30-negotiation/02` — research-purpose negotiation reaches TERMINATED.
-- `40-transfer/01` — transfer initiates and succeeds.
-- `99-negative-auth/*` — no-key and wrong-key calls return 401.
+- `00-auth/*` - connector `client_credentials` tokens fetched cleanly from Authority KC; JWTs decoded by Bruno carry the expected `glcdi_*` claims.
+- `10-provider-seeding/*` - caney-fork connector accepts the asset/policy/contract-definition POSTs with `X-Api-Key` only.
+- `20-catalog-discovery/01-catalog-as-regen-producer.bru` - white-buffalo sees the M1 fixture asset.
+- `20-catalog-discovery/02-catalog-as-researcher.bru` - point-blue does NOT see it (filtered).
+- `30-negotiation/01` - internal-purpose negotiation reaches FINALIZED.
+- `30-negotiation/02` - research-purpose negotiation reaches TERMINATED.
+- `40-transfer/01` - transfer initiates and succeeds.
+- `99-negative-auth/*` - no-key and wrong-key calls return 401.
 
-> **Pre-§ 3.5 caveat:** until [`IMPLEM_PLAN § 3.5`](IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) ships the `iam-mock` → `iam-oauth2` swap, DSP-level identity is the mock's fixed claims — the policy filtering scenarios above (catalog-discovery / negotiation) still pass against the *expected* outcome but the underlying claim chain isn't real yet. The Bruno auth folder (`00-auth/*`) verifies the Authority-KC side of the chain works; the connector-side validation happens once § 3.5 lands.
+> **Pre-§ 3.5 caveat:** until [`IMPLEM_PLAN § 3.5`](IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) ships the `iam-mock` → `iam-oauth2` swap, DSP-level identity is the mock's fixed claims - the policy filtering scenarios above (catalog-discovery / negotiation) still pass against the *expected* outcome but the underlying claim chain isn't real yet. The Bruno auth folder (`00-auth/*`) verifies the Authority-KC side of the chain works; the connector-side validation happens once § 3.5 lands.
 
 Also verify in browser dev tools (one happy-path session):
 - **No** calls to any Keycloak host. The catalogue UI authenticates to its local connector with `X-Api-Key` only.
@@ -261,7 +324,7 @@ Verify (Tier 1):
 In separate terminals:
 
 ```bash
-# Terminal A — caney-fork (provider)
+# Terminal A - caney-fork (provider)
 cd participant-agent-services
 cp .env.example .env.caney-fork
 # Edit .env.caney-fork:
@@ -281,15 +344,15 @@ docker compose --env-file .env.caney-fork up -d
 ```
 
 ```bash
-# Terminal B — white-buffalo (consumer)
+# Terminal B - white-buffalo (consumer)
 # Same shape, with PARTICIPANT_NAME=white-buffalo,
 #   EDC_OAUTH_CLIENT_ID=glcdi-connector-white-buffalo, and different ports (8081, 19194)
 docker compose --env-file .env.white-buffalo up -d
 ```
 
 Verify both stacks:
-- `docker compose ps` for each — all services healthy, **no** `keycloak`, `postgres-kc`, or `oauth2-proxy` services.
-- `curl -H "X-Api-Key: <EDC_API_KEY>" http://localhost:19193/management/v3/assets/request -X POST -d '{"@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"}, "@type": "QuerySpec"}' -H 'Content-Type: application/json'` returns `[]` (empty list, no assets seeded yet) — proves `X-Api-Key` works, management API is reachable directly (no oauth2-proxy hop).
+- `docker compose ps` for each - all services healthy, **no** `keycloak`, `postgres-kc`, or `oauth2-proxy` services.
+- `curl -H "X-Api-Key: <EDC_API_KEY>" http://localhost:19193/management/v3/assets/request -X POST -d '{"@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"}, "@type": "QuerySpec"}' -H 'Content-Type: application/json'` returns `[]` (empty list, no assets seeded yet) - proves `X-Api-Key` works, management API is reachable directly (no oauth2-proxy hop).
 
 ### 3.4 Seed the M1 fixtures
 
@@ -313,9 +376,9 @@ Expected outcomes:
 | Folder | Assertion | Status |
 |--------|-----------|--------|
 | `00-auth/01–03` | tokens fetched; expected `glcdi_*` claims present | ✅ |
-| `20-catalog-discovery/01-catalog-as-regen-producer.bru` | white-buffalo sees the M1 asset | ✅ — this is the M1 positive |
-| `20-catalog-discovery/02-catalog-as-researcher.bru` | point-blue does NOT see it (filtered) | ✅ — this is the M1 negative |
-| `30-negotiation/01-negotiate-internal-purpose.bru` | reaches FINALIZED (after polling — see Bruno notes) | ✅ |
+| `20-catalog-discovery/01-catalog-as-regen-producer.bru` | white-buffalo sees the M1 asset | ✅ - this is the M1 positive |
+| `20-catalog-discovery/02-catalog-as-researcher.bru` | point-blue does NOT see it (filtered) | ✅ - this is the M1 negative |
+| `30-negotiation/01-negotiate-internal-purpose.bru` | reaches FINALIZED (after polling - see Bruno notes) | ✅ |
 | `30-negotiation/02-negotiate-research-purpose.bru` | reaches TERMINATED | ✅ |
 | `40-transfer/01-initiate-transfer.bru` | transfer-process completes | ✅ |
 | `99-negative-auth/01,02` | 401 returned | ✅ |
@@ -326,9 +389,9 @@ If any row fails, see § 3.7 below.
 
 Open `http://localhost:8080` (caney-fork) in a browser:
 
-- The page loads directly — **no Keycloak redirect**. The UI shows a prompt to enter the operator API key on first load (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)).
+- The page loads directly - **no Keycloak redirect**. The UI shows a prompt to enter the operator API key on first load (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)).
 - Paste `<EDC_API_KEY>` into the prompt; the UI stores it in `localStorage.glcdi_operator_api_key` and uses it as `X-Api-Key` on every management-API call.
-- Browse to assets / policies / contract definitions / contract negotiations / transfer-processes sections — each component renders.
+- Browse to assets / policies / contract definitions / contract negotiations / transfer-processes sections - each component renders.
 - Browser DevTools network tab: every `/management/*` request carries `X-Api-Key` and **no `Authorization: Bearer`**; no `silent-callback` requests in flight; no calls to any Keycloak host.
 
 ### 3.7 Common failure modes
@@ -340,25 +403,25 @@ Open `http://localhost:8080` (caney-fork) in a browser:
 | `curl -H "X-Api-Key: …" .../management/…` returns 401 | API key on the request doesn't match `web.http.management.auth.key` in the connector's `configuration.properties` | Re-export `EDC_API_KEY=$(grep web.http.management.auth.key participant/configuration.properties | cut -d= -f2 | tr -d ' ')` and retry |
 | Bruno's `20-catalog-discovery/01` returns 200 but asset missing from response | Access policy not seeded, or seeded with a constraint that doesn't match the JWT's claim shape | Verify the policy JSON; verify the JWT claims via the `00-auth/*` decode assertions |
 | Catalog query returns 200 with the asset visible to *every* consumer (including `point-blue`) | Pre-§ 3.5 expected behaviour: `iam-mock` doesn't actually validate or extract claims, so the access policy receives a fixed mock identity | Expected pre-§ 3.5; the negative-case assertion (`point-blue` filtered out) only becomes load-bearing once `iam-oauth2` is wired |
-| Negotiation hangs in REQUESTED forever | `edc.dsp.callback.address` mismatch between the two participants | Check both `participant/configuration.properties` files — must match the external host the *other* connector calls back to |
+| Negotiation hangs in REQUESTED forever | `edc.dsp.callback.address` mismatch between the two participants | Check both `participant/configuration.properties` files - must match the external host the *other* connector calls back to |
 | Connector logs `Failed to obtain token from oauth2 IdP` after § 3.5 lands | `edc.oauth.token.url` / `edc.oauth.provider.jwks.url` / `edc.oauth.client.id` mismatch with Authority KC config | Verify all three properties resolve correctly; mint a `client_credentials` token manually with the same values to confirm it works end-to-end |
 | Participant UI shows "Network error" trying to call `/management` and `localStorage.glcdi_operator_api_key` is set | `EDC_API_KEY` rotation got out of sync between `.env` (consumed by UI build) and `configuration.properties` (consumed by connector) | Rotate the key in both places to the same value; restart connector + rebuild UI image |
-| Bruno test for the participant UI's `tems-transfers-list` component fails because the component isn't rendered | Component not configured in `participant-ui/config.json` (Track F finding — deferred) | Add the component to `config.json.template` per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent); rebuild and redeploy the participant UI image |
+| Bruno test for the participant UI's `tems-transfers-list` component fails because the component isn't rendered | Component not configured in `participant-ui/config.json` (Track F finding - deferred) | Add the component to `config.json.template` per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent); rebuild and redeploy the participant UI image |
 
 ---
 
 ## 4. Workflow recommendations
 
 - **Local validation is the gate before staging.** Don't push to staging if Bruno doesn't run green locally. Catching a misnamed claim or a missing redirect URI on the laptop is cheaper than catching it in a maintenance window.
-- **Cycle the local stack frequently** while iterating on policies (Phase 4) and policy functions (Phase 3) — `docker compose down -v` resets state cleanly.
+- **Cycle the local stack frequently** while iterating on policies (Phase 4) and policy functions (Phase 3) - `docker compose down -v` resets state cleanly.
 - **Snapshot before destructive changes** even locally (small disk overhead; saves a re-init if a config goes sideways).
-- **Use the same `.env` shape locally and in staging.** The only differences should be hostnames, ports, and secrets — not the variable names or which services are present.
+- **Use the same `.env` shape locally and in staging.** The only differences should be hostnames, ports, and secrets - not the variable names or which services are present.
 
 ---
 
 ## 5. Open items / future work
 
-- **Phase 3.5 prerequisite for the Tier-1 claim chain to be load-bearing.** Until `iam-oauth2` is wired in (currently `iam-mock` is the IdentityService), the policy engine doesn't actually evaluate `glcdi_*` claims at the receiving connector. Local validation can prove the auth path (token issuance, `X-Api-Key` gating) but not the policy decisions themselves. Re-run § 2.5 / § 3.5 after Phase 3.5 — that's when M1 sign-off on Tier 1 becomes possible.
+- **Phase 3.5 prerequisite for the Tier-1 claim chain to be load-bearing.** Until `iam-oauth2` is wired in (currently `iam-mock` is the IdentityService), the policy engine doesn't actually evaluate `glcdi_*` claims at the receiving connector. Local validation can prove the auth path (token issuance, `X-Api-Key` gating) but not the policy decisions themselves. Re-run § 2.5 / § 3.5 after Phase 3.5 - that's when M1 sign-off on Tier 1 becomes possible.
 - **Realm-import determinism.** The `glcdi-realm.json` is imported only on first boot. Operators applying changes through Path B (live admin console) must keep the in-repo JSON in sync manually. Future work: a CI check that fails if the in-repo JSON drifts from the live realm export.
 - **Per-participant deployment-config templates.** Today each participant copies `.env.example` and edits manually. A small generator script (one-shot per onboarding) would reduce config drift between participants.
 - **Tier-2 cutover runbook.** When [`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) is approved, this doc gets a § 4 covering the additional cutover steps (oauth2-proxy reintroduction, UI OIDC restoration, per-org groups + human-user activation). The Tier-2 follow-up appendix in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md#appendix-tier-2-follow-up-checklist-post-m1-optional) is the placeholder.
@@ -368,9 +431,9 @@ Open `http://localhost:8080` (caney-fork) in a browser:
 
 ## References
 
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) — phased plan, especially § 1.5 (Authority cleanup + identity simplification), § 4.5 (Bruno + UI tracks), § Milestone M1.
-- [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) — operator checklist focused on the rename (DNS, TLS, KC paths A/B, CI/CD vars, VM layout).
-- [`IDENTITY.md`](IDENTITY.md) — post-Phase-1.5 identity architecture, claim model, OIDC vs OID4VC rationale.
-- [`PAYMENT_GATING.md`](PAYMENT_GATING.md) — payment-required workflow design (post-M1).
-- [`bruno/`](bruno/) — Bruno HTTP-test collection for the M1 scenario (track 4.5.E).
-- [`policies/`](policies/) — ODRL policy templates (the `regenerative-producers-only` access policy and `internal-use-only` contract policy used in M1 live in `policies/access/` and `policies/contract/`).
+- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - phased plan, especially § 1.5 (Authority cleanup + identity simplification), § 4.5 (Bruno + UI tracks), § Milestone M1.
+- [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) - operator checklist focused on the rename (DNS, TLS, KC paths A/B, CI/CD vars, VM layout).
+- [`IDENTITY.md`](IDENTITY.md) - post-Phase-1.5 identity architecture, claim model, OIDC vs OID4VC rationale.
+- [`PAYMENT_GATING.md`](PAYMENT_GATING.md) - payment-required workflow design (post-M1).
+- [`bruno/`](bruno/) - Bruno HTTP-test collection for the M1 scenario (track 4.5.E).
+- [`policies/`](policies/) - ODRL policy templates (the `regenerative-producers-only` access policy and `internal-use-only` contract policy used in M1 live in `policies/access/` and `policies/contract/`).

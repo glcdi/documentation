@@ -1,5 +1,5 @@
 meta {
-  name: Management API call with no X-Api-Key — expect 401
+  name: Management API call with no X-Api-Key - expect 401
   type: http
   seq: 1
 }
@@ -12,12 +12,12 @@ post {
 
 docs {
   Deliberately omits X-Api-Key. The X-Api-Key floor (IMPLEM_PLAN § 1.5.3) is
-  enforced at both Tier 1 and Tier 2 — the connector should refuse with 401
+  enforced at both Tier 1 and Tier 2 - the connector should refuse with 401
   either way. At Tier 2 the missing Bearer would also fail oauth2-proxy, but
   the API-key check fires regardless.
 
   Uses POST /assets/request (the canonical EDC list endpoint) instead of
-  GET /assets (which doesn't exist — would 405 before the auth filter
+  GET /assets (which doesn't exist - would 405 before the auth filter
   even runs).
 }
 

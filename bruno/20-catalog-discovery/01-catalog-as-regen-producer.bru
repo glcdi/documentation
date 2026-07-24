@@ -1,5 +1,5 @@
 meta {
-  name: Catalog query as regenerative producer (white-buffalo) — positive case
+  name: Catalog query as regenerative producer (white-buffalo) - positive case
   type: http
   seq: 1
 }
@@ -20,11 +20,11 @@ docs {
 
   At Tier 1 (this collection's default), the management call only carries
   `X-Api-Key`. The identity claims that drive the policy decision flow over
-  the DSP layer between the two connectors — white-buffalo's connector mints
+  the DSP layer between the two connectors - white-buffalo's connector mints
   its own `client_credentials` token at startup and presents it to caney-fork
   via DSP; caney-fork's `iam-oauth2` (post-§ 3.5) extracts the `glcdi_*`
   claims into ClaimToken for policy evaluation. Bruno doesn't drive that
-  token mint — the connector does it itself.
+  token mint - the connector does it itself.
 }
 
 headers {

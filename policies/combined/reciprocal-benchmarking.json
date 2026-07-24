@@ -4,7 +4,7 @@
     "odrl": "http://www.w3.org/ns/odrl/2/",
     "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
   },
-  "comment": "SCENARIO: Reciprocal Benchmarking Pool — Ranchers form a benchmarking pool where access is conditional on contribution. A rancher who has not published any data to the dataspace cannot access the pool. Those who contribute get access to peer data AND must share their benchmarking results back. This encodes the reciprocity expectation described in the GLCDI Trust Framework: participants establish clear reciprocity expectations as part of the trust boundaries.",
+  "comment": "SCENARIO: Reciprocal Benchmarking Pool - Ranchers form a benchmarking pool where access is conditional on contribution. A rancher who has not published any data to the dataspace cannot access the pool. Those who contribute get access to peer data AND must share their benchmarking results back. This encodes the reciprocity expectation described in the GLCDI Trust Framework: participants establish clear reciprocity expectations as part of the trust boundaries.",
 
   "accessPolicy": {
     "@id": "glcdi:access:benchmarking-pool",

@@ -52,7 +52,7 @@ tests {
 
   test("token carries GLCDI claims", function() {
     const token = res.getBody().access_token;
-    // Decode JWT middle segment (no signature verification — Bruno is just
+    // Decode JWT middle segment (no signature verification - Bruno is just
     // checking the shape; the connector's iam-oauth2 verifies the signature
     // against the Authority KC JWKS at policy-evaluation time).
     const payload = JSON.parse(

@@ -1,4 +1,4 @@
-@startuml Contract Rejected — Wrong Purpose
+@startuml Contract Rejected - Wrong Purpose
 title **Contract Policy Enforcement: Wrong Purpose**\nA corporate actor tries to use research data for ESG reporting
 
 skinparam backgroundColor #FEFEFE
@@ -14,7 +14,7 @@ actor "ESG Analyst\n(Corporate partner)" as Analyst #FFF3E0
 participant "Corporate\nEDC Connector" as CORP_EDC #E3F2FD
 participant "Caney Fork\nEDC Connector" as CF_EDC #E8F5E9
 
-== Catalog Discovery (succeeds — asset uses members-only access) ==
+== Catalog Discovery (succeeds - asset uses members-only access) ==
 
 Analyst -> CORP_EDC : Browse Caney Fork catalog
 CORP_EDC -> CF_EDC : DSP Catalog Query
@@ -37,7 +37,7 @@ note over Analyst
   or internal analysis only.
 end note
 
-== Contract Negotiation (fails — wrong purpose) ==
+== Contract Negotiation (fails - wrong purpose) ==
 
 Analyst -> CORP_EDC : Accepts terms\npurpose = "Scope3Reporting"
 CORP_EDC -> CF_EDC : Contract negotiation\n(purpose = "Scope3Reporting")

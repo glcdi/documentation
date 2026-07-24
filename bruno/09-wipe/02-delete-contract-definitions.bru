@@ -16,7 +16,7 @@ docs {
 
   Bruno has no native fan-out over a JSON array, so each invocation deletes
   exactly one item. The post-response script shifts the array, re-stores it,
-  and re-binds `contract_definition_next_id` to the new head — so re-running
+  and re-binds `contract_definition_next_id` to the new head - so re-running
   this request walks through the list without needing to re-list every time.
 
   Manual loop:
@@ -34,7 +34,7 @@ headers {
 script:pre-request {
   const nextId = bru.getVar("contract_definition_next_id");
   if (!nextId) {
-    console.warn("contract_definition_next_id is empty — run 01-list-contract-definitions first, or the list is already empty.");
+    console.warn("contract_definition_next_id is empty - run 01-list-contract-definitions first, or the list is already empty.");
   }
 }
 

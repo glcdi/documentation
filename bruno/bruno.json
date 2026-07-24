@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "GLCDI M1 — Regenerative-Only + Internal-Use-Only",
+  "name": "GLCDI M1 - Regenerative-Only + Internal-Use-Only",
   "type": "collection",
   "ignore": [
     "node_modules",

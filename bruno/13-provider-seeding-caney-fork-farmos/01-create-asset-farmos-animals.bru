@@ -1,5 +1,5 @@
 meta {
-  name: Create asset (caney-fork — farmOS animals, OAuth2-fetched)
+  name: Create asset (caney-fork - farmOS animals, OAuth2-fetched)
   type: http
   seq: 1
 }
@@ -17,22 +17,22 @@ docs {
   controlplane shadow JAR): when the asset's privateProperties carries
   `oauth2:clientSecret`, the extension performs the token exchange at
   request time against `oauth2:tokenUrl` and injects
-  `Authorization: Bearer <token>` into the outbound fetch — no
+  `Authorization: Bearer <token>` into the outbound fetch - no
   vault.properties edit needed.
 
   Where each field lives, and why:
 
-    properties               — catalog-exposed metadata (peers see this).
+    properties               - catalog-exposed metadata (peers see this).
                                Carries name, description, content-type,
                                glcdi:assetClass. NEVER carries secrets.
 
-    privateProperties        — server-side-only metadata (never in the
+    privateProperties        - server-side-only metadata (never in the
                                catalog response, never wired to a peer).
                                Carries `oauth2:clientSecret`. Mutating
-                               this is a pure Management API call — no
+                               this is a pure Management API call - no
                                vault edit, no connector restart.
 
-    dataAddress              — server-side-only fetch metadata (also
+    dataAddress              - server-side-only fetch metadata (also
                                never in the catalog). Carries the
                                operational, non-secret OAuth2 params:
                                tokenUrl, clientId, scope. Plus the
@@ -57,7 +57,7 @@ body:json {
     "@id": "{{farmos_animal_asset_id}}",
     "@type": "Asset",
     "properties": {
-      "name": "{{org_display_name}} — live animal census (farmOS)",
+      "name": "{{org_display_name}} - live animal census (farmOS)",
       "description": "JSON:API feed of farmOS asset/animal records on caney-fork's farmOS instance, fetched at transfer time via OAuth2 client_credentials.",
       "contenttype": "application/vnd.api+json",
       "glcdi:assetClass": "livestock-census",

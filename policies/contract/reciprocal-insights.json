@@ -22,7 +22,7 @@
                 "rightOperand": "glcdi:OriginalProvider"
               }
             ],
-            "comment": "The consumer must share back any derived insights, model outputs, or analytical results with the original data provider. This does not require sharing raw data from the consumer's own holdings — only the outputs produced using the provider's data. For example: a researcher who trains a model on Caney Fork SOC data must share the model's predictions back with Caney Fork. A rancher who benchmarks against a peer's grazing rotation must share their own benchmarking results."
+            "comment": "The consumer must share back any derived insights, model outputs, or analytical results with the original data provider. This does not require sharing raw data from the consumer's own holdings - only the outputs produced using the provider's data. For example: a researcher who trains a model on Caney Fork SOC data must share the model's predictions back with Caney Fork. A rancher who benchmarks against a peer's grazing rotation must share their own benchmarking results."
           }
         ]
       },

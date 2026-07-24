@@ -4,7 +4,7 @@
     "odrl": "http://www.w3.org/ns/odrl/2/",
     "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
   },
-  "comment": "SCENARIO: Agronomic Model Calibration — A research institution (e.g., Point Blue Conservation Science) wants to access SOC and grazing management data from multiple ranches to train a predictive model that estimates how SOC changes in response to grazing practices. The producer (e.g., Caney Fork Farms) shares their data under strict conditions: only researchers may see it, it can only be used for model training, must be anonymised, and attribution is required.",
+  "comment": "SCENARIO: Agronomic Model Calibration - A research institution (e.g., Point Blue Conservation Science) wants to access SOC and grazing management data from multiple ranches to train a predictive model that estimates how SOC changes in response to grazing practices. The producer (e.g., Caney Fork Farms) shares their data under strict conditions: only researchers may see it, it can only be used for model training, must be anonymised, and attribution is required.",
 
   "accessPolicy": {
     "@id": "glcdi:access:model-calibration-researchers",

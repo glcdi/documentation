@@ -53,7 +53,7 @@ note right of Finance
   (PAYMENT_GATING.md §6.1).
 end note
 
-== Premature Transfer Attempt — rejected by the gate ==
+== Premature Transfer Attempt - rejected by the gate ==
 
 Consumer -> C_EDC : Request transfer (before payment)
 C_EDC -> P_EDC : POST /v3/transferprocesses
@@ -61,7 +61,7 @@ group PaymentRequiredFilter
   P_EDC -> P_EDC : Read privateProperties:\npayment.status == "pending"\n=> **REJECT**
 end
 P_EDC --> C_EDC : **HTTP 402 Payment Required**
-C_EDC --> Consumer : Transfer rejected — payment pending
+C_EDC --> Consumer : Transfer rejected - payment pending
 
 == External Payment ==
 
@@ -70,7 +70,7 @@ Pay --> Consumer : Invoice (out-of-band channel\nowned by the billing system)
 Consumer -> Pay : Pay invoice
 Pay --> Finance : Payment confirmed\n(externalRef: e.g. stripe_pi_3MXa...)
 
-== Payment Status Update — back-channel into the connector ==
+== Payment Status Update - back-channel into the connector ==
 
 Finance -> P_EDC : POST /v3/contractnegotiations/{id}/payment\nX-Api-Key: ...\n{paid: true, amount: "100.00",\n currency: "USD", externalRef: "..."}
 group PaymentController
@@ -108,7 +108,7 @@ note over P_EDC
   Substrate for refund-claim adjudication and
   Trust Framework compliance reviews.
   An aggregating service + UI on the Authority side
-  is **proposed** (PAYMENT_GATING.md §3.3) — not built yet.
+  is **proposed** (PAYMENT_GATING.md §3.3) - not built yet.
 end note
 
 == If deadline passes without payment (v2) ==
@@ -122,7 +122,7 @@ end note
      → both sides converge on **TERMINATED**
   4. Cascade-terminate any in-flight transfer-processes
   Once terminated, EDC core refuses any future transfer creation
-  upstream of the v0 filter — the deadline check in the filter becomes redundant.
+  upstream of the v0 filter - the deadline check in the filter becomes redundant.
 end note
 
 @enduml

@@ -25,7 +25,7 @@ headers {
 script:pre-request {
   const nextId = bru.getVar("policy_definition_next_id");
   if (!nextId) {
-    console.warn("policy_definition_next_id is empty — run 03-list-policy-definitions first, or the list is already empty.");
+    console.warn("policy_definition_next_id is empty - run 03-list-policy-definitions first, or the list is already empty.");
   }
 }
 

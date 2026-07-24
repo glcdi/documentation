@@ -19,14 +19,14 @@
 #   --no-dry-run        actually execute (default: dry-run preview)
 #   --kc-secret SECRET  governance Keycloak client secret for glcdi-connector-demo
 #                       (you get this from the governance KC admin console
-#                       AFTER you register the client there — see step "manual" below)
+#                       AFTER you register the client there - see step "manual" below)
 #                       Required only with --no-dry-run, omit on dry-run.
 #                       Can also be passed via env var DEMO_KC_CLIENT_SECRET.
 #   --keep-volumes      do NOT drop the named volumes (state survives).
 #                       Use only if you've already wiped manually.
 #
 # Out-of-band manual steps NOT covered by this script (do these on the
-# governance VM via the Keycloak admin console — there is no API key
+# governance VM via the Keycloak admin console - there is no API key
 # auto-discovery here):
 #
 #   1. Governance KC realm `glcdi`:
@@ -98,7 +98,7 @@ while [[ $# -gt 0 ]]; do
     --kc-secret)     KC_SECRET="${2:-}"; shift 2 || die "--kc-secret needs a value" ;;
     --kc-secret=*)   KC_SECRET="${1#--kc-secret=}"; shift ;;
     -h|--help)       sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *)               die "unknown argument: $1 — see --help" ;;
+    *)               die "unknown argument: $1 - see --help" ;;
   esac
 done
 
@@ -114,8 +114,8 @@ preflight() {
   done
   docker compose version >/dev/null 2>&1 || die "docker compose v2 missing"
 
-  [[ -d "$REPO_PATH" ]] || die "REPO_PATH '$REPO_PATH' is not a directory — set REPO_PATH=/glcdi/... if your VM uses that layout"
-  [[ -f "$REPO_PATH/.env" ]] || die "$REPO_PATH/.env missing — is this a snapshot of a participant VM?"
+  [[ -d "$REPO_PATH" ]] || die "REPO_PATH '$REPO_PATH' is not a directory - set REPO_PATH=/glcdi/... if your VM uses that layout"
+  [[ -f "$REPO_PATH/.env" ]] || die "$REPO_PATH/.env missing - is this a snapshot of a participant VM?"
   [[ -f "$REPO_PATH/docker-compose.yml" ]] || die "$REPO_PATH/docker-compose.yml missing"
 
   local old_name
@@ -125,7 +125,7 @@ preflight() {
   fi
   log "Current PARTICIPANT_NAME: $old_name"
   if [[ "$old_name" == "$DEMO_SLUG" ]]; then
-    warn "Already PARTICIPANT_NAME=$DEMO_SLUG — script seems already-applied. Re-running will rewrite secrets."
+    warn "Already PARTICIPANT_NAME=$DEMO_SLUG - script seems already-applied. Re-running will rewrite secrets."
   else
     log "Will convert: $old_name → $DEMO_SLUG"
   fi
@@ -136,7 +136,7 @@ preflight() {
       die "--no-dry-run requires --kc-secret SECRET (or DEMO_KC_CLIENT_SECRET env). Get the secret from the governance KC client glcdi-connector-demo."
     fi
     if [[ ${#KC_SECRET} -lt 16 ]]; then
-      warn "KC client secret looks short (${#KC_SECRET} chars) — KC mints 36+ char secrets by default. Continuing anyway."
+      warn "KC client secret looks short (${#KC_SECRET} chars) - KC mints 36+ char secrets by default. Continuing anyway."
     fi
   fi
 
@@ -157,7 +157,7 @@ stop_stack() {
     log "  [dry-run] cd $REPO_PATH && docker compose --profile prod down --remove-orphans"
     return 0
   fi
-  compose_in down --remove-orphans || warn "compose down returned non-zero — continuing"
+  compose_in down --remove-orphans || warn "compose down returned non-zero - continuing"
   ok "  stack stopped"
 }
 
@@ -170,7 +170,7 @@ drop_volumes() {
   local vols
   vols=$(docker volume ls --format '{{.Name}}' | grep "^${project}_" || true)
   if [[ -z "$vols" ]]; then
-    warn "No volumes matching ^${project}_ — already wiped, or compose project named differently"
+    warn "No volumes matching ^${project}_ - already wiped, or compose project named differently"
     return 0
   fi
   log "Found volumes for project $project:"
@@ -286,7 +286,7 @@ EOF
 # participant/configuration.properties regeneration
 # -----------------------------------------------------------------------------
 
-# We don't want to fight the .example layout — instead, rewrite the live
+# We don't want to fight the .example layout - instead, rewrite the live
 # .properties file in-place by substituting placeholders / known values.
 # The 3 substitutions that matter:
 #   - PARTICIPANT_NAME placeholder OR existing slug → demo slug
@@ -297,7 +297,7 @@ write_properties() {
   local cfg_example="$REPO_PATH/participant/configuration.properties.example"
 
   if [[ ! -f "$cfg" && -f "$cfg_example" ]]; then
-    log "$cfg missing — bootstrapping from $cfg_example"
+    log "$cfg missing - bootstrapping from $cfg_example"
     if $DRY_RUN; then
       log "  [dry-run] cp $cfg_example $cfg"
     else
@@ -354,14 +354,14 @@ write_idh_properties() {
   local idh_example="$REPO_PATH/participant/idh-configuration.properties.example"
 
   if [[ ! -f "$idh" && -f "$idh_example" ]]; then
-    log "$idh missing — bootstrapping from $idh_example"
+    log "$idh missing - bootstrapping from $idh_example"
     if $DRY_RUN; then
       log "  [dry-run] cp $idh_example $idh"
     else
       cp "$idh_example" "$idh"
     fi
   elif [[ ! -f "$idh" ]]; then
-    warn "$idh missing AND no .example — skipping IDH config rewrite"
+    warn "$idh missing AND no .example - skipping IDH config rewrite"
     return 0
   fi
 
@@ -391,7 +391,7 @@ start_stack() {
     log "  [dry-run] cd $REPO_PATH && docker compose --profile prod up -d"
     return 0
   fi
-  compose_in pull || warn "compose pull returned non-zero — continuing with cached images"
+  compose_in pull || warn "compose pull returned non-zero - continuing with cached images"
   compose_in up -d || die "compose up failed"
   ok "  stack starting"
 }
@@ -411,7 +411,7 @@ health_check() {
     fi
     sleep 5
   done
-  warn "  connector did not pass /check/health within 150s — inspect with: docker logs $container"
+  warn "  connector did not pass /check/health within 150s - inspect with: docker logs $container"
 }
 
 # -----------------------------------------------------------------------------
@@ -420,7 +420,7 @@ health_check() {
 
 next_steps() {
   hr
-  ok "Conversion DONE — next manual steps:"
+  ok "Conversion DONE - next manual steps:"
   printf '\n'
   printf '  1. On the GOVERNANCE Keycloak admin console (glcdi realm):\n'
   printf '     - Client %s (created already if you passed --kc-secret)\n' "$DEMO_PARTICIPANT_ID"
@@ -438,7 +438,7 @@ next_steps() {
   printf '     - As demo@%s, you should additionally see the Stone Barns asset (members-policy).\n' "$DEMO_DOMAIN"
   if ! $DRY_RUN; then
     printf '\n'
-    printf '  NEW EDC_API_KEY (preserve — your laptop glcdi.sh fetches this via SSH):\n'
+    printf '  NEW EDC_API_KEY (preserve - your laptop glcdi.sh fetches this via SSH):\n'
     printf '     %s\n' "$NEW_API_KEY"
   fi
 }
@@ -453,7 +453,7 @@ main() {
   hr
 
   if $DRY_RUN; then
-    warn "DRY-RUN — no destructive action will run. Add --no-dry-run to commit."
+    warn "DRY-RUN - no destructive action will run. Add --no-dry-run to commit."
   else
     warn "LIVE RUN. Stack will be torn down and reinitialized. Ctrl-C within 5s to abort."
     local i; for i in 5 4 3 2 1; do printf '  %d...\n' "$i"; sleep 1; done

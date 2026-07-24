@@ -1,4 +1,4 @@
-# GLCDI Dataspace Authority — Proposal
+# GLCDI Dataspace Authority - Proposal
 
 A proposal for the responsibilities, composition, and operating mode of the governance body provisionally named the **Dataspace Authority**. Everything below is put forward for discussion with the body itself once seated; nothing here is a decided commitment.
 
@@ -8,7 +8,7 @@ This document answers: *what would the Dataspace Authority be accountable for, h
 
 "Dataspace Authority" is a working name. Two things to flag for the body to weigh in on:
 
-- **Terminological collision.** In the wider dataspace literature (Gaia-X, IDSA, DSBA), "Authority" has specific meaning — Federation Authority, Participant Authority, Sector Authority — typically bodies that *issue credentials* and act as technical trust anchors. Under this proposal the body's remit is governance-and-approvals, not credential issuance; the name may be stronger than the role.
+- **Terminological collision.** In the wider dataspace literature (Gaia-X, IDSA, DSBA), "Authority" has specific meaning - Federation Authority, Participant Authority, Sector Authority - typically bodies that *issue credentials* and act as technical trust anchors. Under this proposal the body's remit is governance-and-approvals, not credential issuance; the name may be stronger than the role.
 - **Proposal tone.** This document, and the rest of `management/`, frames governance content as proposals because the body has not yet agreed its own scope. "Authority" is a firmer label than "Committee" or "Council" and may preempt that agreement.
 
 Alternative names to consider: *Governance Council*, *Dataspace Council*, *Trust Body*, *Participant Council*. Keeping "Steering Committee" is also an option. The rest of this document uses "Dataspace Authority" as the current working name.
@@ -17,7 +17,7 @@ Alternative names to consider: *Governance Council*, *Dataspace Council*, *Trust
 
 ## Why a governance body exists at all
 
-GLCDI is a **consent-governed, permissioned** dataspace — participants retain control over their data, and access is mediated by policies and by a shared Trust Framework. Several decisions cannot be automated or delegated to individual participants:
+GLCDI is a **consent-governed, permissioned** dataspace - participants retain control over their data, and access is mediated by policies and by a shared Trust Framework. Several decisions cannot be automated or delegated to individual participants:
 
 - Who is allowed into the dataspace (membership approval).
 - What participant *types* and *certification statuses* mean (shared vocabulary).
@@ -25,7 +25,7 @@ GLCDI is a **consent-governed, permissioned** dataspace — participants retain 
 - When a cohort is ready to close out and the next one to start.
 - What to do when a participant allegedly breaches an obligation.
 
-A standing body is proposed because these decisions recur, touch every participant, and require institutional memory. Without it, each decision would have to be reopened with the full participant set every time — which is not workable beyond a small prototype.
+A standing body is proposed because these decisions recur, touch every participant, and require institutional memory. Without it, each decision would have to be reopened with the full participant set every time - which is not workable beyond a small prototype.
 
 ---
 
@@ -37,7 +37,7 @@ Grouped by theme. "Proposed" means the project team is putting this forward as a
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Review participant applications | Confirm stated organisation, participant type, certification evidence; approve or reject onboarding | [`README.md` § Onboarding Flow](README.md) (replaced — see below), [`IDENTITY.md` § Onboarding Flow (Proposed)](IDENTITY.md#onboarding-flow-proposed) |
+| Review participant applications | Confirm stated organisation, participant type, certification evidence; approve or reject onboarding | [`README.md` § Onboarding Flow](README.md) (replaced - see below), [`IDENTITY.md` § Onboarding Flow (Proposed)](IDENTITY.md#onboarding-flow-proposed) |
 | Approve role assignment | Assign realm roles (`glcdi_member` + participant-type role) and initial certification status on approval | [`IDENTITY.md` § Proposed Participant Role Assignments](IDENTITY.md#proposed-participant-role-assignments) |
 | Suspend or offboard | Revoke membership on serious or repeated Trust Framework breach; define what "serious" means | §C below |
 | Maintain the participant-type taxonomy | Own the canonical list of participant types (`producer`, `researcher`, `data-steward`, …) | [`IMPLEM_PLAN.md` § 1.2](IMPLEM_PLAN.md) |
@@ -65,7 +65,7 @@ Grouped by theme. "Proposed" means the project team is putting this forward as a
 
 | Responsibility | Detail | Cross-reference |
 |----------------|--------|-----------------|
-| Monitor duty-based obligations | Oversee compliance with `attribution`, `anonymisation`, `reciprocal-insights` — obligations the connector cannot technically enforce | [`policies/README.md` § Implementation Feasibility](policies/README.md#implementation-feasibility) |
+| Monitor duty-based obligations | Oversee compliance with `attribution`, `anonymisation`, `reciprocal-insights` - obligations the connector cannot technically enforce | [`policies/README.md` § Implementation Feasibility](policies/README.md#implementation-feasibility) |
 | Define audit mechanism | Choose between self-attestation, periodic review, and automated checks; document the chosen mix in Trust Framework v1 | [`IMPLEM_PLAN.md` § 6.2](IMPLEM_PLAN.md) |
 | Handle incident and breach reports | Receive complaints, investigate, propose remediation; escalate to legal counsel only where the DSA warrants it | *to be documented in Trust Framework* |
 | Approve consent revocation procedures | Document how a producer revokes consent for a previously shared dataset (contracts, deletion notification, audit trail) | [`IMPLEM_PLAN.md` § 6.3](IMPLEM_PLAN.md) |
@@ -91,7 +91,7 @@ Composition is harder to propose without knowing the seated participants; the sh
 | Research institution representative(s) | Voice of data consumers whose research depends on the dataspace | 1 |
 | Data steward representative | Bridges producers and researchers; maintains curated datasets | 1 |
 | Project team lead (technical) | Liaison with the implementation effort; non-voting on non-technical matters (optional) | 1 |
-| Project team lead (governance) | Secretariat role — agenda, minutes, action tracking (optional) | 1 |
+| Project team lead (governance) | Secretariat role - agenda, minutes, action tracking (optional) | 1 |
 | Funder observer (non-voting) | Strategic alignment; no veto on participant-level decisions | 0–1 |
 
 **Open questions on composition:**
@@ -107,8 +107,8 @@ Composition is harder to propose without knowing the seated participants; the sh
 
 | Mode | Cadence | Typical agenda |
 |------|---------|----------------|
-| **Standing session** | Monthly (indicative — to be agreed) | Cohort status, onboarding approvals, Trust Framework iterations, any pending compliance items |
-| **Asynchronous queue** | Rolling | Time-sensitive approvals — certification-status updates, contribution-status flips, onboarding green-lights that do not warrant a full session |
+| **Standing session** | Monthly (indicative - to be agreed) | Cohort status, onboarding approvals, Trust Framework iterations, any pending compliance items |
+| **Asynchronous queue** | Rolling | Time-sensitive approvals - certification-status updates, contribution-status flips, onboarding green-lights that do not warrant a full session |
 | **Ad-hoc session** | On demand | Incident / breach response, scope-change proposals, urgent disputes |
 
 ### Decision-making
@@ -139,19 +139,19 @@ The project team is proposed to provide secretariat support (agenda preparation,
 
 Listed explicitly to prevent scope creep and to make the body's remit auditable.
 
-- **Day-to-day technical operations** — deploys, incident runbooks, on-call. Owned by the Project Team.
-- **Individual data-sharing decisions** — the Authority does not approve or reject specific contracts between two participants; that is what access + contract policies mediate automatically.
-- **Commercial / pricing decisions** — including future corporate `payment-required` amounts. Those belong to the relevant provider participant, with the Authority approving only the *policy template* wording.
-- **Fundraising or grant strategy** — owned by the initiative sponsors.
-- **Legal prosecution of breach** — the Authority documents and refers; it does not litigate.
-- **Technical architecture choices** — e.g. OIDC vs. DCP / VC migration timing. The Authority endorses a direction proposed by the Project Team; it does not design the stack itself.
+- **Day-to-day technical operations** - deploys, incident runbooks, on-call. Owned by the Project Team.
+- **Individual data-sharing decisions** - the Authority does not approve or reject specific contracts between two participants; that is what access + contract policies mediate automatically.
+- **Commercial / pricing decisions** - including future corporate `payment-required` amounts. Those belong to the relevant provider participant, with the Authority approving only the *policy template* wording.
+- **Fundraising or grant strategy** - owned by the initiative sponsors.
+- **Legal prosecution of breach** - the Authority documents and refers; it does not litigate.
+- **Technical architecture choices** - e.g. OIDC vs. DCP / VC migration timing. The Authority endorses a direction proposed by the Project Team; it does not design the stack itself.
 
 ---
 
 ## Open questions
 
 1. **Name.** Does the body accept "Dataspace Authority", or prefer another name (Council, Committee, Trust Body)? See §Naming caveat.
-2. **Voting.** What decision rule applies — rough consensus, majority, supermajority, weighted by participant type?
+2. **Voting.** What decision rule applies - rough consensus, majority, supermajority, weighted by participant type?
 3. **Seats.** Who sits on the first instance of the body, and how are seats filled / refreshed over time?
 4. **Async ratification window.** Is 5 business days right for async decisions, or too long / too short?
 5. **Funder observer.** Include from the outset, or introduce only if a dedicated institutional funder is named?
@@ -161,9 +161,9 @@ Listed explicitly to prevent scope creep and to make the body's remit auditable.
 
 ## References
 
-- [`README.md`](README.md) — governance overview (high-level)
-- [`IDENTITY.md`](IDENTITY.md) — identity, onboarding flow, role assignments
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) — phased implementation plan; Phase 2 (Keycloak claims), Phase 6 (governance-level enforcement)
-- [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) — operator checklist for renaming the live `governance-*` infrastructure once this proposal is ratified
-- [`policies/plan.md`](policies/plan.md) — cohort-level policy rollout proposal, including Authority-owned decision points
-- [`policies/README.md`](policies/README.md) — per-policy implementation feasibility and governance-vs-technical enforcement
+- [`README.md`](README.md) - governance overview (high-level)
+- [`IDENTITY.md`](IDENTITY.md) - identity, onboarding flow, role assignments
+- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - phased implementation plan; Phase 2 (Keycloak claims), Phase 6 (governance-level enforcement)
+- [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) - operator checklist for renaming the live `governance-*` infrastructure once this proposal is ratified
+- [`policies/plan.md`](policies/plan.md) - cohort-level policy rollout proposal, including Authority-owned decision points
+- [`policies/README.md`](policies/README.md) - per-policy implementation feasibility and governance-vs-technical enforcement

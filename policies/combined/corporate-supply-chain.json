@@ -4,7 +4,7 @@
     "odrl": "http://www.w3.org/ns/odrl/2/",
     "glcdi": "https://w3id.org/glcdi/v0.1.0/ns/"
   },
-  "comment": "SCENARIO: Corporate Supply Chain / ESG Reporting — A food company or certification body needs aggregated SOC data to support Scope 3 emissions calculations, ESG reporting, or regenerative sourcing claims. The data provider (a ranch) allows access but requires: anonymisation of farm-level data, attribution to GLCDI, payment for data access, and a strict retention limit. This scenario anticipates post-prototype corporate participation mentioned in the blueprint.",
+  "comment": "SCENARIO: Corporate Supply Chain / ESG Reporting - A food company or certification body needs aggregated SOC data to support Scope 3 emissions calculations, ESG reporting, or regenerative sourcing claims. The data provider (a ranch) allows access but requires: anonymisation of farm-level data, attribution to GLCDI, payment for data access, and a strict retention limit. This scenario anticipates post-prototype corporate participation mentioned in the blueprint.",
 
   "accessPolicy": {
     "@id": "glcdi:access:corporate-partners",

@@ -21,7 +21,7 @@
     "obligation": [
       {
         "action": "anonymize",
-        "comment": "The consumer MUST anonymise all personally-identifiable and farm-identifiable information before any processing, analysis, or publication. This includes ranch names, GPS coordinates (must be generalised to county/region level), and any field-level identifiers. This is a contractual obligation — enforcement relies on the Data Sharing Agreement, not technical controls."
+        "comment": "The consumer MUST anonymise all personally-identifiable and farm-identifiable information before any processing, analysis, or publication. This includes ranch names, GPS coordinates (must be generalised to county/region level), and any field-level identifiers. This is a contractual obligation - enforcement relies on the Data Sharing Agreement, not technical controls."
       },
       {
         "action": "inform",

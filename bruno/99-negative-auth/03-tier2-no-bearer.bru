@@ -1,5 +1,5 @@
 meta {
-  name: Management call without Bearer (Tier 2 only) — expect 401 at Tier 2, 200 at Tier 1
+  name: Management call without Bearer (Tier 2 only) - expect 401 at Tier 2, 200 at Tier 1
   type: http
   seq: 3
 }
@@ -11,17 +11,17 @@ post {
 }
 
 docs {
-  Tier 1 has no oauth2-proxy in front of /management — `X-Api-Key` alone is
+  Tier 1 has no oauth2-proxy in front of /management - `X-Api-Key` alone is
   the contract (IMPLEM_PLAN § 1.5.3), so this request should succeed.
   Tier 2 reintroduces oauth2-proxy (§ 7.2.3); a missing Bearer must be
   rejected with 401 before the connector even sees the request.
 
   We send a valid X-Api-Key and force-remove any Bearer header that the
   collection-level pre-request script in `../collection.bru` would otherwise
-  inject at Tier 2 — this request's whole point is "what happens when
+  inject at Tier 2 - this request's whole point is "what happens when
   Bearer is absent at Tier 2".
 
-  Uses POST /assets/request — the canonical EDC list endpoint. GET /assets
+  Uses POST /assets/request - the canonical EDC list endpoint. GET /assets
   doesn't exist and would 405 before the auth filter runs.
 }
 
@@ -52,7 +52,7 @@ tests {
   test("response status reflects tier", function() {
     const tier = bru.getEnvVar("tier") || "tier1";
     if (tier === "tier1") {
-      // No oauth2-proxy at Tier 1 — X-Api-Key alone passes through.
+      // No oauth2-proxy at Tier 1 - X-Api-Key alone passes through.
       expect(res.getStatus()).to.be.oneOf([200, 204]);
     } else {
       // oauth2-proxy rejects missing Bearer before connector sees the call.
