@@ -69,7 +69,7 @@ LOCAL_DIR="$SCRIPT_DIR/.glcdi.local"
 SECRETS_FILE="$LOCAL_DIR/secrets.env"
 
 # The governance-services dir is renamed to authority-services in the in-flight
-# AUTHORITY_MIGRATION.md cutover. Support both - the local script picks whichever
+# ops/authority-migration.md cutover. Support both - the local script picks whichever
 # exists.
 if [[ -d "$WORKSPACE_ROOT/authority-services" ]]; then
   AUTHORITY_DIR="$WORKSPACE_ROOT/authority-services"
@@ -87,7 +87,7 @@ BRUNO_DIR="$WORKSPACE_ROOT/management/bruno"
 
 # Participants. M1 trio runs locally + staging; demo is staging-only
 # (a workshop showcase VM colocating Stone Barns / Sonoma / UFL / Pasa
-# fixtures - see OTHER_PARTICIPANTS.md).
+# fixtures - see ops/demo-vm.md).
 ORGS=(caney-fork point-blue white-buffalo demo)
 LOCAL_ORGS=(caney-fork point-blue white-buffalo)
 declare -A ORG_PORTS=(
@@ -1288,7 +1288,7 @@ seed_farmos_one() {
 # Seed the demo VM via the 12-provider-seeding-demo bruno folder. 4
 # contributor-specific assets backed by static JSON stubs at /data/<slug>.json
 # on the demo VM. Atomic obligation policies + per-asset CD policies that
-# merge the relevant atoms (Shape B per OTHER_PARTICIPANTS.md §4.1).
+# merge the relevant atoms (Shape B per ops/demo-vm.md §4.1).
 seed_demo() {
   local host="$1"
   local api_key="$2"

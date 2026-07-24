@@ -1,16 +1,16 @@
 # GLCDI Deployment & Validation
 
-Operator runbook for applying [Phase 1.5 (Identity Tier 1)](IMPLEM_PLAN.md#phase-15-identity-tier-1--single-tier-auth--authority-cleanup) changes to staging, plus a local-stack validation procedure that lets developers prove the M1 scenario end-to-end before pushing to staging.
+Operator runbook for applying [Phase 1.5 (Identity Tier 1)](../IMPLEM_PLAN.md#phase-15-identity-tier-1--single-tier-auth--authority-cleanup) changes to staging, plus a local-stack validation procedure that lets developers prove the M1 scenario end-to-end before pushing to staging.
 
-This document complements [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (which is focused narrowly on the `governance → authority` rename) by covering the Phase 1.5 topology cuts: **removing the per-participant Keycloak and oauth2-proxy** from the participant compose, provisioning the **3 connector service-account clients** in the Authority KC, switching the participant UI to **API-key-only login**, and rotating the API keys + connector secrets out of their `changeme-*` defaults. Everything below is put forward as a proposal for the project team and Dataspace Authority to validate; nothing here is a decided commitment.
+This document complements [`authority-migration.md`](authority-migration.md) (which is focused narrowly on the `governance → authority` rename) by covering the Phase 1.5 topology cuts: **removing the per-participant Keycloak and oauth2-proxy** from the participant compose, provisioning the **3 connector service-account clients** in the Authority KC, switching the participant UI to **API-key-only login**, and rotating the API keys + connector secrets out of their `changeme-*` defaults. Everything below is put forward as a proposal for the project team and Dataspace Authority to validate; nothing here is a decided commitment.
 
-> **Tier scope.** This runbook covers the **Tier 1** cutover only - no end-user OIDC, no `oauth2-proxy`, no `glcdi-ui` client validation. Tier 2 ([`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)) layers user OIDC back on top of the Tier-1 cluster as a separate, post-M1 cutover; the Tier-2 follow-up appendix in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) lists the additional operator steps for that phase.
+> **Tier scope.** This runbook covers the **Tier 1** cutover only - no end-user OIDC, no `oauth2-proxy`, no `glcdi-ui` client validation. Tier 2 ([`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui)) layers user OIDC back on top of the Tier-1 cluster as a separate, post-M1 cutover; the Tier-2 follow-up appendix in [`authority-migration.md`](authority-migration.md) lists the additional operator steps for that phase.
 
 ## TL;DR
 
 - **Staging deployment** in the current GLCDI environment is mostly a **container-restart exercise**. DNS for `authority.glcdi.startinblox.com` and the per-participant hosts is already resolving; nginx, certbot/TLS and the `.env` files on each VM are already valid. The Tier-1 cutover is: snapshot Postgres volumes → refresh the Authority Keycloak realm (Path A: wipe volume + re-import the in-repo `glcdi-realm.json`; or Path B: targeted admin-console edits) → `docker compose down && docker compose up -d` on each participant VM against the post-1.5 compose (no participant KC, no oauth2-proxy). Indicative window: ~20 min for the realm + ~10 min per participant + verification time.
 - **Local validation** spins up Authority KC + two participant stacks (one provider, one consumer) on the developer's laptop, seeds the M1 fixtures, and runs the Bruno collection (`management/bruno/`) end-to-end with `X-Api-Key` only. The two acceptance signals are (1) a green Bruno run and (2) the participant UI surfaces the asset / policy / contract / negotiation / transfer-process components correctly under API-key login.
-- **The rename runbook in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) only matters if your environment hasn't already migrated DNS/TLS/`.env`/nginx.** Current GLCDI staging is past that point; this doc is the simpler restart-and-verify procedure that follows.
+- **The rename runbook in [`authority-migration.md`](authority-migration.md) only matters if your environment hasn't already migrated DNS/TLS/`.env`/nginx.** Current GLCDI staging is past that point; this doc is the simpler restart-and-verify procedure that follows.
 
 ### Fast local bootstrap via `scripts/glcdi.sh`
 
@@ -18,7 +18,7 @@ This document complements [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (wh
 
 ```sh
 git clone git@git.startinblox.com:applications/glcdi/management.git             # this repo
-git clone git@git.startinblox.com:applications/glcdi/authority-services.git     # Authority KC + onboarding portal (formerly governance-services/ - see AUTHORITY_MIGRATION.md)
+git clone git@git.startinblox.com:applications/glcdi/authority-services.git     # Authority KC + onboarding portal (formerly governance-services/ - see authority-migration.md)
 git clone git@git.startinblox.com:applications/glcdi/participant-agent-services.git   # Per-participant Compose stack
 git clone git@git.startinblox.com:applications/glcdi/edc-connector.git          # EDC control-plane / data-plane distribution
 git clone git@git.startinblox.com:applications/glcdi/edc-glcdi-extension.git    # GLCDI-specific EDC extensions (copy-merged into edc-connector/ at build time)
@@ -73,7 +73,7 @@ The only inputs you might override are environment variables on the invocation i
 - `GLCDI_FARMOS=1` - additionally brings up the optional caney-fork farmOS site on `:8091`; run `./glcdi.sh farmos-install` once after the first `up`.
 - `GLCDI_USE_LOCAL_PACKAGES=true` (+ `GLCDI_SIB_CORE_PATH=…`, `GLCDI_PKG_PATH=…`, etc.) - swap the participant UI's CDN-loaded `@startinblox/glcdi` bundle for a local Vite dev-server URL.
 
-Full subcommand reference, iteration workflows, and capability-vs-gated matrix in [`scripts/README.md`](scripts/README.md).
+Full subcommand reference, iteration workflows, and capability-vs-gated matrix in [`scripts/README.md`](../scripts/README.md).
 
 ---
 
@@ -83,16 +83,16 @@ In the current GLCDI staging environment, the heavy infrastructure pieces are **
 
 | Item | Status (current GLCDI staging) | Action if not in this state |
 |------|-------------------------------|----------------------------|
-| DNS for `authority.glcdi.startinblox.com` and per-participant hosts | ✅ already resolving | Add records per [`AUTHORITY_MIGRATION.md` § 1](AUTHORITY_MIGRATION.md) |
+| DNS for `authority.glcdi.startinblox.com` and per-participant hosts | ✅ already resolving | Add records per [`authority-migration.md` § 1](authority-migration.md) |
 | Nginx config on each VM | Tier-1 update: `/management/*` proxied **directly** to the connector (no oauth2-proxy hop); `/oauth2/*` route removed | Update per `participant-agent-services/nginx/` |
 | `.env` on each VM | Tier-1 envvars: `AUTHORITY_KEYCLOAK_URL`, per-org `EDC_OAUTH_CLIENT_ID=glcdi-connector-<org>`, `EDC_OAUTH_CLIENT_SECRET`, `EDC_API_KEY` (rotated). **No `OIDC_CLIENT_ID`, no `GLCDI_UI_CLIENT_SECRET`, no `LOCAL_KEYCLOAK_*`** - those return at Tier 2. | Apply the Tier-1 changes; re-deploy |
-| Certbot / TLS certs | ✅ already issued and renewing | Issue per `AUTHORITY_MIGRATION.md` § 2 |
+| Certbot / TLS certs | ✅ already issued and renewing | Issue per `authority-migration.md` § 2 |
 | In-repo changes merged across the four sibling repos | Verify with `git log` on `main` | Land the per-repo Phase 1.5 commits |
-| Container images rebuilt and published | Verify image digests; specifically the `participant-ui` image with **OIDC envvars stripped** (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)) | CI rebuild |
-| Secrets rotated and stored | `web.http.management.auth.key` / `edc.api.auth.key` / `edc.api.control.auth.apikey.value` ≠ `123456`; per-org `glcdi-connector-<org>` secrets minted from the realm-JSON `changeme-*` placeholders | Rotate per `AUTHORITY_MIGRATION.md` § 4 |
+| Container images rebuilt and published | Verify image digests; specifically the `participant-ui` image with **OIDC envvars stripped** (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](../IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)) | CI rebuild |
+| Secrets rotated and stored | `web.http.management.auth.key` / `edc.api.auth.key` / `edc.api.control.auth.apikey.value` ≠ `123456`; per-org `glcdi-connector-<org>` secrets minted from the realm-JSON `changeme-*` placeholders | Rotate per `authority-migration.md` § 4 |
 | Bruno collection runs cleanly against local stack | See § 3 (local validation) | Unblock by fixing the local issue first; staging green requires local green |
 
-**If everything in the "current GLCDI staging" column is ✅, the cutover is the simplified procedure in § 2.** If any row is red, do those rows first (with the runbook in `AUTHORITY_MIGRATION.md`) before § 2.
+**If everything in the "current GLCDI staging" column is ✅, the cutover is the simplified procedure in § 2.** If any row is red, do those rows first (with the runbook in `authority-migration.md`) before § 2.
 
 ---
 
@@ -112,13 +112,13 @@ Before any destructive change:
 
 ### 2.2 Authority Keycloak - refresh the realm
 
-The in-repo `authority-services/resources/keycloak/realms/glcdi-realm.json` declares the realm content used by **both Tier 1 (load-bearing for M1)** and **Tier 2 (inert at Tier 1, becomes load-bearing in [`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui))**:
+The in-repo `authority-services/resources/keycloak/realms/glcdi-realm.json` declares the realm content used by **both Tier 1 (load-bearing for M1)** and **Tier 2 (inert at Tier 1, becomes load-bearing in [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui))**:
 
 **Tier 1 - load-bearing for M1:**
 - 12 realm roles (`user`, `admin`, plus `glcdi_member`, `glcdi_producer`, `glcdi_researcher`, `glcdi_data_steward`, and 6 future participant types).
 - 1 client scope `glcdi-claims` carrying the 5 protocol mappers (realm-roles → `glcdi_roles`; user-attribute → `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`).
 - **3 `glcdi-connector-<org>` service-account clients** (`caney-fork`, `point-blue`, `white-buffalo`) with `serviceAccountsEnabled: true`, `glcdi-claims` in default scopes.
-- **3 service-account users** (one per connector client, auto-created from each client) with `glcdi_*` realm roles + per-user attributes set per [`IMPLEM_PLAN § 1.5.4`](IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
+- **3 service-account users** (one per connector client, auto-created from each client) with `glcdi_*` realm roles + per-user attributes set per [`IMPLEM_PLAN § 1.5.4`](../IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak).
 - Empty `identityProviders` (no federation).
 
 **Tier 2 - declared but inert at Tier 1:**
@@ -206,7 +206,7 @@ The response lists how many of each resource type were `ADDED`, `OVERWRITTEN`, o
 
 #### Option 3 - Admin Console manual edits (last resort, when partial-import support is patchy)
 
-Walk the admin console step by step. Useful when KC version doesn't support partialImport for some resource type, or for one-off fixes. The detailed checklist is in [`AUTHORITY_MIGRATION.md` § 3 Path B](AUTHORITY_MIGRATION.md). Phase 1.5 (Tier 1) specifically adds:
+Walk the admin console step by step. Useful when KC version doesn't support partialImport for some resource type, or for one-off fixes. The detailed checklist is in [`authority-migration.md` § 3 Path B](authority-migration.md). Phase 1.5 (Tier 1) specifically adds:
 
 - Confirm or create the `glcdi-claims` client scope with the 5 protocol mappers.
 - Create the 3 `glcdi-connector-<org>` clients (`client_credentials` only; `glcdi-claims` in default scopes).
@@ -214,11 +214,11 @@ Walk the admin console step by step. Useful when KC version doesn't support part
 - For each connector client's auto-created service-account user: assign the org's `glcdi_*` realm roles; set per-user attributes (`glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status`).
 - Mint and rotate client secrets out-of-band.
 
-Path A in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) (wipe + re-import) is the clean way to apply all of the above in one shot. Option 3 is for surgical fixes. Tier-2 follow-up (groups + human users + `glcdi-ui` activation) is in [`AUTHORITY_MIGRATION.md`'s Tier-2 appendix](AUTHORITY_MIGRATION.md#appendix-tier-2-follow-up-checklist-post-m1-optional).
+Path A in [`authority-migration.md`](authority-migration.md) (wipe + re-import) is the clean way to apply all of the above in one shot. Option 3 is for surgical fixes. Tier-2 follow-up (groups + human users + `glcdi-ui` activation) is in [`authority-migration.md`'s Tier-2 appendix](authority-migration.md#appendix-tier-2-follow-up-checklist-post-m1-optional).
 
 #### About the per-user attributes
 
-At Tier 1, the realm JSON sets `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status` on each **service-account user** directly. This is the *only* place those attributes need to live for connector ↔ connector policy evaluation. (At Tier 2, the same attributes get set on the per-org *human* users, again on the user record - stock Keycloak's `oidc-usermodel-attribute-mapper` reads user attributes only, there's no built-in mapper for group attributes.) Adding a new participant at Tier 1 = create a new connector client + SA user with the same attribute shape (the `EXTENSIONS=(...)` array pattern in [`IMPLEM_PLAN § 2.7`](IMPLEM_PLAN.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band)).
+At Tier 1, the realm JSON sets `glcdi_membership`, `glcdi_organisation`, `glcdi_certification_status`, `glcdi_contribution_status` on each **service-account user** directly. This is the *only* place those attributes need to live for connector ↔ connector policy evaluation. (At Tier 2, the same attributes get set on the per-org *human* users, again on the user record - stock Keycloak's `oidc-usermodel-attribute-mapper` reads user attributes only, there's no built-in mapper for group attributes.) Adding a new participant at Tier 1 = create a new connector client + SA user with the same attribute shape (the `EXTENSIONS=(...)` array pattern in [`IMPLEM_PLAN § 2.7`](../IMPLEM_PLAN.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band)).
 
 #### Rotating client secrets after import
 
@@ -253,7 +253,7 @@ The `.env` on the VM doesn't need editing during the cutover (already done out-o
 
 ### 2.5 Post-cutover verification
 
-Run the [Bruno collection](bruno/) (`management/bruno/`) against staging:
+Run the [Bruno collection](../bruno/) (`management/bruno/`) against staging:
 
 ```bash
 cd management/bruno
@@ -270,7 +270,7 @@ Expected: green run. Specifically:
 - `40-transfer/01` - transfer initiates and succeeds.
 - `99-negative-auth/*` - no-key and wrong-key calls return 401.
 
-> **Pre-§ 3.5 caveat:** until [`IMPLEM_PLAN § 3.5`](IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) ships the `iam-mock` → `iam-oauth2` swap, DSP-level identity is the mock's fixed claims - the policy filtering scenarios above (catalog-discovery / negotiation) still pass against the *expected* outcome but the underlying claim chain isn't real yet. The Bruno auth folder (`00-auth/*`) verifies the Authority-KC side of the chain works; the connector-side validation happens once § 3.5 lands.
+> **Pre-§ 3.5 caveat:** until [`IMPLEM_PLAN § 3.5`](../IMPLEM_PLAN.md#35-replace-iam-mock-with-iam-oauth2-and-configure-claim-extraction) ships the `iam-mock` → `iam-oauth2` swap, DSP-level identity is the mock's fixed claims - the policy filtering scenarios above (catalog-discovery / negotiation) still pass against the *expected* outcome but the underlying claim chain isn't real yet. The Bruno auth folder (`00-auth/*`) verifies the Authority-KC side of the chain works; the connector-side validation happens once § 3.5 lands.
 
 Also verify in browser dev tools (one happy-path session):
 - **No** calls to any Keycloak host. The catalogue UI authenticates to its local connector with `X-Api-Key` only.
@@ -317,7 +317,7 @@ curl -fsSL http://localhost:8090/auth/realms/glcdi/.well-known/openid-configurat
 Verify (Tier 1):
 - Admin console at `http://localhost:8090/auth/admin` (admin/admin from `.env`).
 - Realm `glcdi` shows clients `glcdi-connector-caney-fork`, `glcdi-connector-point-blue`, `glcdi-connector-white-buffalo` (Tier 1 load-bearing) plus `glcdi-ui` (Tier 2 carryover, inert at Tier 1).
-- Mint a token for `glcdi-connector-caney-fork` via `client_credentials` and decode it (per [`IMPLEM_PLAN § 2.5`](IMPLEM_PLAN.md#25-verify-token-contents)). Expected claims: `glcdi_organisation=caney-fork`, `glcdi_roles=["glcdi_member","glcdi_producer"]`, `glcdi_certification_status=regenerative-verified`.
+- Mint a token for `glcdi-connector-caney-fork` via `client_credentials` and decode it (per [`IMPLEM_PLAN § 2.5`](../IMPLEM_PLAN.md#25-verify-token-contents)). Expected claims: `glcdi_organisation=caney-fork`, `glcdi_roles=["glcdi_member","glcdi_producer"]`, `glcdi_certification_status=regenerative-verified`.
 
 ### 3.3 Spin up two participant stacks (caney-fork as provider, white-buffalo as consumer)
 
@@ -389,7 +389,7 @@ If any row fails, see § 3.7 below.
 
 Open `http://localhost:8080` (caney-fork) in a browser:
 
-- The page loads directly - **no Keycloak redirect**. The UI shows a prompt to enter the operator API key on first load (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)).
+- The page loads directly - **no Keycloak redirect**. The UI shows a prompt to enter the operator API key on first load (Tier-1 strip-down per [`IMPLEM_PLAN § 4.5.F`](../IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent)).
 - Paste `<EDC_API_KEY>` into the prompt; the UI stores it in `localStorage.glcdi_operator_api_key` and uses it as `X-Api-Key` on every management-API call.
 - Browse to assets / policies / contract definitions / contract negotiations / transfer-processes sections - each component renders.
 - Browser DevTools network tab: every `/management/*` request carries `X-Api-Key` and **no `Authorization: Bearer`**; no `silent-callback` requests in flight; no calls to any Keycloak host.
@@ -399,14 +399,14 @@ Open `http://localhost:8080` (caney-fork) in a browser:
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Bruno's `00-auth/*` returns 401 from Authority KC | `glcdi-connector-<org>` client secret mismatch, or service account missing the `glcdi-claims` scope on its default scopes (so the token doesn't carry claims) | Verify in admin console: client → Client Scopes → `glcdi-claims` is in defaults; rotate secret if it differs from `.env` |
-| Bruno's `00-auth/*` token decodes to an empty claim payload | Service-account user is missing realm-role assignments and per-user attributes | Verify each `service-account-glcdi-connector-<org>` user has the right `glcdi_*` realm roles + attributes (per [`IMPLEM_PLAN § 1.5.4`](IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak)) |
+| Bruno's `00-auth/*` token decodes to an empty claim payload | Service-account user is missing realm-role assignments and per-user attributes | Verify each `service-account-glcdi-connector-<org>` user has the right `glcdi_*` realm roles + attributes (per [`IMPLEM_PLAN § 1.5.4`](../IMPLEM_PLAN.md#154-provision-connector-service-account-clients-in-the-authority-keycloak)) |
 | `curl -H "X-Api-Key: …" .../management/…` returns 401 | API key on the request doesn't match `web.http.management.auth.key` in the connector's `configuration.properties` | Re-export `EDC_API_KEY=$(grep web.http.management.auth.key participant/configuration.properties | cut -d= -f2 | tr -d ' ')` and retry |
 | Bruno's `20-catalog-discovery/01` returns 200 but asset missing from response | Access policy not seeded, or seeded with a constraint that doesn't match the JWT's claim shape | Verify the policy JSON; verify the JWT claims via the `00-auth/*` decode assertions |
 | Catalog query returns 200 with the asset visible to *every* consumer (including `point-blue`) | Pre-§ 3.5 expected behaviour: `iam-mock` doesn't actually validate or extract claims, so the access policy receives a fixed mock identity | Expected pre-§ 3.5; the negative-case assertion (`point-blue` filtered out) only becomes load-bearing once `iam-oauth2` is wired |
 | Negotiation hangs in REQUESTED forever | `edc.dsp.callback.address` mismatch between the two participants | Check both `participant/configuration.properties` files - must match the external host the *other* connector calls back to |
 | Connector logs `Failed to obtain token from oauth2 IdP` after § 3.5 lands | `edc.oauth.token.url` / `edc.oauth.provider.jwks.url` / `edc.oauth.client.id` mismatch with Authority KC config | Verify all three properties resolve correctly; mint a `client_credentials` token manually with the same values to confirm it works end-to-end |
 | Participant UI shows "Network error" trying to call `/management` and `localStorage.glcdi_operator_api_key` is set | `EDC_API_KEY` rotation got out of sync between `.env` (consumed by UI build) and `configuration.properties` (consumed by connector) | Rotate the key in both places to the same value; restart connector + rebuild UI image |
-| Bruno test for the participant UI's `tems-transfers-list` component fails because the component isn't rendered | Component not configured in `participant-ui/config.json` (Track F finding - deferred) | Add the component to `config.json.template` per [`IMPLEM_PLAN § 4.5.F`](IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent); rebuild and redeploy the participant UI image |
+| Bruno test for the participant UI's `tems-transfers-list` component fails because the component isn't rendered | Component not configured in `participant-ui/config.json` (Track F finding - deferred) | Add the component to `config.json.template` per [`IMPLEM_PLAN § 4.5.F`](../IMPLEM_PLAN.md#45f-participant-ui-configuration-track-f--parallel-agent); rebuild and redeploy the participant UI image |
 
 ---
 
@@ -424,16 +424,16 @@ Open `http://localhost:8080` (caney-fork) in a browser:
 - **Phase 3.5 prerequisite for the Tier-1 claim chain to be load-bearing.** Until `iam-oauth2` is wired in (currently `iam-mock` is the IdentityService), the policy engine doesn't actually evaluate `glcdi_*` claims at the receiving connector. Local validation can prove the auth path (token issuance, `X-Api-Key` gating) but not the policy decisions themselves. Re-run § 2.5 / § 3.5 after Phase 3.5 - that's when M1 sign-off on Tier 1 becomes possible.
 - **Realm-import determinism.** The `glcdi-realm.json` is imported only on first boot. Operators applying changes through Path B (live admin console) must keep the in-repo JSON in sync manually. Future work: a CI check that fails if the in-repo JSON drifts from the live realm export.
 - **Per-participant deployment-config templates.** Today each participant copies `.env.example` and edits manually. A small generator script (one-shot per onboarding) would reduce config drift between participants.
-- **Tier-2 cutover runbook.** When [`IMPLEM_PLAN § 7.2`](IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) is approved, this doc gets a § 4 covering the additional cutover steps (oauth2-proxy reintroduction, UI OIDC restoration, per-org groups + human-user activation). The Tier-2 follow-up appendix in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md#appendix-tier-2-follow-up-checklist-post-m1-optional) is the placeholder.
-- **Phase 7.1 Payment workflow.** When [`PAYMENT_GATING.md`](PAYMENT_GATING.md) v0 ships, this doc gets a sub-section under § 2 / § 3 covering the SMTP-recipient env var and the `payment-status-extension` deploy.
+- **Tier-2 cutover runbook.** When [`IMPLEM_PLAN § 7.2`](../IMPLEM_PLAN.md#phase-72-identity-tier-2--add-user-oidc-at-the-ui) is approved, this doc gets a § 4 covering the additional cutover steps (oauth2-proxy reintroduction, UI OIDC restoration, per-org groups + human-user activation). The Tier-2 follow-up appendix in [`authority-migration.md`](authority-migration.md#appendix-tier-2-follow-up-checklist-post-m1-optional) is the placeholder.
+- **Phase 7.1 Payment workflow.** When [`PAYMENT_GATING.md`](../PAYMENT_GATING.md) v0 ships, this doc gets a sub-section under § 2 / § 3 covering the SMTP-recipient env var and the `payment-status-extension` deploy.
 
 ---
 
 ## References
 
-- [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) - phased plan, especially § 1.5 (Authority cleanup + identity simplification), § 4.5 (Bruno + UI tracks), § Milestone M1.
-- [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) - operator checklist focused on the rename (DNS, TLS, KC paths A/B, CI/CD vars, VM layout).
-- [`IDENTITY.md`](IDENTITY.md) - post-Phase-1.5 identity architecture, claim model, OIDC vs OID4VC rationale.
-- [`PAYMENT_GATING.md`](PAYMENT_GATING.md) - payment-required workflow design (post-M1).
-- [`bruno/`](bruno/) - Bruno HTTP-test collection for the M1 scenario (track 4.5.E).
-- [`policies/`](policies/) - ODRL policy templates (the `regenerative-producers-only` access policy and `internal-use-only` contract policy used in M1 live in `policies/access/` and `policies/contract/`).
+- [`IMPLEM_PLAN.md`](../IMPLEM_PLAN.md) - phased plan, especially § 1.5 (Authority cleanup + identity simplification), § 4.5 (Bruno + UI tracks), § Milestone M1.
+- [`authority-migration.md`](authority-migration.md) - operator checklist focused on the rename (DNS, TLS, KC paths A/B, CI/CD vars, VM layout).
+- [`IDENTITY.md`](../IDENTITY.md) - post-Phase-1.5 identity architecture, claim model, OIDC vs OID4VC rationale.
+- [`PAYMENT_GATING.md`](../PAYMENT_GATING.md) - payment-required workflow design (post-M1).
+- [`bruno/`](../bruno/) - Bruno HTTP-test collection for the M1 scenario (track 4.5.E).
+- [`policies/`](../policies/) - ODRL policy templates (the `regenerative-producers-only` access policy and `internal-use-only` contract policy used in M1 live in `policies/access/` and `policies/contract/`).

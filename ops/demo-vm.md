@@ -7,7 +7,7 @@ conversion + governance-KC steps pending.
 - `management/ASSETS_EXAMPLES.md` - workshop-phase contributor inputs
   (Stone Barns / Sonoma Mountain / UFL / Pasa / White Buffalo)
 - `management/IMPLEM_PLAN.md` - M1 trio + roadmap
-- `management/NUCLEAR_WIPE_STAGINGS_PLAN.md` - wipe + reseed flow,
+- `management/ops/staging-wipe.md` - wipe + reseed flow,
   extended to cover the demo VM
 
 ## 1. Scope
@@ -271,7 +271,7 @@ Manual catalog visibility checks:
 
 - `management/ASSETS_EXAMPLES.md` - workshop dataset inputs
 - `management/IMPLEM_PLAN.md` - M1 trio + roadmap
-- `management/NUCLEAR_WIPE_STAGINGS_PLAN.md` - wipe + reseed flow
+- `management/ops/staging-wipe.md` - wipe + reseed flow
 - `management/scripts/setup-demo-from-snapshot.sh` - VM-side conversion
 - `management/scripts/glcdi.sh:76-104` - `ORGS` + `LOCAL_ORGS` + per-org maps
 - `management/scripts/glcdi.sh:1062-1080` - `seed_demo`

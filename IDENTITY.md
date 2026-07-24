@@ -265,7 +265,7 @@ These are the proposed onboarding flows, to be validated with the Dataspace Auth
 3. On approval (proposed actions):
    a. Authority operator extends realm JSON: new `glcdi-connector-<org>` client +
       service-account user with appropriate `glcdi_*` realm roles + attributes
-   b. Realm JSON re-imported (or live-edited via admin console) per DEPLOYMENT.md § 2.2
+   b. Realm JSON re-imported (or live-edited via admin console) per ops/deployment.md § 2.2
    c. Rotated client_id / client_secret shipped to participant via vault / OOB channel
 4. Participant operator drops client_id / client_secret into participant/configuration.properties,
    restarts connector → can publish assets, query catalogs, negotiate contracts

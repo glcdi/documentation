@@ -5,7 +5,7 @@ plus the three M1 participant connectors (`caney-fork`, `point-blue`,
 `white-buffalo`) - in the right order with secrets rotated from their
 `changeme-*` placeholders.
 
-It is the scripted form of [`../DEPLOYMENT.md` § 3 (local validation)](../DEPLOYMENT.md).
+It is the scripted form of [`../ops/deployment.md` § 3 (local validation)](../ops/deployment.md).
 
 ## Quick start
 
@@ -183,6 +183,6 @@ green vs. red, and use the red rows as a checklist for the next phase.
 ## Pointers
 
 - Identity tiering: [`../IMPLEM_PLAN.md` § Identity Tiering Strategy](../IMPLEM_PLAN.md#identity-tiering-strategy)
-- Tier-1 cutover (manual, runbook): [`../DEPLOYMENT.md`](../DEPLOYMENT.md)
-- Authority rename runbook: [`../AUTHORITY_MIGRATION.md`](../AUTHORITY_MIGRATION.md)
+- Tier-1 cutover (manual, runbook): [`../ops/deployment.md`](../ops/deployment.md)
+- Authority rename runbook: [`../ops/authority-migration.md`](../ops/authority-migration.md)
 - Bruno collection: [`../bruno/`](../bruno/)

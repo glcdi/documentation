@@ -4,8 +4,7 @@ Governance, policy design, and identity management resources for the
 **Grazing Lands Carbon Data Initiative (GLCDI)** dataspace.
 
 This directory is the working space for designing the rules, roles, and trust mechanisms
-that govern how data flows between participants. It is not a deployable service - it feeds
-into the three deployable sub-projects of the GLCDI workspace:
+that govern how data flows between participants. It is not a deployable service - it feeds into the three deployable sub-projects of the GLCDI workspace:
 
 | Sub-project | What it deploys | What it takes from here |
 |-------------|----------------|------------------------|
@@ -52,10 +51,10 @@ Grouped by intent. The physical layout is still flat today; a reorganisation int
 
 | Doc | For |
 |-----|-----|
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Deployment runbook + local end-to-end validation (with the `glcdi.sh` fast-path). |
-| [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md) | Operator checklist for the in-flight `governance-*` → `authority-*` rename + Tier-1 cutover. |
-| [`NUCLEAR_WIPE_STAGINGS_PLAN.md`](NUCLEAR_WIPE_STAGINGS_PLAN.md) | Staging-participant full-reset runbook. |
-| [`OTHER_PARTICIPANTS.md`](OTHER_PARTICIPANTS.md) | Plan for the co-located demo staging VM. |
+| [`ops/deployment.md`](ops/deployment.md) | Deployment runbook + local end-to-end validation (with the `glcdi.sh` fast-path). |
+| [`ops/authority-migration.md`](ops/authority-migration.md) | Operator checklist for the in-flight `governance-*` → `authority-*` rename + Tier-1 cutover. |
+| [`ops/staging-wipe.md`](ops/staging-wipe.md) | Staging-participant full-reset runbook. |
+| [`ops/demo-vm.md`](ops/demo-vm.md) | Plan for the co-located demo staging VM. |
 
 **Meta.**
 

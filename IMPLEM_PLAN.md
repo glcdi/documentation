@@ -19,7 +19,7 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 **Delivery order:**
 
 1. **Phase 1 - Vocabulary & Namespace.** Register `glcdi:` JSON-LD context; agree on participant-type, certification-status, purpose taxonomies. Foundational; blocks Phase 3.
-2. **Phase 1.5 - Identity (Tier 1) + Authority cleanup.** Complete the governance→authority rename (per [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md)); remove per-participant Keycloak from the participant compose stack; provision 3 connector service-account clients in the Authority Keycloak (`glcdi-connector-<org>`) with `glcdi_*` claims; UI runs on `X-Api-Key` only. **No end-user OIDC at this tier.**
+2. **Phase 1.5 - Identity (Tier 1) + Authority cleanup.** Complete the governance→authority rename (per [`ops/authority-migration.md`](ops/authority-migration.md)); remove per-participant Keycloak from the participant compose stack; provision 3 connector service-account clients in the Authority Keycloak (`glcdi-connector-<org>`) with `glcdi_*` claims; UI runs on `X-Api-Key` only. **No end-user OIDC at this tier.**
 3. **Phase 1.6 - Packaged organization onboarding (current intermediate delivery).** Replace the placeholder onboarding stack in `governance-services` with the `djangoldp_glcdi_onboarding` package - a public registration form at `/registration/` and a Django admin dashboard at `/registration/admin/`. Approval triggers automatic Keycloak provisioning (group, user with temp password, roles); approve/deny links land directly in admin mail. Pairs with the realm-roles cleanup (only `glcdi_member`, `glcdi_producer`, `glcdi_researcher`, `glcdi_non_profit`, `glcdi_non_regulatory`), the realm-wide spelling normalisation to `glcdi_organization`, and the addition of `realm-management.realm-admin` to the `governance` client's service account. **Connector onboarding stays out-of-band (Tier-1 - see § 2.7); only human-org onboarding is packaged here.**
 4. **Phase 2 - Keycloak claims (on connector SAs).** Realm roles, attributes, protocol mappers so each connector's `client_credentials` token carries `glcdi_membership`, `glcdi_roles`, `glcdi_certification_status`, `glcdi_contribution_status`. Claims live on the SA users that back each connector client.
 4. **Phase 3 - EDC policy functions.** Custom `AtomicConstraintFunction`s reading the claims above. ~200 LOC. § 3.5 swaps `iam-mock` for `iam-oauth2` against the Authority KC - **the gate to "real auth" between connectors**.
@@ -33,7 +33,7 @@ GLCDI's path from today's single open-research policy to a fully enforced ODRL p
 12. **Phase 7.3 - Identity (Tier 3): decentralised claims via VC/DCP.** Long-term migration to Verifiable Credentials and the Decentralised Claims Protocol. Aligns GLCDI with Gaia-X / DSBA direction.
 13. **Phase 7.4–7.5 - Other future enhancements.** Federated Catalogue policy metadata, participant-facing policy UI.
 
-**Status (in-repo):** Phase 1 (vocabulary), Phase 1.5 (Tier-1 identity + rename), Phase 1.6 (packaged organization onboarding - **current intermediate delivery, local smoke complete (form → admin mail → approve → KC group `sib` with `glcdi_organization=["sib"]` + `glcdi_member+glcdi_producer` + new user + temp password mail); awaiting staging cutover**), Phase 2 (Keycloak claims on connector SAs), and Phase 4.5 (Bruno + UI tracks) have substantive in-repo work in their working trees, blocked only on the staging cutover (Path-A re-import per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)). Phase 3 (EDC policy extension), Phase 4 (seeding scripts), Phase 5 (integration testing), and Milestone M1 are still to start. Phase 6 (governance / Trust Framework) runs in parallel and is owned outside this repo. Phase 7 (post-M1) - Tier 2 identity (7.2) and the VC migration (7.3) sit alongside payment (7.1) as candidate next workstreams once M1 is signed off.
+**Status (in-repo):** Phase 1 (vocabulary), Phase 1.5 (Tier-1 identity + rename), Phase 1.6 (packaged organization onboarding - **current intermediate delivery, local smoke complete (form → admin mail → approve → KC group `sib` with `glcdi_organization=["sib"]` + `glcdi_member+glcdi_producer` + new user + temp password mail); awaiting staging cutover**), Phase 2 (Keycloak claims on connector SAs), and Phase 4.5 (Bruno + UI tracks) have substantive in-repo work in their working trees, blocked only on the staging cutover (Path-A re-import per [`ops/deployment.md` § 2.2](ops/deployment.md)). Phase 3 (EDC policy extension), Phase 4 (seeding scripts), Phase 5 (integration testing), and Milestone M1 are still to start. Phase 6 (governance / Trust Framework) runs in parallel and is owned outside this repo. Phase 7 (post-M1) - Tier 2 identity (7.2) and the VC migration (7.3) sit alongside payment (7.1) as candidate next workstreams once M1 is signed off.
 
 **Parallelisation:** up to **3 concurrent agents** at peak - main implementation track (1.5 → 2 → 3 → 4 → 5 → M1 → 7.1), Bruno track (4.5 E), Participant-UI track (4.5 F). Phase 6 also runs in parallel with the technical phases.
 
@@ -174,7 +174,7 @@ defined and resolvable.
 
 ## Phase 1.5: Identity (Tier 1) - Single-tier auth + Authority cleanup
 
-Implements the **Tier 1** identity model defined in [§ Identity Tiering Strategy](#identity-tiering-strategy): one Authority Keycloak holding three connector service-account clients (one per participant org), `client_credentials` flow at startup to mint connector-bound JWTs carrying `glcdi_*` claims, and `X-Api-Key` as the *only* gate at the EDC management API. **No end-user OIDC anywhere - the UI is a per-org tool that authenticates to its local connector with the API key.** Bundled with the in-flight governance→authority rename whose operator checklist lives in [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md).
+Implements the **Tier 1** identity model defined in [§ Identity Tiering Strategy](#identity-tiering-strategy): one Authority Keycloak holding three connector service-account clients (one per participant org), `client_credentials` flow at startup to mint connector-bound JWTs carrying `glcdi_*` claims, and `X-Api-Key` as the *only* gate at the EDC management API. **No end-user OIDC anywhere - the UI is a per-org tool that authenticates to its local connector with the API key.** Bundled with the in-flight governance→authority rename whose operator checklist lives in [`ops/authority-migration.md`](ops/authority-migration.md).
 
 ### Why Tier 1 first (read-only spike summary)
 
@@ -188,9 +188,9 @@ The two-tier user-OIDC content is preserved verbatim in **[Phase 7.2: Identity (
 
 ### 1.5.1 Complete the governance → authority rename
 
-Per [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md): finish the in-repo renames across `edc-connector/`, `governance-services/` (→ `authority-services/`), `participant-agent-services/`, `participant-ui/`, and the `management/` docs themselves. Operator checklist (DNS, TLS, live Keycloak path A vs. B, CI/CD variables, VM layout, cutover, post-cutover verification) is in that document.
+Per [`ops/authority-migration.md`](ops/authority-migration.md): finish the in-repo renames across `edc-connector/`, `governance-services/` (→ `authority-services/`), `participant-agent-services/`, `participant-ui/`, and the `management/` docs themselves. Operator checklist (DNS, TLS, live Keycloak path A vs. B, CI/CD variables, VM layout, cutover, post-cutover verification) is in that document.
 
-**Status:** [x] In-repo edits across the 4 sibling repos done (edc-connector clean; participant-ui, participant-agent-services, governance-services swept); top-level `governance-services/` → `authority-services/` directory rename is a separate workspace-level `mv` · [x] `management/` doc-level sweep done (IDENTITY.md, IMPLEM_PLAN.md, README.md, AUTHORITY.md, etc.) · [ ] Operator-side cutover in staging (per [`DEPLOYMENT.md` § 2](DEPLOYMENT.md))
+**Status:** [x] In-repo edits across the 4 sibling repos done (edc-connector clean; participant-ui, participant-agent-services, governance-services swept); top-level `governance-services/` → `authority-services/` directory rename is a separate workspace-level `mv` · [x] `management/` doc-level sweep done (IDENTITY.md, IMPLEM_PLAN.md, README.md, AUTHORITY.md, etc.) · [ ] Operator-side cutover in staging (per [`ops/deployment.md` § 2](ops/deployment.md))
 
 ### 1.5.2 Remove per-participant Keycloak (and oauth2-proxy) from the participant compose stack
 
@@ -198,7 +198,7 @@ In `participant-agent-services/docker-compose.yml`: delete the `keycloak`, `post
 
 > Operators who still want a defence-in-depth layer (basic-auth, IP allow-list, mTLS) in front of the catalogue UI host can add it at the Nginx layer - entirely orthogonal to the connector/policy stack and at the operator's discretion. **Adding user OIDC back is the Tier 2 path (§ 7.2).**
 
-**Status:** [x] `keycloak` + `postgres-kc` services + volume removed · [x] `participant/keycloak/realms/edc-realm.json` deleted · [ ] `oauth2-proxy` service removed (Tier-1 cut) · [ ] Nginx routes collapsed (no `/oauth2/*`; `/management/*` proxied directly to connector) · [ ] Live volumes (`<stack>_keycloak-pg-data`) removed on each VM (per [`DEPLOYMENT.md` § 2.3](DEPLOYMENT.md))
+**Status:** [x] `keycloak` + `postgres-kc` services + volume removed · [x] `participant/keycloak/realms/edc-realm.json` deleted · [ ] `oauth2-proxy` service removed (Tier-1 cut) · [ ] Nginx routes collapsed (no `/oauth2/*`; `/management/*` proxied directly to connector) · [ ] Live volumes (`<stack>_keycloak-pg-data`) removed on each VM (per [`ops/deployment.md` § 2.3](ops/deployment.md))
 
 ### 1.5.3 `X-Api-Key` as the primary management-API auth
 
@@ -210,7 +210,7 @@ Operator hardening checklist:
 - The key is **per-participant**, not shared across the dataspace. Each participant rotates independently.
 - For "API key in the browser is a bad look in production" - yes, the trust boundary is the per-participant network. Treat the catalogue UI as an internal tool. If that boundary is too weak for a given operator, add basic-auth or VPN at Nginx (see § 1.5.2 callout) or graduate to Tier 2 (§ 7.2).
 
-**Status:** [x] Documented in [`DEPLOYMENT.md` § 1, § 2.5, § 3.7](DEPLOYMENT.md); Bruno's `99-negative-auth/*.bru` covers the negative cases · [ ] Operator rotates the three API keys from `123456` defaults on each VM · [ ] Live verification: Bruno green run against staging
+**Status:** [x] Documented in [`ops/deployment.md` § 1, § 2.5, § 3.7](ops/deployment.md); Bruno's `99-negative-auth/*.bru` covers the negative cases · [ ] Operator rotates the three API keys from `123456` defaults on each VM · [ ] Live verification: Bruno green run against staging
 
 ### 1.5.4 Provision connector service-account clients in the Authority Keycloak
 
@@ -236,13 +236,13 @@ In the Authority KC's `glcdi` realm (declarative - already in `governance-servic
 
 **Adding a new participant** at Tier 1 = Authority operator creates a new `glcdi-connector-<org>` client + SA in the realm JSON (or via admin console), assigns the right roles + attributes, sends `client_id` / `client_secret` to the new participant out-of-band; the participant operator drops them into `participant/configuration.properties` (`edc.oauth.client.id` / `edc.oauth.client.secret.alias`) per § 3.5.
 
-**Status:** [x] Realm JSON declares the 3 connector clients + 3 SA users with role + attribute assignments - see [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md) for the breakdown · [ ] Imported into live Authority KC (Path A re-import) · [ ] Per-org connector secrets rotated from `changeme-*` placeholders and propagated to each participant VM's `.env`
+**Status:** [x] Realm JSON declares the 3 connector clients + 3 SA users with role + attribute assignments - see [`ops/deployment.md` § 2.2](ops/deployment.md) for the breakdown · [ ] Imported into live Authority KC (Path A re-import) · [ ] Per-org connector secrets rotated from `changeme-*` placeholders and propagated to each participant VM's `.env`
 
 ### 1.5.5 Sanity-check DSP-level identity is still working
 
 After the cuts above, run a smoke-test contract negotiation between two participant connectors. Pre-§ 3.5 (still on `iam-mock`): expected behaviour is unchanged - fixed claims, negotiation reaches `FINALIZED` regardless. Post-§ 3.5 (`iam-oauth2`): each connector authenticates to Authority KC at startup via its `glcdi-connector-<org>` client_credentials, the JWT carries that org's `glcdi_*` claims, the remote connector validates against Authority KC's JWKS, negotiation reaches `FINALIZED` and access policies are evaluated against the real claims for the first time.
 
-**Status:** [ ] Pre-§ 3.5 smoke (iam-mock) - runs after staging cutover, tracked in [`DEPLOYMENT.md` § 2.5](DEPLOYMENT.md) · [ ] Post-§ 3.5 verification (iam-oauth2 + real claims)
+**Status:** [ ] Pre-§ 3.5 smoke (iam-mock) - runs after staging cutover, tracked in [`ops/deployment.md` § 2.5](ops/deployment.md) · [ ] Post-§ 3.5 verification (iam-oauth2 + real claims)
 
 ### 1.5.6 Auth flow & credentials reference (Tier 1)
 
@@ -306,7 +306,7 @@ EDC policy engine on Connector B evaluates the access policy against those claim
 ### Dependencies & risks
 
 - **Blocks Phase 2** - claims now live on the 3 connector SAs in the Authority KC.
-- **Coordinates with [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md)** - the operator-side rename and the topology simplification benefit from a single deploy window per participant.
+- **Coordinates with [`ops/authority-migration.md`](ops/authority-migration.md)** - the operator-side rename and the topology simplification benefit from a single deploy window per participant.
 - **§ 3.5 (iam-mock → iam-oauth2) is the load-bearing gate.** Until it ships, Tier 1's claims are wired but not enforced - the receiving connector still trusts mock tokens. Treat § 3.5 as part of the Tier-1 critical path, not an afterthought.
 - **Trust boundary at the catalogue UI is the per-participant network.** If a stakeholder pushes back on "API key in the browser," the answer is either (a) add basic-auth/VPN at Nginx - orthogonal to the connector stack - or (b) graduate to Tier 2 (§ 7.2). Do not introduce ad-hoc Bearer-token plumbing at Tier 1.
 - **No remaining architectural unknowns** after the spike. Risk is operational: cutover sequencing, API-key rotation, and the § 3.5 swap.
@@ -371,7 +371,7 @@ While Phase 1.5 finishes the connector-side cutover, the in-flight intermediate 
 | Item | Detail |
 |------|--------|
 | **Task** | Run `./management/scripts/glcdi.sh reset && ./management/scripts/glcdi.sh up` to bring up a clean Authority. Verify in order: (a) `https://.../auth/realms/glcdi/.well-known/openid-configuration` returns 200; (b) `POST .../realms/glcdi/protocol/openid-connect/token` with the `governance` `client_credentials` flow returns an access token whose service-account user holds `realm-management.realm-admin`; (c) `GET /registration/` renders the form; (d) submitting the form lands a "pending approval" mail in `onboarding-backend`'s `./mails`; (e) logging into `/registration/admin/` as the dummy admin and clicking Approve triggers the requester email with temp Keycloak credentials; (f) the new user appears in KC inside a group whose `glcdi_organization` attribute is the slugged org name. |
-| **Where** | Local: against `http://localhost/...` per the updated `governance-services/README.md`. Staging: same flow, after Path-A wipe-and-replay of the Authority KC volume per [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md). |
+| **Where** | Local: against `http://localhost/...` per the updated `governance-services/README.md`. Staging: same flow, after Path-A wipe-and-replay of the Authority KC volume per [`ops/deployment.md` § 2.2](ops/deployment.md). |
 | **Status** | [x] Local smoke run completed end-to-end - `glcdi.sh reset && up` brought the stack up clean, the form at `http://localhost:8083/registration/` accepted a submission, the admin-notification mail landed in `/ldpserver/mails`, the dummy admin approved via the dashboard, a temporary KC password mail went to the requester, and the new user/group were verified via the Admin REST API (group `sib` with `glcdi_organization=["sib"]` + `glcdi_member` + `glcdi_producer`; user `benoit.aless` in group `sib` with a single password credential). · [ ] Re-run on staging once `1.6.7` ships through CI |
 
 ### 1.6.7 Public-facing KC login URL in the requester's approval mail
@@ -702,7 +702,7 @@ read from the token:
 2. The Dataspace Authority reviews and approves.
 3. On approval, the Authority operator:
    - Adds a `glcdi-connector-<new-org>` client (with `serviceAccountsEnabled: true`, `glcdi-claims` default scope) and its SA user (with the right `glcdi_*` realm roles + attributes) to the realm JSON.
-   - Imports / patches the live realm (admin console for a single client; Path B re-import for a batch - see [`DEPLOYMENT.md` § 2.2](DEPLOYMENT.md)).
+   - Imports / patches the live realm (admin console for a single client; Path B re-import for a batch - see [`ops/deployment.md` § 2.2](ops/deployment.md)).
    - Rotates the placeholder secret and ships `client_id` / `client_secret` to the participant operator via vault / out-of-band channel.
 4. The participant operator drops `client_id` / `client_secret` into `participant/configuration.properties` (`edc.oauth.client.id` / `edc.oauth.client.secret.alias` per § 3.5) and restarts the connector.
 

@@ -110,7 +110,7 @@ A single scenario illustrates every edge in the diagram. **Provider** publishes 
 5. **Consumer negotiates.** The consumer proposes a contract offer; the provider re-evaluates the contract policy at negotiation time (purpose check), reaches `FINALIZED` (or `TERMINATED` on mismatch).
 6. **Transfer.** The consumer requests a transfer; the provider issues an EDR token pointing at its data-plane. The consumer calls the data-plane endpoint with the EDR (browser-side over CORS with echoed `Access-Control-Allow-Origin` + `Allow-Credentials`), the data-plane resolves the underlying HttpData source through the LDP, and the bytes flow directly between the two participants. **The Authority is not on this path.**
 
-The [Bruno collection](bruno/) exercises every step of this walkthrough; see [`DEPLOYMENT.md` § 3](DEPLOYMENT.md) for the local end-to-end run.
+The [Bruno collection](bruno/) exercises every step of this walkthrough; see [`ops/deployment.md` § 3](ops/deployment.md) for the local end-to-end run.
 
 ---
 
@@ -174,7 +174,7 @@ GLCDI runs one Authority deployment and one deployment per participant, all on s
 | `authority.glcdi.startinblox.com` | Authority Keycloak, onboarding portal, Postgres | Project team (transitional) → Dataspace Authority (post-ratification) |
 | `«name».glcdi.startinblox.com` | Participant stack (nginx, EDC control-plane + data-plane, catalogue UI, Identity Hub, Postgres); djangoldp-glcdi runs externally | Each participant operator |
 
-For the operator's per-VM layout, secret management convention, and CI deploy shape see [`DEPLOYMENT.md`](DEPLOYMENT.md); for the in-flight rename from `governance-*` to `authority-*` see [`AUTHORITY_MIGRATION.md`](AUTHORITY_MIGRATION.md).
+For the operator's per-VM layout, secret management convention, and CI deploy shape see [`ops/deployment.md`](ops/deployment.md); for the in-flight rename from `governance-*` to `authority-*` see [`ops/authority-migration.md`](ops/authority-migration.md).
 
 ---
 
@@ -189,5 +189,5 @@ For the operator's per-VM layout, secret management convention, and CI deploy sh
 | Full standards traceability (ODRL, DSP, DCAT, JSON-LD, identity) | [`STANDARDS.md`](STANDARDS.md) |
 | Payment-gating design proposal | [`PAYMENT_GATING.md`](PAYMENT_GATING.md) |
 | Phased implementation plan and current status | [`IMPLEM_PLAN.md`](IMPLEM_PLAN.md) |
-| Deployment runbook + local end-to-end validation | [`DEPLOYMENT.md`](DEPLOYMENT.md) |
+| Deployment runbook + local end-to-end validation | [`ops/deployment.md`](ops/deployment.md) |
 | Governance model overview (Trust Framework, cohorts, membership) | [`README.md`](README.md) |
