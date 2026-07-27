@@ -136,7 +136,7 @@ edc.iam.token.scope=openid profile glcdi_claims
 |------|--------|
 | **Task** | The current per-org `participant/configuration.properties` carries `web.http.public.port=9291` / `web.http.public.path=/public` / `edc.dataplane.api.public.baseurl=…/public`, and `nginx-dev.conf` + `nginx-prod.conf` carry a `location /public/ → edc-connector:9291` block. These are pre-0.15.x leftovers - EDC 0.15.x doesn't bind a `public` context (verified empirically and via POM inspection of `dataplane-base-bom-0.15.1`). They're inert today (no upstream listening, so any traffic 502s - but no traffic flows there in practice). |
 | **Action when § 3.8.1 lands** | If § 3.8.1's chosen URL strategy is (a) direct fetch, drop the `public` lines from both `configuration.properties.example` and the two nginx conf files. If strategy is (b) dataplane proxy, replace the upstream port (9291 → whatever the custom public extension binds) and keep the location block. |
-| **Status** | [ ] Strategy chosen in § 3.8.1 · [ ] Stale `public`-context settings removed / updated accordingly · [ ] Note in IMPLEM_PLAN.md release notes that EDC 0.15.x flipped from public-api artifact to caller-registered generator |
+| **Status** | [ ] Strategy chosen in § 3.8.1 · [ ] Stale `public`-context settings removed / updated accordingly · [ ] Note in `implementation-plan.md` release notes that EDC 0.15.x flipped from public-api artifact to caller-registered generator |
 
 ---
 

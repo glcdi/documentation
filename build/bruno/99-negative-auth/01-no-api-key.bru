@@ -11,7 +11,7 @@ post {
 }
 
 docs {
-  Deliberately omits X-Api-Key. The X-Api-Key floor (IMPLEM_PLAN § 1.5.3) is
+  Deliberately omits X-Api-Key. The X-Api-Key floor (implementation-plan § 1.5.3) is
   enforced at both Tier 1 and Tier 2 - the connector should refuse with 401
   either way. At Tier 2 the missing Bearer would also fail oauth2-proxy, but
   the API-key check fires regardless.

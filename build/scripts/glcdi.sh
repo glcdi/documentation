@@ -542,7 +542,7 @@ write_participant_configs() {
     log "Writing config for $org (port $nginx_port)"
 
     # .env - consumed by docker compose and the catalogue-ui image entrypoint.
-    # Tier 1 (IMPLEM_PLAN.md § 1.5): X-Api-Key only on the UI, connector
+    # Tier 1 (implementation-plan.md § 1.5): X-Api-Key only on the UI, connector
     # client_credentials against Authority KC for DSP. No OIDC envvars at
     # this tier - they (KEYCLOAK_URL / OIDC_CLIENT_ID / KC_IDP_HINT /
     # LINKED_PROVIDER_* / oauth2-proxy/GLCDI_UI_CLIENT_SECRET) come back

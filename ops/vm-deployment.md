@@ -141,7 +141,7 @@ curl -fsSL -X PUT "$KC_BASE/admin/realms/glcdi/clients/$CLIENT_INTERNAL_ID" \
 echo "New secret: $NEW_SECRET - store in GLCDI_CONNECTOR_CANEY_FORK_SECRET on the participant VM"
 ```
 
-Repeat for each of the 3 connector clients. The `glcdi-ui` client is **not used at Tier 1**; rotating its secret can be deferred to the Tier-2 follow-up ([`IMPLEM_PLAN § 7.2.7`](../build/plan/phase-7-future.md#727-cutover-operator-checklist)).
+Repeat for each of the 3 connector clients. The `glcdi-ui` client is **not used at Tier 1**; rotating its secret can be deferred to the Tier-2 follow-up ([`implementation-plan § 7.2.7`](../build/plan/phase-7-future.md#727-cutover-operator-checklist)).
 
 ---
 
@@ -200,7 +200,7 @@ If a participant VM has drift you can't unwind with a normal deploy (renamed ass
 
 - **Realm-import determinism.** `glcdi-realm.json` is imported only on first boot. Operators applying changes through Option 3 (live admin console) must keep the in-repo JSON in sync manually. Future work: a CI check that fails if the in-repo JSON drifts from the live realm export.
 - **Per-participant deployment-config templates.** Today each participant copies `.env.example` and edits manually. A small generator script (one-shot per onboarding) would reduce config drift between participants.
-- **Tier-2 cutover.** When [`IMPLEM_PLAN § 7.2`](../build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) is approved, this doc gets a § covering the additional cutover steps (oauth2-proxy reintroduction, UI OIDC restoration, per-org groups + human-user activation). The operator checklist is already staged in [`IMPLEM_PLAN § 7.2.7`](../build/plan/phase-7-future.md#727-cutover-operator-checklist).
+- **Tier-2 cutover.** When [`implementation-plan § 7.2`](../build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) is approved, this doc gets a § covering the additional cutover steps (oauth2-proxy reintroduction, UI OIDC restoration, per-org groups + human-user activation). The operator checklist is already staged in [`implementation-plan § 7.2.7`](../build/plan/phase-7-future.md#727-cutover-operator-checklist).
 - **Phase 7.1 Payment workflow.** When [`../design/payment-gating.md`](../design/payment-gating.md) v0 ships, this doc gets a sub-section covering the SMTP-recipient env var and the `payment-status-extension` deploy.
 
 ---

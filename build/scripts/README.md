@@ -36,7 +36,7 @@ GLCDI_TIER=tier2 ./glcdi.sh all     # equivalent
 The script itself doesn't bring up oauth2-proxy differently between tiers
 (the participant compose has `oauth2-proxy` as a long-running service
 either way today). The tier flag drives Bruno's auth model only - see
-`../bruno/README.md`. **Until [`IMPLEM_PLAN § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)
+`../bruno/README.md`. **Until [`implementation-plan § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)
 lands the actual Tier-2 UI changes**, `test tier2` exercises the
 oauth2-proxy validation path but the catalogue UI itself is still in
 its pre-§ 4.5.F state.
@@ -87,7 +87,7 @@ The script remaps via `NGINX_PORT` and per-participant `configuration.properties
 | Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ✅ | - (Phase 3 constraint functions + Phase 3.5 `glcdi-iam-keycloak` extension shipped) |
 | Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ✅ | - |
 | Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 4 seeding + transfer state-machine polling - see [`../plan/phase-4-seeding.md`](../plan/phase-4-seeding.md) |
-| `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`IMPLEM_PLAN § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
+| `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`implementation-plan § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
 
 The script doesn't pretend more works than does. Run it, observe what's
 green vs. red, and use the red rows as a checklist for the next phase.
@@ -127,7 +127,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
 ### Switching to Tier 2 to validate the oauth2-proxy path
 
 ```sh
-# Once IMPLEM_PLAN § 7.2 has landed the actual Tier-2 changes:
+# Once implementation-plan § 7.2 has landed the actual Tier-2 changes:
 ./glcdi.sh test tier2
 ```
 
@@ -152,7 +152,7 @@ green vs. red, and use the red rows as a checklist for the next phase.
   `.glcdi.local/`. If `participant-agent-services/docker-compose.yml`
   changes how `./participant` is mounted, the override needs updating.
 - **`oauth2-proxy` stays in compose at Tier 1.** The Tier-1 strip-down
-  per [`IMPLEM_PLAN § 1.5.2`](../plan/phase-1.5-identity-tier1.md#152-remove-per-participant-keycloak-and-oauth2-proxy-from-the-participant-compose-stack)
+  per [`implementation-plan § 1.5.2`](../plan/phase-1.5-identity-tier1.md#152-remove-per-participant-keycloak-and-oauth2-proxy-from-the-participant-compose-stack)
   removes `oauth2-proxy` from the participant compose. Until that lands
   in `participant-agent-services/docker-compose.yml`, the script brings
   it up - it just doesn't gate any Bruno path at Tier 1 because the

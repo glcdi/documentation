@@ -2,7 +2,7 @@
 
 Technical architecture of the **Grazing Lands Carbon Data Initiative (GLCDI)** dataspace - the federated, decentralised infrastructure that lets participants share soil-organic-carbon and grazing-management data under enforceable consent, and the interoperability standards that make that sharing portable across implementations.
 
-This document is the entry point for the "Data Space Architecture Design" deliverable. It describes the topology, the components each participant runs, how data flows between them under the Dataspace Protocol (DSP), and where the technical enforcement boundary lies. For per-mechanism specification traceability see [`strategy/standards.md`](strategy/standards.md); for the identity model in detail see [`reference/identity.md`](reference/identity.md); for the phased implementation plan see [`IMPLEM_PLAN.md`](build/implementation-plan.md).
+This document is the entry point for the "Data Space Architecture Design" deliverable. It describes the topology, the components each participant runs, how data flows between them under the Dataspace Protocol (DSP), and where the technical enforcement boundary lies. For per-mechanism specification traceability see [`strategy/standards.md`](strategy/standards.md); for the identity model in detail see [`reference/identity.md`](reference/identity.md); for the phased implementation plan see [`implementation-plan.md`](build/implementation-plan.md).
 
 ---
 
@@ -188,7 +188,7 @@ For the operator's per-VM layout, secret management convention, and CI deploy sh
 | Policy catalogue, access vs. contract vs. combined scenarios | [`reference/policies/README.md`](reference/policies/README.md) |
 | Full standards traceability (ODRL, DSP, DCAT, JSON-LD, identity) | [`strategy/standards.md`](strategy/standards.md) |
 | Payment-gating design proposal | [`design/payment-gating.md`](design/payment-gating.md) |
-| Phased implementation plan and current status | [`IMPLEM_PLAN.md`](build/implementation-plan.md) |
+| Phased implementation plan and current status | [`implementation-plan.md`](build/implementation-plan.md) |
 | Local end-to-end validation via `glcdi.sh` | [`ops/local-stack.md`](ops/local-stack.md) |
 | Staging / prod VM deployment runbook | [`ops/vm-deployment.md`](ops/vm-deployment.md) |
 | Governance model overview (Trust Framework, cohorts, membership) | [`README.md`](README.md) |

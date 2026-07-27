@@ -13,7 +13,6 @@ management/
 ├── README.md                 # Entry point + index grouped by intent
 ├── ARCHITECTURE.md           # Head document for the "Data Space Architecture Design" deliverable
 ├── AGENTS.md                 # This file
-├── IMPLEM_PLAN.md            # Phased implementation plan (master backlog)
 ├── architecture.mmd/.png     # Reference topology diagram (Mermaid source + rendered PNG)
 ├── context.jsonld            # GLCDI JSON-LD namespace definition
 │
@@ -32,13 +31,17 @@ management/
 ├── design/                   # Design proposals under review, not yet as-built
 │   └── payment-gating.md     # Payment-required contract policy design
 │
+├── build/                    # Everything used to build the prototype
+│   ├── implementation-plan.md   # Phased implementation plan (master backlog)
+│   ├── plan/                 # Per-phase deep-dive plan docs (phase-1.5 … phase-7-future)
+│   ├── bruno/                # HTTP test collection driving the M1 scenario end-to-end
+│   └── scripts/              # Local-stack orchestrator (glcdi.sh) + deploy helpers
+│
 ├── ops/                      # Runbooks - anything an operator opens under time pressure
 │   ├── local-stack.md        # Run the whole stack on a laptop via glcdi.sh
 │   ├── vm-deployment.md      # Deploy to staging / prod VMs (CI-driven; manual bits documented)
-│   ├── staging-wipe.md       # Staging-participant full-reset runbook
+│   └── staging-wipe.md       # Staging-participant full-reset runbook
 │
-├── bruno/                    # HTTP test collection driving the M1 scenario end-to-end
-├── scripts/                  # Local-stack orchestrator (glcdi.sh) + deploy helpers
 └── presentations/            # reveal.js slide decks
 ```
 
@@ -140,7 +143,7 @@ Per-scenario sequence diagrams: `reference/policies/diagrams/*.puml`.
 
 ## Implementation status (current)
 
-Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.md); the summary below is a snapshot for orientation.
+Track the authoritative status in [`implementation-plan.md`](build/implementation-plan.md); the summary below is a snapshot for orientation.
 
 | Component | Status |
 |-----------|--------|
@@ -210,7 +213,7 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 | "What does the system look like?" | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | "How do I run it locally?" | [`ops/local-stack.md`](ops/local-stack.md) |
 | "How do I deploy to a VM?" | [`ops/vm-deployment.md`](ops/vm-deployment.md) |
-| "What is planned next?" | [`IMPLEM_PLAN.md`](build/implementation-plan.md) |
+| "What is planned next?" | [`implementation-plan.md`](build/implementation-plan.md) |
 | "What decisions are still open?" | [`strategy/open-questions.md`](strategy/open-questions.md) |
 | "How does auth work today / next / later?" | [`reference/identity.md`](reference/identity.md) + [`reference/authentication.md`](reference/authentication.md) |
 | "Which specifications is X built on?" | [`strategy/standards.md`](strategy/standards.md) |

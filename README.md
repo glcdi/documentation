@@ -2,7 +2,7 @@
 
 Architecture, governance, policy design, and identity management resources for the **Grazing Lands Carbon Data Initiative (GLCDI)** dataspace.
 
-This directory is the working space for designing the rules, roles, and trust mechanisms that govern how data flows between participants. It is not a deployable service - it feeds into the three deployable sub-projects of the GLCDI workspace:
+This repository is the working space for designing the rules, roles, and trust mechanisms that govern how data flows between participants. It is not a deployable service - it feeds into the five deployable sibling repositories of the GLCDI workspace:
 
 | Sub-project | What it deploys | What it takes from here |
 |-------------|----------------|------------------------|
@@ -117,7 +117,7 @@ Absolute dates and the composition of Cohorts 2+ are open items - see [`strategy
 Identity management, authentication, the GLCDI claim model (realm roles, certification status, membership), the OIDC-vs-OID4VC rationale, the proposed onboarding flow, the identity standards mapping, and the migration path to Verifiable Credentials all live in a dedicated document: [`reference/identity.md`](reference/identity.md).
 
 At a glance:
-- **Tiered rollout** - Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`IMPLEM_PLAN.md` § Identity Tiering Strategy](build/implementation-plan.md#identity-tiering-strategy) for the full argument.
+- **Tiered rollout** - Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`implementation-plan.md` § Identity Tiering Strategy](build/implementation-plan.md#identity-tiering-strategy) for the full argument.
 - **GLCDI token claims** on connector service-account tokens carry the participant's membership, role, certification status, contribution status, and organisation - consumed by EDC policy functions. Full shape + mapper details in [`reference/identity.md`](reference/identity.md).
 - **OIDC for the prototype**; Verifiable Credentials / OID4VC considered but deliberately deferred to Tier 3 - see [`reference/identity.md`](reference/identity.md).
 
@@ -158,4 +158,4 @@ The standards-mapping reference (ODRL, DSP, DCAT, JSON-LD, identity standards) h
 
 ## Implementation Status & Roadmap
 
-See [`IMPLEM_PLAN.md`](build/implementation-plan.md) for the full seven-phase implementation plan and current status. Cohort-level policy rollout sequencing lives in [`reference/policies/plan.md`](reference/policies/plan.md).
+See [`implementation-plan.md`](build/implementation-plan.md) for the full seven-phase implementation plan and current status. Cohort-level policy rollout sequencing lives in [`reference/policies/plan.md`](reference/policies/plan.md).

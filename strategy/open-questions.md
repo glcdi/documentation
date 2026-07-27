@@ -26,14 +26,14 @@ These are documented as proposals; the code and realm JSON already encode them f
 
 | # | Ratification | Status | Source |
 |---|--------------|--------|--------|
-| 4 | GLCDI kebab-case vocabulary for statuses / types / outcomes (`producer`, `researcher`, `data-steward`, `regenerative-verified`, etc.) | Proposal encoded in `context.jsonld` + realm JSON | [`../IMPLEM_PLAN.md` § 1](../build/implementation-plan.md) |
-| 5 | PascalCase ODRL purpose vocabulary (`InternalAnalysis`, `ModelTraining`, etc.) | Proposal encoded in `context.jsonld` | [`../IMPLEM_PLAN.md` § 1](../build/implementation-plan.md) |
-| 6 | Tier-1 onboarding sequence (form → admin approval → KC group + user + temp password mail) | Proposal, local smoke passing | [`../IMPLEM_PLAN.md` § 2.7](../build/plan/phase-2-keycloak-claims.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band) |
-| 7 | Trust Framework v0 wording (DSA template, participant obligations, refund adjudication scope) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.1](../build/plan/phase-6-governance.md) |
-| 8 | Trust Framework compliance section (self-attestation, audit rights, escalation) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.2](../build/plan/phase-6-governance.md) |
-| 9 | Revocation procedure (consent revocation, agreement invalidation) | Deliverable pending governance-body approval | [`../IMPLEM_PLAN.md` § 6.3](../build/plan/phase-6-governance.md) |
+| 4 | GLCDI kebab-case vocabulary for statuses / types / outcomes (`producer`, `researcher`, `data-steward`, `regenerative-verified`, etc.) | Proposal encoded in `context.jsonld` + realm JSON | [`implementation-plan.md` § 1](../build/implementation-plan.md) |
+| 5 | PascalCase ODRL purpose vocabulary (`InternalAnalysis`, `ModelTraining`, etc.) | Proposal encoded in `context.jsonld` | [`implementation-plan.md` § 1](../build/implementation-plan.md) |
+| 6 | Tier-1 onboarding sequence (form → admin approval → KC group + user + temp password mail) | Proposal, local smoke passing | [`implementation-plan.md` § 2.7](../build/plan/phase-2-keycloak-claims.md#27-integration-with-the-onboarding-flow-tier-1-out-of-band) |
+| 7 | Trust Framework v0 wording (DSA template, participant obligations, refund adjudication scope) | Deliverable pending governance-body approval | [`implementation-plan.md` § 6.1](../build/plan/phase-6-governance.md) |
+| 8 | Trust Framework compliance section (self-attestation, audit rights, escalation) | Deliverable pending governance-body approval | [`implementation-plan.md` § 6.2](../build/plan/phase-6-governance.md) |
+| 9 | Revocation procedure (consent revocation, agreement invalidation) | Deliverable pending governance-body approval | [`implementation-plan.md` § 6.3](../build/plan/phase-6-governance.md) |
 | 10 | Rollout / cohort-sequencing proposal for policies (which policies land at which cohort) | Proposal in `policies/plan.md` | [`../reference/policies/plan.md`](../reference/policies/plan.md) |
-| 11 | Human-user onboarding proposal at Tier 2 (post-M1) | Proposal, not ratified; only triggers when Tier 2 is approved | [`../IMPLEM_PLAN.md` § 7.2.5](../build/plan/phase-7-future.md#725-tier-2-onboarding-flow) |
+| 11 | Human-user onboarding proposal at Tier 2 (post-M1) | Proposal, not ratified; only triggers when Tier 2 is approved | [`implementation-plan.md` § 7.2.5](../build/plan/phase-7-future.md#725-tier-2-onboarding-flow) |
 
 ---
 
@@ -50,7 +50,7 @@ Kept here as a short changelog so a reviewer can see recent decisions without di
 
 ## Not tracked here (out of scope for this document)
 
-The following are known deferred items but do not need a decision - they are scheduled work or waiting on external dependencies. They live in `../IMPLEM_PLAN.md`, not here:
+The following are known deferred items but do not need a decision - they are scheduled work or waiting on external dependencies. They live in `implementation-plan.md`, not here:
 
 - Phase 5.1 EDC-extension unit tests
 - Participant-UI `tems-transfers-list` component wiring (Track F deferred finding)
@@ -65,4 +65,4 @@ The following are known deferred items but do not need a decision - they are sch
 
 - **When a question is resolved**, move its row into the *Resolved* section with the decision + date.
 - **When a new question surfaces**, add a row and link back to the source doc so a reviewer can read the context.
-- **Do not use this document for backlog tracking** - that's [`../IMPLEM_PLAN.md`](../build/implementation-plan.md). Only add items here that genuinely need a decision.
+- **Do not use this document for backlog tracking** - that's [`implementation-plan.md`](../build/implementation-plan.md). Only add items here that genuinely need a decision.

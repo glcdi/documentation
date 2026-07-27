@@ -4,12 +4,12 @@ A proposal for which policies could go live in which cohort, and what technical 
 
 This document joins three pieces that live separately elsewhere:
 - the **cohort timeline** (participants and focus) - [`../../README.md` §Cohort Timeline](../../README.md#cohort-timeline-proposal)
-- the **technical implementation phases** (vocabulary → Keycloak → extension → seeding → testing → governance) - [`../IMPLEM_PLAN.md`](../../build/implementation-plan.md)
+- the **technical implementation phases** (vocabulary → Keycloak → extension → seeding → testing → governance) - [`implementation-plan.md`](../../build/implementation-plan.md)
 - the **per-policy feasibility & priority** - [`README.md` §Implementation Feasibility](README.md#implementation-feasibility). Effort ratings in the cohort tables below mirror that authoritative source.
 
 For use-case → policy-stack mapping and end-to-end workflow illustrations, see [`README.md` §Relation to GLCDI Use Cases](README.md#relation-to-glcdi-use-cases) and [`README.md` §Sequence Diagrams](README.md#sequence-diagrams).
 
-It is a proposed **sequencing** document, not a re-plan. The phase work is still defined in `../IMPLEM_PLAN.md`; this document proposes *when* each policy might become a blocker.
+It is a proposed **sequencing** document, not a re-plan. The phase work is still defined in `implementation-plan.md`; this document proposes *when* each policy might become a blocker.
 
 ---
 
@@ -43,7 +43,7 @@ The proposal is to roll out GLCDI policies across **two prototype onboarding coh
   - wiring the baseline policy stack into the seeding scripts
   - demonstrating the end-to-end workflow (authentication → filtered catalog → negotiation → transfer → expiry) to the governance body.
 - **Seeding scripts currently apply a single `glcdi:policy:open-research` policy** (`"action": "use"`, no constraints). No catalog filtering, no negotiation-time checks - any authenticated participant sees everything.
-- **No GLCDI-specific constraint is yet evaluated in the connector.** `../IMPLEM_PLAN.md` Phases 1–6 are "not started".
+- **No GLCDI-specific constraint is yet evaluated in the connector.** `implementation-plan.md` Phases 1–6 are "not started".
 - **Cohort 2 ramp-up is underway in parallel** - the composition of C2 is still under discussion; targeting a Q2 start.
 
 The rollout below proposes what remains to be delivered for C1 before it closes out, what C2 would add on top, and what a subsequent **post-prototype phase** could absorb - institutional onboarding, cert-evidence formalisation, the participant purpose-declaration UI, and the last three technical policies (`corporate-partners`, `data-retention-limit`, `payment-required`). The prototype itself targets just two onboarding cohorts: C1 and C2.
@@ -73,7 +73,7 @@ The rollout below proposes what remains to be delivered for C1 before it closes 
 
 ### Proposed implementation approach for C1 close-out
 
-Mapped to `../IMPLEM_PLAN.md` phases:
+Mapped to `implementation-plan.md` phases:
 
 | TODO phase | Proposed C1 scope | Blocker for C1 close-out? |
 |------------|-------------------|:-:|
@@ -165,8 +165,8 @@ Mapped to `../IMPLEM_PLAN.md` phases:
 Post-prototype is where GLCDI would move from "works for a small trusted participant set" to "works for dozens of institutions and corporates at production scale". A non-exhaustive list of interesting topics to explore, in no particular priority order:
 
 - **Payment + retention infrastructure** - external payment/invoicing gateway integration, reconciliation, `data-retention-limit` custom function with persisted transfer timestamps, delete-attestation reporting.
-- **Verifiable Credentials integration** (`../IMPLEM_PLAN.md` §7.2) - move from Keycloak roles to VC-based identity for participant type, membership, and certification. Enables cross-dataspace portability and removes the governance-Keycloak bottleneck.
-- **Federated Catalogue policy metadata** (`../IMPLEM_PLAN.md` §7.3) - publish each participant's policies as catalogue metadata so consumers can filter by policy before negotiating. Would require adopting or forking an XFSC-style federated catalogue.
+- **Verifiable Credentials integration** (`implementation-plan.md` §7.2) - move from Keycloak roles to VC-based identity for participant type, membership, and certification. Enables cross-dataspace portability and removes the governance-Keycloak bottleneck.
+- **Federated Catalogue policy metadata** (`implementation-plan.md` §7.3) - publish each participant's policies as catalogue metadata so consumers can filter by policy before negotiating. Would require adopting or forking an XFSC-style federated catalogue.
 - **Participant UI - policy composer** - beyond a simple purpose-declaration dropdown: full composition UI where participants could attach any access + contract policy template to their assets, preview the effective policy, and see who would/wouldn't match. Would replace all project-team seeding.
 - **Certification-broker integration** - automated validation of `glcdi_certification_status` against third-party certification bodies (USDA Organic, Regenerative Organic Certified, etc.). Would replace the C1 self-certification and the C2 informal-review approach.
 - **Contribution-status automation** - replace manual governance maintenance of `glcdi_contribution_status` with a periodic catalogue crawler that detects when a participant has published its first asset. Scales beyond ~10 participants.
@@ -180,7 +180,7 @@ Post-prototype is where GLCDI would move from "works for a small trusted partici
 
 ### Implementation approach (proposed)
 
-Maps to `../IMPLEM_PLAN.md` Phase 7 (Future Enhancements) plus the workstreams above. Governance + UI workstreams could begin during or shortly after C2; payment + VC + federated-catalogue work is firmly post-grant.
+Maps to `implementation-plan.md` Phase 7 (Future Enhancements) plus the workstreams above. Governance + UI workstreams could begin during or shortly after C2; payment + VC + federated-catalogue work is firmly post-grant.
 
 **Not in scope for post-prototype (proposal):** compute-to-data (data never leaves the provider), zero-knowledge policy evaluation, cross-dataspace federation with sister dataspaces. All interesting topics for a further phase.
 

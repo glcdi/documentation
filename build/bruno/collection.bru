@@ -4,13 +4,13 @@ docs {
 
   - **Tier 1 (default)** - every /management call carries `X-Api-Key` only.
     No Bearer token; oauth2-proxy is removed from the participant compose
-    (IMPLEM_PLAN § 1.5.2). The 00-auth/ folder still mints client_credentials
+    (implementation-plan § 1.5.2). The 00-auth/ folder still mints client_credentials
     tokens against the Authority KC for diagnostic claim-shape checks, but
     those tokens are not attached to /management traffic at this tier.
 
   - **Tier 2** - flip env var `tier` to `tier2`. Adds
     `Authorization: Bearer <token>` to every /management call, on top of the
-    `X-Api-Key` floor (IMPLEM_PLAN § 7.2). The token used is the connector
+    `X-Api-Key` floor (implementation-plan § 7.2). The token used is the connector
     SA token already minted by 00-auth/ - Bruno acts as automated test
     traffic, so it uses SA tokens rather than the per-user OIDC flow that
     real human operators use through the catalogue UI. oauth2-proxy still

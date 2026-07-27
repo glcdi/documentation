@@ -6,7 +6,7 @@ GLCDI - today, and where we expect it to go.
 This document complements two existing references:
 - [`identity.md`](identity.md) - the identity tiering rationale and the standards mapping
   (which specs we lean on, why OIDC before OID4VC).
-- [`IMPLEM_PLAN.md`](../build/implementation-plan.md) - the per-phase implementation backlog (realm JSON,
+- [`implementation-plan.md`](../build/implementation-plan.md) - the per-phase implementation backlog (realm JSON,
   protocol mappers, EDC policy functions, onboarding wiring).
 
 The four phases below are the operational shape of authentication at each
@@ -231,7 +231,7 @@ per-org variants in `djangoldp_glcdi_pointblue` /
 `djangoldp_edc.EdcContractPermissionV3`, which validates DSP-AGREEMENT-ID /
 DSP-PARTICIPANT-ID against the local connector - so the same M1 contract
 gates `/management/` *and* the dataset bytes. See
-[IMPLEM_PLAN.md § 7.6](../build/implementation-plan.md) for the wiring and a local validation
+[`implementation-plan.md` § 7.6](../build/implementation-plan.md) for the wiring and a local validation
 walkthrough. The LDP backend is gated behind the `dev` compose profile and
 is not deployed to staging yet.
 

@@ -5,16 +5,16 @@ access policy plus an internal-use-only contract policy, exercised across
 three participants (caney-fork, point-blue, white-buffalo).
 
 Designed to run in two **identity tier** modes (per
-`../IMPLEM_PLAN.md` § Identity Tiering Strategy):
+`implementation-plan.md` § Identity Tiering Strategy):
 
 - **Tier 1** (default) - `X-Api-Key` only on every `/management` call. No
   Bearer token; oauth2-proxy is not in the participant compose at this tier
-  (`../IMPLEM_PLAN.md` § 1.5.2). The 00-auth/ folder is **diagnostic** -
+  (`implementation-plan.md` § 1.5.2). The 00-auth/ folder is **diagnostic** -
   it mints connector-SA tokens to verify the Authority KC carries the right
   claim shape, but those tokens are not attached to /management traffic.
 - **Tier 2** - `X-Api-Key` **+** `Authorization: Bearer` on every
   /management call. Anticipates the post-M1 user-OIDC layer
-  (`../IMPLEM_PLAN.md` § 7.2). Bruno automation uses the connector-SA
+  (`implementation-plan.md` § 7.2). Bruno automation uses the connector-SA
   tokens already minted by 00-auth/ as Bearer values - oauth2-proxy
   accepts any token signed by Authority KC, which is sufficient for
   test traffic. (Real human operators going through the catalogue UI
@@ -34,8 +34,8 @@ need to know about the tier.
 
 ## What this collection tests
 
-The Phase 4.5.E charter (`../IMPLEM_PLAN.md` § 4.5.E) and the M1 acceptance
-list (`../IMPLEM_PLAN.md` § Milestone M1) decompose to:
+The Phase 4.5.E charter (`implementation-plan.md` § 4.5.E) and the M1 acceptance
+list (`implementation-plan.md` § Milestone M1) decompose to:
 
 - A regenerative producer (white-buffalo) sees the M1 fixture asset in the
   catalog query against caney-fork.
@@ -62,7 +62,7 @@ Bruno → /management/* → connector
 
 No Bearer header on /management calls. The `00-auth/` folder still mints
 connector-SA tokens against Authority KC and decodes them to assert the
-`glcdi_*` claim shape (`../IMPLEM_PLAN.md` § 2.6) - those minted tokens
+`glcdi_*` claim shape (`implementation-plan.md` § 2.6) - those minted tokens
 are not used downstream at this tier; the assertion is verifying that
 Authority KC is correctly configured.
 
@@ -168,7 +168,7 @@ stores the values locally per user.
 | Secret | Source | Tier(s) using it |
 |--------|--------|------------------|
 | `<org>_api_key` | The connector's `web.http.management.auth.key`, rotated per `../../CLAUDE.md` "Things that will bite you" | Tier 1 + Tier 2 |
-| `<org>_client_secret` | Authority Keycloak client secret for `glcdi-connector-<org>` (rotated from realm-JSON `changeme-*` placeholders, per `../IMPLEM_PLAN.md` § 1.5.4) | Tier 1 + Tier 2 (00-auth/ at Tier 1 is diagnostic; at Tier 2 it sources the Bearer tokens) |
+| `<org>_client_secret` | Authority Keycloak client secret for `glcdi-connector-<org>` (rotated from realm-JSON `changeme-*` placeholders, per `implementation-plan.md` § 1.5.4) | Tier 1 + Tier 2 (00-auth/ at Tier 1 is diagnostic; at Tier 2 it sources the Bearer tokens) |
 | `<org>_token` | Auto-populated by `00-auth/0[1-3]-fetch-token-*.bru` | Tier 2 (used by `collection.bru` to inject Bearer); Tier 1 ignores |
 | `m1_negotiation_id`, `m1_contract_agreement_id`, `m1_transfer_process_id` | Auto-populated by `30-negotiation/` and `40-transfer/` scripts | Tier 1 + Tier 2 |
 
@@ -195,7 +195,7 @@ bruno/
 ## Not yet runnable - dependencies
 
 The collection cannot be expected to pass green until the following are in
-place (per the M1 acceptance criteria in `../IMPLEM_PLAN.md` § Milestone M1):
+place (per the M1 acceptance criteria in `implementation-plan.md` § Milestone M1):
 
 - **Phase 1.5 (Tier 1)** - Authority KC has `glcdi-connector-<org>` clients
   with `client_credentials` enabled and the per-org `glcdi-claims` scope
@@ -231,11 +231,11 @@ real data.
 
 ## Pointers
 
-- Identity tiering strategy: `../IMPLEM_PLAN.md` § Identity Tiering Strategy.
-- Tier 1 design + auth flow reference: `../IMPLEM_PLAN.md` § 1.5.6.
-- Tier 2 design (post-M1): `../IMPLEM_PLAN.md` § 7.2.
-- Bruno track design context: `../IMPLEM_PLAN.md` § 4.5.E.
-- M1 acceptance criteria: `../IMPLEM_PLAN.md` § Milestone M1.
+- Identity tiering strategy: `implementation-plan.md` § Identity Tiering Strategy.
+- Tier 1 design + auth flow reference: `implementation-plan.md` § 1.5.6.
+- Tier 2 design (post-M1): `implementation-plan.md` § 7.2.
+- Bruno track design context: `implementation-plan.md` § 4.5.E.
+- M1 acceptance criteria: `implementation-plan.md` § Milestone M1.
 - URN conventions: `../../design/payment-gating.md` § 3.7.
 - GLCDI vocabulary: `../context.jsonld` (and the hosted copy at
   `https://cdn.startinblox.com/owl/glcdi/context.jsonld`).
