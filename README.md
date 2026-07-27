@@ -11,9 +11,7 @@ This repository is the working space for designing the rules, roles, and trust m
 | `participant-agent-services/` | Per-participant Docker Compose stack | Policy-aware seeding scripts + Bruno test collection (Phase 4) |
 | `participant-ui/` | Catalogue UI image | Catalogue UI configuration + policy-aware components |
 
-## Contents
-
-Grouped by intent.
+## Documentation structure
 
 **Start here.**
 
