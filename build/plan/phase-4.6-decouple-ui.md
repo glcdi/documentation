@@ -39,4 +39,4 @@ Specific gaps the fork has to close (acceptance criteria for the modal's M1 cut)
 
 ---
 
-**Navigation:** [← index](../implementation-plan.md) · [← prev: Phase 4.5: Bruno Test Suite + Participant-UI Configuration (Parallel Tracks)](phase-4.5-bruno-and-ui.md) · [next: Phase 5: Testing & Validation →](phase-5-testing.md)
+**Navigation:** [← index](../implementation-plan.md) · [← prev: Phase 4.5: Bruno Test Suite + Participant-UI Configuration (Parallel Tracks)](phase-4.5-bruno-and-ui.md) · [next: Phase 4.7: Audit Trails (Provider-Side) →](phase-4.7-audit-trails.md)

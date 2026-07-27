@@ -31,7 +31,7 @@ GLCDI is a **one Authority + N participants** system:
 ## 3. Reference system architecture (Tier 1 - M1 target)
 
 The diagram below shows the first phase (M1) system architecture:
-- One Authority Keycloak
+- Authority services: Keycloak and the onboarding platform
 - one participant presented fully
 - and one peer participant collapsed.
 
@@ -144,7 +144,7 @@ Identity is layered so the M1 prototype ships on the minimum credible model and 
 | Tier | Status | UI auth | Connector-to-connector auth | Identity issuer |
 |------|--------|---------|-----------------------------|-----------------|
 | **Tier 1** (M1 default) | Done | `X-Api-Key` only | Authority-signed JWT (`client_credentials`, `iam-oauth2`) | Authority Keycloak |
-| **Tier 2** ([Phase 7.2](build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)) | Deferred post-M1 | `X-Api-Key` + user OIDC Bearer (oauth2-proxy in front of `/management`) | Unchanged from Tier 1 | Authority Keycloak (adds `glcdi-ui` client + groups + human users) |
+| **Tier 2** ([Phase 7.2](build/plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui)) | Deferred; | `X-Api-Key` + user OIDC Bearer (oauth2-proxy in front of `/management`) | Unchanged from Tier 1 | Authority Keycloak (adds `glcdi-ui` client + groups + human users) |
 | **Tier 3** ([Phase 7.3](build/plan/phase-7-future.md#73-identity-tier-3---decentralised-claims-via-vc--dcp)) | Deferred; long-term direction | Likely `X-Api-Key` + DID-bound presentation | Verifiable Presentation minted by the Identity Hub via DCP / IATP | Per-participant issuer (Authority KC's role as connector-token issuer disappears) |
 
 See [`reference/identity.md`](reference/identity.md) for the tier rationale, the claim model, and the OIDC-vs-OID4VC-vs-VC decision.

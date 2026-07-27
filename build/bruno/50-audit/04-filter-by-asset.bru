@@ -1,0 +1,36 @@
+meta {
+  name: Filter by asset id narrows the result set
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{caney_fork_host}}/management/v3/glcdi/audit?asset={{m1_asset_id}}
+  auth: none
+}
+
+docs {
+  Confirms the `asset` query parameter is honoured. Every returned row
+  must have `asset_id == m1_asset_id`. Skipped if `m1_asset_id` isn't
+  set (fresh session without a seeded fixture).
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+  Accept: application/json
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("all rows scoped to the requested asset id (skip if fixture unset)", function() {
+    const assetId = bru.getEnvVar("m1_asset_id");
+    if (!assetId) return;
+    const body = res.getBody();
+    for (const rec of body.items) {
+      expect(rec.asset_id).to.equal(assetId);
+    }
+  });
+}

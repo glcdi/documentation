@@ -1,0 +1,18 @@
+meta {
+  name: 50-audit
+  seq: 6
+}
+
+docs {
+  Provider-side audit trail — see management/design/audit-trails.md and
+  management/build/plan/phase-4.7-audit-trails.md.
+
+  What this folder asserts:
+  - 01: the /v3/glcdi/audit endpoint is reachable + returns the { total, items } shape.
+  - 02: TRANSFER_STARTED rows land after 30-negotiation + 40-transfer have run.
+  - 03: ACCESS rows land after a public-API fetch (skipped if the fetch step hasn't run).
+  - 04: the `asset` query filter narrows the result set correctly.
+
+  Depends on: 10-provider-seeding, 30-negotiation, 40-transfer having run
+  in the same session. Runs after 40-transfer per the folder sequence.
+}

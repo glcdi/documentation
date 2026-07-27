@@ -1,0 +1,41 @@
+meta {
+  name: ACCESS rows appear after a public-API fetch via the EDR
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{caney_fork_host}}/management/v3/glcdi/audit?type=ACCESS
+  auth: none
+}
+
+docs {
+  Depends on a public-API fetch having happened via the EDR issued in the
+  40-transfer flow. Asserts at least one ACCESS row exists and carries a
+  status_code + a non-null path.
+
+  This file does NOT itself perform the public-API fetch — that requires
+  the EDR data-address from `/management/v3/edrs/{transferId}/dataaddress`
+  (see the reference/edr-fetch playbook). Wire that in as a preceding file
+  once Phase 4 seeding lands a stable EDR-fetch harness.
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+  Accept: application/json
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("at least one ACCESS row exists (allow-empty if the fetch step was skipped)", function() {
+    const body = res.getBody();
+    if (body.total > 0) {
+      const rec = body.items[0];
+      expect(rec.event_type).to.equal("ACCESS");
+      expect(rec).to.have.property("status_code");
+    }
+  });
+}

@@ -37,6 +37,7 @@ This repository is the working space for designing the rules, roles, and trust m
 | Doc | Covers |
 |-----|--------|
 | [`design/payment-gating.md`](design/payment-gating.md) | Payment-required contract policy - connector extension, storage model, governance carve-outs. |
+| [`design/audit-trails.md`](design/audit-trails.md) | Provider-side audit trails - transfer + EDR + public-API access recording, storage schema, retention. |
 
 **Build.**
 

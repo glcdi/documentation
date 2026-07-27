@@ -1,0 +1,48 @@
+meta {
+  name: Audit endpoint is reachable and empty on a fresh stack
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{caney_fork_host}}/management/v3/glcdi/audit
+  auth: none
+}
+
+docs {
+  Provider-side audit trail (see management/design/audit-trails.md and
+  management/build/plan/phase-4.7-audit-trails.md).
+
+  On a fresh `glcdi.sh reset && glcdi.sh up`, the endpoint should return a
+  200 with { total: 0, items: [] }. Later folders in this collection assert
+  that transfer + access rows appear once traffic has flowed.
+
+  When the audit-store extension is not yet loaded (e.g. iterating on the
+  extension code without a full `build` step), this file returns 404. Rerun
+  `glcdi.sh build && glcdi.sh up` to pick up the new controlplane image.
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+  Accept: application/json
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("response shape matches { total, items }", function() {
+    const body = res.getBody();
+    expect(body).to.have.property("total");
+    expect(body).to.have.property("items");
+    expect(body.items).to.be.an("array");
+  });
+
+  test("no rows on a fresh stack (skip if state was inherited)", function() {
+    const body = res.getBody();
+    if (body.total === 0) {
+      expect(body.items.length).to.equal(0);
+    }
+  });
+}

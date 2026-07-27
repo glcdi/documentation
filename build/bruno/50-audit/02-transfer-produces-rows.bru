@@ -1,0 +1,46 @@
+meta {
+  name: TRANSFER_STARTED row appears for a completed negotiation
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{caney_fork_host}}/management/v3/glcdi/audit?type=TRANSFER_STARTED
+  auth: none
+}
+
+docs {
+  Depends on the 30-negotiation → 40-transfer flow having run and reached
+  STARTED at least once. Asserts that one audit row exists with the
+  expected asset id and consumer participant id from the M1 fixture.
+
+  This does not itself initiate a transfer — 40-transfer/01 must have run
+  in the same session. Assumes `m1_asset_id` and `m1_consumer_id`
+  (`urn:glcdi:participant:white-buffalo`) have been populated by earlier
+  files.
+}
+
+headers {
+  X-Api-Key: {{caney_fork_api_key}}
+  Accept: application/json
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("at least one TRANSFER_STARTED row exists", function() {
+    const body = res.getBody();
+    expect(body.total).to.be.at.least(1);
+  });
+
+  test("row is scoped to the m1 asset id when set", function() {
+    const body = res.getBody();
+    const assetId = bru.getEnvVar("m1_asset_id");
+    if (assetId) {
+      const found = body.items.some(r => r.asset_id === assetId);
+      expect(found).to.equal(true);
+    }
+  });
+}

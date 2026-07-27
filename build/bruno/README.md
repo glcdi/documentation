@@ -189,6 +189,7 @@ bruno/
 ├── 20-catalog-discovery/            # Positive (regen-producer) + negative (researcher) catalog queries
 ├── 30-negotiation/                  # Positive (InternalAnalysis) + negative (other purpose)
 ├── 40-transfer/                     # Initiate transfer against the agreed contract
+├── 50-audit/                        # Provider-side audit trail: transfer + access rows land as expected
 └── 99-negative-auth/                # Tier-1+2: no/wrong X-Api-Key. Tier-2 only: no/wrong Bearer.
 ```
 

@@ -53,4 +53,4 @@
 
 ---
 
-**Navigation:** [← index](../implementation-plan.md) · [← prev: Phase 4.6: Decouple participant-ui from `@startinblox/solid-tems`](phase-4.6-decouple-ui.md) · [next: 🚦 Milestone M1: Regenerative-Only Access + Internal-Use-Only Contract - End-to-End on Tier 1 →](milestone-m1.md)
+**Navigation:** [← index](../implementation-plan.md) · [← prev: Phase 4.7: Audit Trails (Provider-Side)](phase-4.7-audit-trails.md) · [next: 🚦 Milestone M1: Regenerative-Only Access + Internal-Use-Only Contract - End-to-End on Tier 1 →](milestone-m1.md)

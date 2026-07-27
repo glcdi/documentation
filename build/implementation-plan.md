@@ -109,6 +109,7 @@ The full topology diagram + per-component role + data-flow walkthrough live in [
 | 4 | Update Seeding Scripts & Contract Definitions | [`plan/phase-4-seeding.md`](plan/phase-4-seeding.md) |
 | 4.5 | Bruno Test Suite + Participant-UI Configuration (Parallel Tracks) | [`plan/phase-4.5-bruno-and-ui.md`](plan/phase-4.5-bruno-and-ui.md) |
 | 4.6 | Decouple participant-ui from `@startinblox/solid-tems` | [`plan/phase-4.6-decouple-ui.md`](plan/phase-4.6-decouple-ui.md) |
+| 4.7 | Audit Trails (Provider-Side) | [`plan/phase-4.7-audit-trails.md`](plan/phase-4.7-audit-trails.md) |
 | 5 | Testing & Validation | [`plan/phase-5-testing.md`](plan/phase-5-testing.md) |
 | M-M1 | Regenerative-Only Access + Internal-Use-Only Contract - End-to-End on Tier 1 | [`plan/milestone-m1.md`](plan/milestone-m1.md) |
 | 6 | Governance-Level Enforcement (Non-Technical) - Proposal | [`plan/phase-6-governance.md`](plan/phase-6-governance.md) |
