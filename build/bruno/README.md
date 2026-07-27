@@ -209,7 +209,7 @@ place (per the M1 acceptance criteria in `../IMPLEM_PLAN.md` § Milestone M1):
 - **Phase 3** - Custom `AtomicConstraintFunction`s registered for
   `glcdi:membership`, `glcdi:participantType`, `glcdi:certificationStatus`,
   and `iam-mock` swapped for the custom `glcdi-iam-keycloak` extension
-  against the Authority KC (§ 3.5 — landed; the catalog-discovery +
+  against the Authority KC (§ 3.5 - landed; the catalog-discovery +
   negotiation scenarios exercise real policy logic today).
 - **Phase 4** - Provider seeding scripts publish the M1 fixture asset with
   the correct policies (this collection's `10-provider-seeding/` mirrors

@@ -21,8 +21,8 @@ Grouped by intent.
 |-----|-----|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Head document for the "Data Space Architecture Design" deliverable - topology, components, data flows, standards, tiering, enforcement boundary. **Read this first.** |
 | [`strategy/authority.md`](strategy/authority.md) | Proposed responsibilities, composition, and operating mode of the Dataspace Authority (for the body to review and ratify). |
-| [`strategy/open-questions.md`](strategy/open-questions.md) | Decisions pending — cutover date, cohort composition, vocabulary + framework ratifications. |
-| [`build/implementation-plan.md`](build/implementation-plan.md) | Phased implementation plan — index + TL;DR + identity tiering + runtime architecture, with each phase in its own file under [`build/plan/`](build/plan/). |
+| [`strategy/open-questions.md`](strategy/open-questions.md) | Decisions pending - cutover date, cohort composition, vocabulary + framework ratifications. |
+| [`build/implementation-plan.md`](build/implementation-plan.md) | Phased implementation plan - index + TL;DR + identity tiering + runtime architecture, with each phase in its own file under [`build/plan/`](build/plan/). |
 
 **Reference (as-designed).**
 
@@ -51,8 +51,8 @@ Grouped by intent.
 
 | Doc | For |
 |-----|-----|
-| [`ops/local-stack.md`](ops/local-stack.md) | Run the whole stack on a laptop via `glcdi.sh` — the gate before any staging deploy. |
-| [`ops/vm-deployment.md`](ops/vm-deployment.md) | Deploy to staging/prod VMs — GitLab CI/CD does the pull + up; this covers realm refresh, snapshots, and rollback. |
+| [`ops/local-stack.md`](ops/local-stack.md) | Run the whole stack on a laptop via `glcdi.sh` - the gate before any staging deploy. |
+| [`ops/vm-deployment.md`](ops/vm-deployment.md) | Deploy to staging/prod VMs - GitLab CI/CD does the pull + up; this covers realm refresh, snapshots, and rollback. |
 | [`ops/staging-wipe.md`](ops/staging-wipe.md) | Staging-participant full-reset runbook. |
 
 **Meta.**
@@ -103,12 +103,12 @@ Specific participant composition per cohort is under discussion and intentionall
 
 | Cohort | Participant count (indicative) | Focus | Status |
 |--------|-------------------------------|-------|--------|
-| **1** | ~3 (prototype onboarding) — the M1 trio | Foundational validation, Trust Framework v0 | In progress |
+| **1** | ~3 (prototype onboarding) - the M1 trio | Foundational validation, Trust Framework v0 | In progress |
 | **2** | ~6 (Cohort 1 + a proposed second wave) | Cross-context testing, Trust Framework v1 | Composition under discussion |
 | **3** | Expanded institutional participation | Institutional stress-testing | Not scoped |
 | **Post-prototype** | Rolling institutional + corporate onboarding | Broader onboarding | Not scoped |
 
-Absolute dates and the composition of Cohorts 2+ are open items — see [`strategy/open-questions.md`](strategy/open-questions.md). A standalone showcase VM (`demo.glcdi.startinblox.com`) also runs alongside the M1 trio for workshop fixtures; that is not itself a cohort participant.
+Absolute dates and the composition of Cohorts 2+ are open items - see [`strategy/open-questions.md`](strategy/open-questions.md). A standalone showcase VM (`demo.glcdi.startinblox.com`) also runs alongside the M1 trio for workshop fixtures; that is not itself a cohort participant.
 
 ---
 
@@ -118,7 +118,7 @@ Identity management, authentication, the GLCDI claim model (realm roles, certifi
 
 At a glance:
 - **Tiered rollout** - Tier 1 (M1 default) is a single Authority Keycloak with one `client_credentials` service-account client per connector; the Catalogue UI uses `X-Api-Key` only. Tier 2 (post-M1) adds per-user OIDC at the UI. Tier 3 migrates connector identity to Verifiable Credentials via DCP. See [`IMPLEM_PLAN.md` § Identity Tiering Strategy](build/implementation-plan.md#identity-tiering-strategy) for the full argument.
-- **GLCDI token claims** on connector service-account tokens carry the participant's membership, role, certification status, contribution status, and organisation — consumed by EDC policy functions. Full shape + mapper details in [`reference/identity.md`](reference/identity.md).
+- **GLCDI token claims** on connector service-account tokens carry the participant's membership, role, certification status, contribution status, and organisation - consumed by EDC policy functions. Full shape + mapper details in [`reference/identity.md`](reference/identity.md).
 - **OIDC for the prototype**; Verifiable Credentials / OID4VC considered but deliberately deferred to Tier 3 - see [`reference/identity.md`](reference/identity.md).
 
 ---

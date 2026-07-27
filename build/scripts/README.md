@@ -84,9 +84,9 @@ The script remaps via `NGINX_PORT` and per-participant `configuration.properties
 | `/management` reachable with rotated `X-Api-Key` | ✅ | - |
 | Bruno's `00-auth/` succeeds - connector SAs mint tokens with the right claims | ✅ post-realm-import | - |
 | Bruno's `10-provider-seeding/` (asset / policy / contract def CRUD) | ✅ | - |
-| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ✅ | — (Phase 3 constraint functions + Phase 3.5 `glcdi-iam-keycloak` extension shipped) |
-| Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ✅ | — |
-| Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 4 seeding + transfer state-machine polling — see [`../plan/phase-4-seeding.md`](../plan/phase-4-seeding.md) |
+| Bruno's `20-catalog-discovery/` filtering correctly admits white-buffalo + filters point-blue | ✅ | - (Phase 3 constraint functions + Phase 3.5 `glcdi-iam-keycloak` extension shipped) |
+| Bruno's `30-negotiation/` reaching FINALIZED / TERMINATED | ✅ | - |
+| Bruno's `40-transfer/` reaching a terminal success state | ⚠ partial | Phase 4 seeding + transfer state-machine polling - see [`../plan/phase-4-seeding.md`](../plan/phase-4-seeding.md) |
 | `99-negative-auth/03-tier2-no-bearer.bru` and `/04-tier2-wrong-bearer.bru` | ⚠ Tier-2 only | [`IMPLEM_PLAN § 7.2`](../plan/phase-7-future.md#72-identity-tier-2---add-user-oidc-at-the-ui) (oauth2-proxy actually validating Bearer) |
 
 The script doesn't pretend more works than does. Run it, observe what's

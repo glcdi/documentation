@@ -1,6 +1,6 @@
 # GLCDI Trust & Control Mechanisms - Specification Mapping
 
-Each trust and control mechanism used in the GLCDI dataspace is backed by one or more open specifications. This document maps **what the dataspace does** to **which standard enables it**, providing full traceability from governance intent to technical implementation. Every layer — policy, protocol, identity, sovereignty, semantic — lives here in one place. For the identity architecture and rationale (not the standards list itself), see [`../reference/identity.md`](../reference/identity.md).
+Each trust and control mechanism used in the GLCDI dataspace is backed by one or more open specifications. This document maps **what the dataspace does** to **which standard enables it**, providing full traceability from governance intent to technical implementation. Every layer - policy, protocol, identity, sovereignty, semantic - lives here in one place. For the identity architecture and rationale (not the standards list itself), see [`../reference/identity.md`](../reference/identity.md).
 
 ## Data Consent & Usage Control
 
@@ -25,7 +25,7 @@ Each trust and control mechanism used in the GLCDI dataspace is backed by one or
 | **Decentralised identity** (Tier 3) | Participants identified by DIDs, claims carried in Verifiable Credentials | [W3C DID Core 1.0](https://www.w3.org/TR/did-core/) + [W3C VC Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/) | Currently `did:web:<participant>.glcdi.startinblox.com` is configured in EDC but VCs are not yet issued. The DCP-shaped config (`edc.iam.issuer.id`, `edc.iam.sts.oauth.token.url`) is the placeholder for this direction. |
 | **Gaia-X compliance** (Tier 3 alignment) | Self-descriptions, trust anchors, credential issuance aligned with Gaia-X | [Gaia-X Trust Framework](https://docs.gaia-x.eu/policy-rules-committee/trust-framework/) | GLCDI architecture is designed to be Gaia-X-compatible (Self-Descriptions, Federated Catalogue, Compliance Service); full alignment lands with Tier 3. |
 
-See [`../reference/identity.md`](../reference/identity.md) for the identity architecture the table above operationalises — tier progression, claim model, and the OIDC-vs-OID4VC-vs-VC decision.
+See [`../reference/identity.md`](../reference/identity.md) for the identity architecture the table above operationalises - tier progression, claim model, and the OIDC-vs-OID4VC-vs-VC decision.
 
 ## Catalog Discovery & Contract Negotiation
 

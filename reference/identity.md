@@ -2,7 +2,7 @@
 
 The GLCDI identity model: the tier progression, the claim shape, the realm-role catalogue, the onboarding flow, and the rationale for choosing OpenID Connect at Tier 1 over Verifiable Credentials at Tier 3. This is the architectural snapshot; the operational per-phase roadmap (what changes at each tier, sequence diagrams for onboarding + connector-to-connector trust + user login + VC issuance) lives in the sibling document [`authentication.md`](authentication.md).
 
-For the overall governance model this feeds into, see [`README.md`](../README.md). The full specification traceability — every identity-adjacent standard alongside the ODRL / DSP / DCAT / semantic ones — lives in [`../strategy/standards.md`](../strategy/standards.md). For the step-by-step implementation plan (realm JSON, protocol mappers, EDC policy functions), see [`IMPLEM_PLAN.md`](../build/implementation-plan.md) - Phase 2 covers Keycloak claim configuration and Phase 3 covers the EDC-side claim extraction.
+For the overall governance model this feeds into, see [`README.md`](../README.md). The full specification traceability - every identity-adjacent standard alongside the ODRL / DSP / DCAT / semantic ones - lives in [`../strategy/standards.md`](../strategy/standards.md). For the step-by-step implementation plan (realm JSON, protocol mappers, EDC policy functions), see [`IMPLEM_PLAN.md`](../build/implementation-plan.md) - Phase 2 covers Keycloak claim configuration and Phase 3 covers the EDC-side claim extraction.
 
 ## Architecture
 
@@ -293,7 +293,7 @@ The Tier-2 flow does not regenerate the Tier-1 connector identity - it adds a hu
 
 ## Identity Standards Mapping
 
-The identity / authentication mechanisms below — OAuth2 `client_credentials`, JWT token-based authorisation, OIDC-claim RBAC, and the Tier-3 DID / VC / Gaia-X targets — are catalogued alongside every other GLCDI specification (policy, protocol, semantic, sovereignty) in [`../strategy/standards.md` § Identity, Authentication & Role-Based Access](../strategy/standards.md#identity-authentication--role-based-access). Deferring to that document keeps a single canonical standards table and avoids drift.
+The identity / authentication mechanisms below - OAuth2 `client_credentials`, JWT token-based authorisation, OIDC-claim RBAC, and the Tier-3 DID / VC / Gaia-X targets - are catalogued alongside every other GLCDI specification (policy, protocol, semantic, sovereignty) in [`../strategy/standards.md` § Identity, Authentication & Role-Based Access](../strategy/standards.md#identity-authentication--role-based-access). Deferring to that document keeps a single canonical standards table and avoids drift.
 
 ---
 

@@ -1,10 +1,10 @@
 # AGENTS.md - GLCDI Management Context
 
-Context for AI agents working in the `management/` directory of the GLCDI project — what this directory contains, how it relates to the broader project, and what an agent needs to know to contribute effectively.
+Context for AI agents working in the `management/` directory of the GLCDI project - what this directory contains, how it relates to the broader project, and what an agent needs to know to contribute effectively.
 
 ## What this directory is
 
-`management/` is the **governance, design, and operations space** for the GLCDI dataspace. It holds the architecture reference, the phased implementation plan, ODRL policy templates, operator runbooks, and the local-stack orchestrator that runs the whole system on a laptop. It is not itself a deployable service — its outputs feed the sibling code repos of the workspace.
+`management/` is the **governance, design, and operations space** for the GLCDI dataspace. It holds the architecture reference, the phased implementation plan, ODRL policy templates, operator runbooks, and the local-stack orchestrator that runs the whole system on a laptop. It is not itself a deployable service - its outputs feed the sibling code repos of the workspace.
 
 ## Directory layout
 
@@ -32,7 +32,7 @@ management/
 ├── design/                   # Design proposals under review, not yet as-built
 │   └── payment-gating.md     # Payment-required contract policy design
 │
-├── ops/                      # Runbooks — anything an operator opens under time pressure
+├── ops/                      # Runbooks - anything an operator opens under time pressure
 │   ├── local-stack.md        # Run the whole stack on a laptop via glcdi.sh
 │   ├── vm-deployment.md      # Deploy to staging / prod VMs (CI-driven; manual bits documented)
 │   ├── staging-wipe.md       # Staging-participant full-reset runbook
@@ -42,7 +42,7 @@ management/
 └── presentations/            # reveal.js slide decks
 ```
 
-The **`README.md` contents block** is grouped by reader intent (Start here / Reference / Design / Build / Operate / Meta) — an agent scanning for where something belongs should read that first.
+The **`README.md` contents block** is grouped by reader intent (Start here / Reference / Design / Build / Operate / Meta) - an agent scanning for where something belongs should read that first.
 
 ## What is GLCDI?
 
@@ -66,8 +66,8 @@ Post-prototype types (corporate supply-chain partners, certification bodies, fun
 
 Every asset is governed by two policies:
 
-- **Access policy** — evaluated when a consumer queries the catalog. Controls **who can see** the offer. If the consumer's identity doesn't satisfy the constraints, the offer is hidden.
-- **Contract policy** — evaluated during contract negotiation. Controls **what the consumer can do** with the data.
+- **Access policy** - evaluated when a consumer queries the catalog. Controls **who can see** the offer. If the consumer's identity doesn't satisfy the constraints, the offer is hidden.
+- **Contract policy** - evaluated during contract negotiation. Controls **what the consumer can do** with the data.
 
 Both are linked to assets through a **Contract Definition**:
 
@@ -75,7 +75,7 @@ Both are linked to assets through a **Contract Definition**:
 Contract Definition = Asset Selector + Access Policy ID + Contract Policy ID
 ```
 
-### Constraint mechanism — Tier 1
+### Constraint mechanism - Tier 1
 
 At Tier 1 (M1 target), constraints reference claims carried on the consumer connector's **Authority Keycloak JWT**, minted via `client_credentials` at connector startup:
 
@@ -95,8 +95,8 @@ At Tier 1 (M1 target), constraints reference claims carried on the consumer conn
 | `glcdi:participantType` | `glcdi_roles` (array) | `"glcdi_" + rightOperand` present in array |
 | `glcdi:participantType` (isAnyOf) | `glcdi_roles` (array) | any of `["glcdi_" + v for v in rightOperand]` present |
 | `glcdi:certificationStatus` | `glcdi_certification_status` (string) | `claim == rightOperand` or `claim in rightOperand` |
-| `odrl:dateTime` | System clock | Native EDC — no custom function needed |
-| `odrl:purpose` | Consumer's contract offer | Native EDC — consumer declares purpose |
+| `odrl:dateTime` | System clock | Native EDC - no custom function needed |
+| `odrl:purpose` | Consumer's contract offer | Native EDC - consumer declares purpose |
 | `odrl:elapsedTime` | Transfer timestamp + clock | Needs custom function (deferred, Phase 3) |
 | `odrl:payAmount` | External payment system | Needs custom function + external API (see `design/payment-gating.md`) |
 
@@ -106,7 +106,7 @@ All GLCDI-specific terms use the prefix `glcdi:` mapped to `https://w3id.org/glc
 
 ## Identity architecture (Tier 1)
 
-The M1 target is **Tier 1**: one central Authority Keycloak, one `glcdi-connector-«org»` service-account client per participant, connector-only DSP-level identity, `X-Api-Key` at the UI edge. **No end-user OIDC anywhere at this tier** — the two-tier federated flow that older versions of this document described is Tier 2 territory (Phase 7.2), deliberately deferred to post-M1.
+The M1 target is **Tier 1**: one central Authority Keycloak, one `glcdi-connector-«org»` service-account client per participant, connector-only DSP-level identity, `X-Api-Key` at the UI edge. **No end-user OIDC anywhere at this tier** - the two-tier federated flow that older versions of this document described is Tier 2 territory (Phase 7.2), deliberately deferred to post-M1.
 
 ```
 Participant connector
@@ -150,7 +150,7 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 | Onboarding portal (form → admin approve → KC group + user + mail) | Local smoke passing (Phase 1.6); awaiting staging cutover |
 | Keycloak protocol mappers + Bruno auth checks | Done (Phase 2) |
 | EDC custom policy functions (participant-type, cert-status) | Drafted (Phase 3.1–3.2); unit tests deferred |
-| `iam-mock` → `glcdi-iam-keycloak` swap | Done — custom `glcdi-iam-keycloak` extension (stock `iam-oauth2` was retired in EDC 0.15.x; we hand-rolled the replacement). See `build/plan/phase-3-edc-policy-extension.md § 3.5`. |
+| `iam-mock` → `glcdi-iam-keycloak` swap | Done - custom `glcdi-iam-keycloak` extension (stock `iam-oauth2` was retired in EDC 0.15.x; we hand-rolled the replacement). See `build/plan/phase-3-edc-policy-extension.md § 3.5`. |
 | Seeding scripts + Bruno M1 scenario | Done (Phase 4.5 tracks E + F) |
 | Milestone M1 sign-off | Blocked on staging cutover + Phase 3.5 |
 | DSA / Trust Framework v0/v1 | Not started (Phase 6, governance-body-owned) |
@@ -198,10 +198,10 @@ Track the authoritative status in [`IMPLEM_PLAN.md`](build/implementation-plan.m
 
 ## Important caveats
 
-- **Governance-level obligations are not technically enforced** — anonymisation, attribution, deletion duties rely on the Data Sharing Agreement, not the connector. Full enforcement-boundary table in [`ARCHITECTURE.md § 8`](ARCHITECTURE.md).
+- **Governance-level obligations are not technically enforced** - anonymisation, attribution, deletion duties rely on the Data Sharing Agreement, not the connector. Full enforcement-boundary table in [`ARCHITECTURE.md § 8`](ARCHITECTURE.md).
 - **The Authority KC realm JSON is imported only on first boot.** Post-init edits to the JSON do nothing; changes must go through the admin console, or the KC Postgres volume must be wiped for a re-import. See `ops/vm-deployment.md § 3` for the wipe + re-import path (Option 1) and the partial-import + admin-console alternatives.
-- **`combined/` policy files are not directly POSTable** — they bundle access + contract + contract definition for documentation; extract the individual policies to use them.
-- **`w3id.org/glcdi/…` redirect is not registered yet** — the JSON-LD context is served from `cdn.startinblox.com` for the prototype; namespace stewardship (redirect via the w3id PR process) is post-prototype work.
+- **`combined/` policy files are not directly POSTable** - they bundle access + contract + contract definition for documentation; extract the individual policies to use them.
+- **`w3id.org/glcdi/…` redirect is not registered yet** - the JSON-LD context is served from `cdn.startinblox.com` for the prototype; namespace stewardship (redirect via the w3id PR process) is post-prototype work.
 
 ## Where to point questions
 

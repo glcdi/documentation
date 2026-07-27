@@ -10,7 +10,7 @@ This document is the entry point for the "Data Space Architecture Design" delive
 
 GLCDI's architecture is shaped by four commitments:
 
-- **Federated, not central.** Data stays on the participant side. The Authority operates the governance services — the Keycloak realm that holds identity, roles, and policy vocabularies, plus the onboarding portal — but it never proxies, stores, or observes payloads or data transfers.
+- **Federated, not central.** Data stays on the participant side. The Authority operates the governance services - the Keycloak realm that holds identity, roles, and policy vocabularies, plus the onboarding portal - but it never proxies, stores, or observes payloads or data transfers.
 - **Consent-governed and permissioned.** Every asset carries a policy; every access is negotiated; every transfer is EDR-gated. The default is "not discoverable."
 - **Standards-first.** Every mechanism used by the dataspace is backed by a public specification (Dataspace Protocol, ODRL, DCAT, OIDC, OAuth 2.0, JSON-LD, and - at Tier 3 - DCP / IATP / W3C VCs). Nothing proprietary sits on the critical path.
 - **Tiered identity, tiered ambition.** The M1 prototype ships on the smallest identity model that makes the policy stack work (Tier 1). Richer credential surfaces (Tier 2 user OIDC, Tier 3 Verifiable Credentials) layer on top without rewriting the connector trust chain.

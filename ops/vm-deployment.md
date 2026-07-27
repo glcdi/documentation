@@ -6,22 +6,22 @@ Operator runbook for deploying GLCDI changes to the staging (and, later, product
 
 - Refreshing the Authority Keycloak realm content when `glcdi-realm.json` in the sibling `authority-services` repo changes (realm imports run only on first Keycloak boot).
 - Rotating secrets that live in GitLab CI/CD variables + on the VMs' `.env` files.
-- First-time VM provisioning (DNS, TLS, `.env`, nginx) — already in place today.
+- First-time VM provisioning (DNS, TLS, `.env`, nginx) - already in place today.
 - Recovery / rollback when a deploy goes sideways.
 
 For local development / verification, see [`local-stack.md`](local-stack.md). Local green is the gate before triggering a staging deploy.
 
 ---
 
-## 1. The happy path — trigger the CI deploy job
+## 1. The happy path - trigger the CI deploy job
 
 Everyone-uses-this procedure for a standard deploy:
 
 1. **Merge the change** into `main` on the relevant sibling repo (`edc-connector/`, `authority-services/`, `participant-agent-services/`, `participant-ui/`, or `edc-glcdi-extension/`).
 2. **Open the pipeline** in GitLab (`https://git.startinblox.com/applications/glcdi/<repo>/-/pipelines`).
-3. **Trigger the manual `deploy-*` job** for the target environment (typically `deploy-staging`). CI does the rest — SSH → `git pull` in `/glcdi/<repo>/` → `docker compose pull` → `docker compose up -d`.
-4. **Watch the job log** — it prints `docker compose ps` at the end. Failures surface here.
-5. **Verify** — run the Bruno collection against staging (see § 5).
+3. **Trigger the manual `deploy-*` job** for the target environment (typically `deploy-staging`). CI does the rest - SSH → `git pull` in `/glcdi/<repo>/` → `docker compose pull` → `docker compose up -d`.
+4. **Watch the job log** - it prints `docker compose ps` at the end. Failures surface here.
+5. **Verify** - run the Bruno collection against staging (see § 5).
 
 That is normally all there is to it. Every subsequent section below is for the cases where the happy path doesn't apply.
 
@@ -35,23 +35,23 @@ The heavy infrastructure pieces are **already in place** on the current staging 
 |------|-------------------------------|----------------------------|
 | DNS for `authority.glcdi.startinblox.com` and per-participant hosts | ✅ resolving | Add A/AAAA records and wait for propagation |
 | Nginx config on each VM | Tier-1: `/management/*` proxied **directly** to the connector (no oauth2-proxy hop); `/oauth2/*` removed | Update per `participant-agent-services/nginx/` |
-| `.env` on each VM | Tier-1 envvars: `AUTHORITY_KEYCLOAK_URL`, per-org `EDC_OAUTH_CLIENT_ID=glcdi-connector-<org>`, `EDC_OAUTH_CLIENT_SECRET`, `EDC_API_KEY` (rotated). **No `OIDC_CLIENT_ID`, no `GLCDI_UI_CLIENT_SECRET`, no `LOCAL_KEYCLOAK_*`** — those return at Tier 2. | Populate from `.env.example`; distribute secrets via GitLab CI/CD variables |
+| `.env` on each VM | Tier-1 envvars: `AUTHORITY_KEYCLOAK_URL`, per-org `EDC_OAUTH_CLIENT_ID=glcdi-connector-<org>`, `EDC_OAUTH_CLIENT_SECRET`, `EDC_API_KEY` (rotated). **No `OIDC_CLIENT_ID`, no `GLCDI_UI_CLIENT_SECRET`, no `LOCAL_KEYCLOAK_*`** - those return at Tier 2. | Populate from `.env.example`; distribute secrets via GitLab CI/CD variables |
 | Certbot / TLS certs | ✅ issued and renewing | Issue via Certbot (or your CA of choice) and configure auto-renewal |
 | Container images built and published to `registry.startinblox.com` | ✅ CI publishes on `main` | If missing, trigger the `build-*` job in the relevant sibling repo |
 | Secrets rotated from `changeme-*` / `123456` defaults | ✅ | Rotate secrets on each VM and re-import the realm (§ 3) |
-| Bruno collection runs green locally | ✅ prerequisite before any staging deploy | Fix locally first — see [`local-stack.md`](local-stack.md) |
+| Bruno collection runs green locally | ✅ prerequisite before any staging deploy | Fix locally first - see [`local-stack.md`](local-stack.md) |
 
 **VM layout.** Each sibling repo lives at `/glcdi/<repo>/` on its target VM. `.env` and `secrets/` are populated out-of-band from GitLab CI/CD variables (`init-secrets.sh` at deploy time, `delete-secrets.sh` after containers start).
 
 ---
 
-## 3. Manual intervention — Authority Keycloak realm refresh
+## 3. Manual intervention - Authority Keycloak realm refresh
 
-Needed **whenever `authority-services/resources/keycloak/realms/glcdi-realm.json` changes** (that file lives in the sibling `authority-services` repo) — new clients, new roles, new protocol mappers, or rotated `changeme-*` placeholders. Keycloak imports realm JSON **only on first boot**, so a plain `docker compose up -d` on the Authority VM ignores realm-JSON edits.
+Needed **whenever `authority-services/resources/keycloak/realms/glcdi-realm.json` changes** (that file lives in the sibling `authority-services` repo) - new clients, new roles, new protocol mappers, or rotated `changeme-*` placeholders. Keycloak imports realm JSON **only on first boot**, so a plain `docker compose up -d` on the Authority VM ignores realm-JSON edits.
 
 Three options in order of recommendation. Snapshot the Authority Postgres volume before any of them.
 
-### Option 1 — Full re-import (destructive, simplest for a cutover)
+### Option 1 - Full re-import (destructive, simplest for a cutover)
 
 Wipe the Authority KC's Postgres volume and let KC re-import the realm JSON on first boot. Recommended for cutovers when there are no console-side edits to preserve.
 
@@ -81,9 +81,9 @@ Smoke check via admin console (`https://authority.glcdi.startinblox.com/auth/adm
 - **Users** list contains the three `service-account-glcdi-connector-<org>` entries plus three starter human users (Tier-2 carryover).
 - **Identity Providers** list is empty.
 
-Any subsequent admin-console edits live only in Postgres until the next re-import — keep the in-repo JSON in sync (or re-export with `kc.sh export …` periodically).
+Any subsequent admin-console edits live only in Postgres until the next re-import - keep the in-repo JSON in sync (or re-export with `kc.sh export …` periodically).
 
-### Option 2 — Partial import via Admin REST API (non-destructive, scriptable)
+### Option 2 - Partial import via Admin REST API (non-destructive, scriptable)
 
 Use this when the live KC has manual admin-console state to preserve, or when applying incremental changes (e.g. adding a fourth participant later) without a full restart. Not ideal for full-realm cutovers because client-scope and protocol-mapper handling in `partialImport` varies by Keycloak version.
 
@@ -122,7 +122,7 @@ The response lists how many of each resource type were `ADDED`, `OVERWRITTEN`, o
 - Protocol mappers nested inside a client are imported when the client itself is `OVERWRITTEN`, but mappers added at realm-level (in a client scope) need a separate `POST /admin/realms/glcdi/client-scopes/{id}/protocol-mappers/models` per mapper.
 - Service-account users (`service-account-glcdi-connector-<org>`) are auto-created when the client has `serviceAccountsEnabled=true`, but per-user attributes + group membership only land if the user records are included in the `partialImport` `users` field.
 
-### Option 3 — Admin console manual edits (last resort)
+### Option 3 - Admin console manual edits (last resort)
 
 Walk the admin console step by step. Useful when the KC version doesn't support `partialImport` for some resource type, or for one-off fixes. Option 1 (wipe + re-import) is the clean way to apply everything in one shot. Option 3 is for surgical fixes.
 
@@ -151,9 +151,9 @@ Announce a maintenance window ≥ 24h ahead for any change that requires Option 
 
 Before any destructive change:
 
-- **Authority Keycloak Postgres volume** — full snapshot (live admin-console edits live only there).
-- **Each participant connector's Postgres volume** — full snapshot.
-- **Live `glcdi-realm.json`** — export via Admin API, store next to the in-repo version so you can diff what's on prod against what the in-repo JSON would import.
+- **Authority Keycloak Postgres volume** - full snapshot (live admin-console edits live only there).
+- **Each participant connector's Postgres volume** - full snapshot.
+- **Live `glcdi-realm.json`** - export via Admin API, store next to the in-repo version so you can diff what's on prod against what the in-repo JSON would import.
 - **VM filesystem snapshots** if the cloud provider supports them.
 
 ---
@@ -181,7 +181,7 @@ Also verify in browser dev-tools (one happy-path session):
 
 If verification fails and the issue can't be fixed within the maintenance window:
 
-1. **Roll the compose files back** — `cd /glcdi/<repo> && git reset --hard <previous-sha>` on each affected VM.
+1. **Roll the compose files back** - `cd /glcdi/<repo> && git reset --hard <previous-sha>` on each affected VM.
 2. **Restore Authority KC's Postgres volume** from the § 4 snapshot (only if the realm was refreshed).
 3. **Restore each participant's Postgres volume** from the § 4 snapshot (only if a participant volume was wiped).
 4. **`docker compose up -d`** on each rolled-back VM.
@@ -207,7 +207,7 @@ If a participant VM has drift you can't unwind with a normal deploy (renamed ass
 
 ## Related
 
-- [`local-stack.md`](local-stack.md) — local end-to-end validation via `glcdi.sh`; the gate before any staging deploy.
-- [`staging-wipe.md`](staging-wipe.md) — full participant reset (drops connector Postgres + re-seeds).
-- [`../build/implementation-plan.md`](../build/implementation-plan.md) — phased plan; the Milestone M1 section defines what "green on staging" means.
-- [`../reference/identity.md`](../reference/identity.md) — identity architecture; useful when diagnosing Bruno `00-auth/*` failures.
+- [`local-stack.md`](local-stack.md) - local end-to-end validation via `glcdi.sh`; the gate before any staging deploy.
+- [`staging-wipe.md`](staging-wipe.md) - full participant reset (drops connector Postgres + re-seeds).
+- [`../build/implementation-plan.md`](../build/implementation-plan.md) - phased plan; the Milestone M1 section defines what "green on staging" means.
+- [`../reference/identity.md`](../reference/identity.md) - identity architecture; useful when diagnosing Bruno `00-auth/*` failures.
