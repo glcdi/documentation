@@ -30,7 +30,12 @@ GLCDI is a **one Authority + N participants** system:
 
 ## 3. Reference system architecture (Tier 1 - M1 target)
 
-The diagram below shows the M1 topology: one Authority Keycloak, one participant presented fully, and one peer participant collapsed. The `X-Api-Key` at the UI edge and the Authority-signed JWT on the DSP edge are the *only* auth mechanisms at this stage - no OAuth2, no per-participant Keycloak, no per-user OIDC redirect.
+The diagram below shows the first phase (M1) system architecture:
+- One Authority Keycloak
+- one participant presented fully
+- and one peer participant collapsed.
+
+The `X-Api-Key` at the UI edge and the Authority-signed JWT on the DSP edge are the *only* authentication mechanisms at this stage - no OAuth2, no per-participant Keycloak, no per-user OIDC redirect at this stage.
 
 ![GLCDI Tier 1 architecture](architecture.png)
 
