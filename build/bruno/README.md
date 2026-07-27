@@ -50,6 +50,9 @@ list (`implementation-plan.md` § Milestone M1) decompose to:
   (Tier 1 + Tier 2).
 - At **Tier 2 only**, the management API rejects calls with no / malformed
   Bearer token (oauth2-proxy in front of /management).
+- Post-transfer audit rows land on the provider connector: `50-audit/`
+  asserts that TRANSFER_STARTED + ACCESS records appear at
+  `/management/v3/glcdi/audit` after the M1 flow has run (Phase 4.7).
 
 ## Auth model by tier
 

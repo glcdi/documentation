@@ -7,7 +7,7 @@ In-scope for M1. Answers the participant question *"who accessed my datasets, wh
 | **Task** | Ship a new `glcdi-audit-store` extension that persists transfer-lifecycle events and public-API accesses to Postgres, exposes them via a management endpoint, and prunes rows past a configurable retention (default 90 days). Add a matching `audit-list` component to `solid-glcdi` and register it in `participant-ui`. |
 | **Approach** | Reuse hooks that already exist: `EventRouter` for transfer events, `GlcdiPublicApiController.proxy()` (already resolves `agreement_id` / `participant_id` / `asset_id` from the EDR token) for API access. One table, one endpoint, one component. |
 | **Scope carve-out** | Provider-side only. No consumer-side view, no Authority aggregation, no payload capture, no real-time push. All deferred to a post-M1 follow-up. |
-| **Status** | Implemented (extension + UI + Bruno tests land in one pass). Local smoke pending — needs `glcdi.sh reset && glcdi.sh all` to confirm rows appear after a real transfer + EDR fetch. |
+| **Status** | Shipped locally (2026-07-27). Extension, UI, and Bruno `50-audit/` all landed; local three-participant smoke verified — provider-side rows accumulate on caney-fork, consumer-side white-buffalo stays empty, TRANSFER_STARTED + ACCESS both persist, prune loop armed at 90d. Not yet on staging. |
 
 ## 4.7.1 Extension - `glcdi-audit-store`
 
@@ -89,6 +89,15 @@ New folder `management/build/bruno/50-audit/`:
 - [x] `03-access-produces-rows.bru` — issues a GET against the EDR endpoint (public API), then queries `?type=ACCESS` and asserts at least one row.
 - [x] `04-filter-by-asset.bru` — verifies filter narrows correctly.
 - [x] Document the folder in `build/bruno/README.md` under the acceptance-signals table.
+
+## 4.7.10 Refinements landed during implementation
+
+Not in the original plan; discovered while building:
+
+- **Provider-side event filter.** `TransferProcessStarted` fires on both sides of the DSP handshake. Without filtering, consumer connectors also recorded rows with `participant_id = self`. `TransferAuditSubscriber` now reads `edc.participant.id` at extension boot and drops events where `agreement.getProviderId() != self`. See `design/audit-trails.md § 5.6`.
+- **`upstream_url` column on ACCESS rows.** The proxied fetch destination (e.g. `http://farmos:80/api/whatever`) was originally discarded after the log line — added it as an `upstream_url` column so the UI can show `/public/<subpath>` → forwarded to `<upstream>`. Additive schema migration (`ALTER TABLE IF NOT EXISTS ADD COLUMN`).
+- **Schema bootstrap deferred to `start()`.** EDC 0.15.x doesn't have the SQL `DataSourceRegistry` fully wired at `initialize()` time; calling `resolve()` returns null and the connector crash-loops. `SchemaBootstrapper.ensure()` runs from `start()` and no-ops gracefully if the datasource is missing at that point.
+- **Icon + participant-name prettification (UI).** `mdi-clipboard-text-clock-outline` (record + time). Consumer IDs like `glcdi-connector-caney-fork` render as `Caney Fork`. Asset name/description fetched from `/management/v3/assets/request` on load and used in the group header; asset URN dropped to a small caption.
 
 ## Dependencies
 

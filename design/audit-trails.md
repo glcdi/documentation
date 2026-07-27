@@ -1,6 +1,8 @@
-# Audit Trails - Implementation Design (Proposal)
+# Audit Trails - Implementation Design
 
-A proposal for how participants can review, on demand, **when and if their datasets have been accessed, and by whom**. Everything below is a working design for the project team and Dataspace Authority to validate; nothing here is a decided commitment.
+Design rationale for how participants can review, on demand, **when and if their datasets have been accessed, and by whom**.
+
+> **Landed as-designed** on 2026-07-27. The extension (`glcdi-audit-store`), the `<solid-glcdi-audit-list>` component, and the Bruno `50-audit/` acceptance folder all shipped in the same pass, and local smoke passes on the three-participant stack. One design refinement surfaced during implementation — see § 5, item 6 (*Provider-side filter*).
 
 This document complements the phase-doc [`../build/plan/phase-4.7-audit-trails.md`](../build/plan/phase-4.7-audit-trails.md) (the tactical checklist). Its purpose is to justify the shape — extension boundary, storage schema, event choice, retention posture — so an implementer or reviewer can trace *why* each choice was made.
 
@@ -97,7 +99,7 @@ edc-glcdi-extension/extensions/glcdi-audit-store/
 
 Two extension classes because the controlplane and dataplane can run as separate JVMs. In our single-runtime dev setup they coexist, but the split keeps the wiring honest.
 
-`SqlAuditStore` reuses the connector's existing `DataSourceRegistry` (same Postgres the transfer-process store uses). Liquibase changelog under `src/main/resources/glcdi-audit-schema.xml` creates one table on first boot.
+`SqlAuditStore` reuses the connector's existing `DataSourceRegistry` (same Postgres the transfer-process store uses). Schema is bootstrapped once on extension `start()` from `src/main/resources/glcdi-audit/schema.sql` (using `CREATE TABLE IF NOT EXISTS` — no Liquibase dependency needed for one table).
 
 ### 3.2 Storage schema
 
@@ -112,7 +114,8 @@ CREATE TABLE glcdi_audit (
   agreement_id     VARCHAR(255),
   asset_id         VARCHAR(255),
   transfer_id      VARCHAR(255),            -- populated for TRANSFER_* events, null for ACCESS
-  path             TEXT,                    -- populated for ACCESS
+  path             TEXT,                    -- populated for ACCESS - the subpath consumer requested against /public/
+  upstream_url     TEXT,                    -- populated for ACCESS - the actual URL the proxy forwarded to
   status_code      INT,                     -- populated for ACCESS
   bytes            BIGINT,                  -- populated for ACCESS
   extra            JSONB                    -- future-proof escape hatch
@@ -122,6 +125,8 @@ CREATE INDEX glcdi_audit_asset_ts     ON glcdi_audit (asset_id, ts DESC);
 CREATE INDEX glcdi_audit_participant  ON glcdi_audit (participant_id, ts DESC);
 CREATE INDEX glcdi_audit_ts           ON glcdi_audit (ts);   -- for the prune job
 ```
+
+`upstream_url` was added post-review to answer the UI ask *"show `/public/path` → forwarded to X"*. The provider learns exactly what upstream (farmOS, DjangoLDP, another API) the consumer's fetch resolved to. Additive column (`ALTER TABLE IF NOT EXISTS ADD COLUMN`) so it lands safely on existing tables.
 
 Rationale:
 
@@ -238,6 +243,7 @@ Explicitly out of scope for the M1 audit cut, so the reviewer can spot missing c
 | 3 | What happens if `AuditStore.record()` throws? | Wrapped in try/catch inside `proxy()` and the subscriber; the audit failure is logged as a warning but does not fail the underlying proxy or transfer event. Audit is best-effort, not load-bearing. |
 | 4 | Does the retention prune need to be transactional or chunked? | For M1: a single `DELETE WHERE ts < ?` is fine (indexed on `ts`). If row counts grow past a few million, revisit with batched deletes. Not premature to optimise now. |
 | 5 | Should `participant_id` be resolved from the DSP counterparty rather than the token claim? | Same value at Tier 1 (the connector-SA JWT carries `glcdi_organisation`). At Tier 2/3 the mapping stays the same; no change needed. |
+| 6 | **Provider-side filter** (surfaced during implementation) — `TransferProcessStarted` fires on **both** provider and consumer sides of the DSP handshake. Without a filter, the consumer connector's audit table gains a row with `participant_id = self`, rendering "Provider X / Consumer X" nonsense. | Resolved: `TransferAuditSubscriber` reads `edc.participant.id` at extension boot and skips events where `agreement.getProviderId() != self`. The `ACCESS` path is unaffected — it only fires on providers by construction. |
 
 ---
 

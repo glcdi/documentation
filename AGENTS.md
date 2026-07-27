@@ -155,6 +155,7 @@ Track the authoritative status in [`implementation-plan.md`](build/implementatio
 | EDC custom policy functions (participant-type, cert-status) | Drafted (Phase 3.1–3.2); unit tests deferred |
 | `iam-mock` → `glcdi-iam-keycloak` swap | Done - custom `glcdi-iam-keycloak` extension (stock `iam-oauth2` was retired in EDC 0.15.x; we hand-rolled the replacement). See `build/plan/phase-3-edc-policy-extension.md § 3.5`. |
 | Seeding scripts + Bruno M1 scenario | Done (Phase 4.5 tracks E + F) |
+| Audit trails (provider-side) | Shipped locally (Phase 4.7) — `glcdi-audit-store` extension + `<solid-glcdi-audit-list>` UI + Bruno `50-audit/`. Not yet on staging. |
 | Milestone M1 sign-off | Blocked on staging cutover + Phase 3.5 |
 | DSA / Trust Framework v0/v1 | Not started (Phase 6, governance-body-owned) |
 
@@ -186,6 +187,7 @@ Track the authoritative status in [`implementation-plan.md`](build/implementatio
 | Phase 4 (seeding) | `bruno/10-provider-seeding/*.bru`, `scripts/glcdi.sh` `seed_one`/`seed_demo` |
 | Phase 4.5.E (Bruno M1 scenario) | `bruno/00-auth/`, `20-catalog-discovery/`, `30-negotiation/`, `40-transfer/`, `99-negative-auth/` |
 | Phase 4.5.F (Participant UI) | `participant-ui/config.json.template`, `participant-ui/docker-entrypoint.sh` |
+| Phase 4.7 (audit trails) | `edc-glcdi-extension/extensions/glcdi-audit-store/`, `edc-glcdi-extension/extensions/glcdi-dataplane-public-api/` (audit hook in `GlcdiPublicApiController.proxy()`), `solid-glcdi/src/components/management/audit-list.ts`, `participant-ui/config.json` + `config.json.template`, `build/bruno/50-audit/` |
 | Phase 6 (governance) | Trust Framework docs (external to this repo, tracked here) |
 | Phase 7.1 (payment) | `design/payment-gating.md` + `edc-glcdi-extension/payment-status-extension/` |
 | Phase 7.2 (Tier 2 user OIDC) | Realm JSON `glcdi-ui` client + groups + users, participant compose `oauth2-proxy` reintroduction, participant-ui OIDC envvars |
